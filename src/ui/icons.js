@@ -1,0 +1,28 @@
+// Iconos dibujados en SVG, sin imágenes externas.
+const P = {
+  crown: '<path d="M3 18 2 7l5 4 5-7 5 7 5-4-1 11zM3 20h18v2H3z"/>',
+  hat: '<path d="M13 2c2 1 4 1 6 3-3 0-4 1-4 2l3 10c2 .3 4 1 4 2 0 1.600-4 3-10 3S2 20.600 2 19c0-1 2-1.700 4-2z"/>',
+  gem: '<path d="M6 3h12l4 6-10 13L2 9zM2 9h20M9 9l3 12 3-12-3-6z" fill-opacity=".9" stroke="rgba(255,255,255,.55)" stroke-width="1.200"/>',
+  star: '<path d="m12 2 3 7 7 .6-5.300 4.700 1.600 7.200L12 17.600 5.700 21.500l1.600-7.200L2 9.600 9 9z"/>',
+  hand: '<path d="M7 12V5a1.500 1.500 0 0 1 3 0v5-6a1.500 1.500 0 0 1 3 0v6-5a1.500 1.500 0 0 1 3 0v7l1-3a1.500 1.500 0 0 1 2.800 1L18 17c-1 3-3 5-6.500 5C7 22 5 18 3 14a1.500 1.500 0 0 1 2.500-1.500z"/>',
+  magnet: '<path d="M4 3h5v9a3 3 0 0 0 6 0V3h5v9a8 8 0 0 1-16 0zM4 7h5M15 7h5" stroke="rgba(255,255,255,.7)" stroke-width="1.500"/>',
+  boot: '<path d="M8 2h7v10c1 2 6 2 6 6v3H5v-3l3-4zM1 6h5v2H1zM0 10h5v2H0z"/>',
+  dice: '<path fill-rule="evenodd" d="M5 2h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm1.500 2.500a1.500 1.500 0 1 0 0 3 1.500 1.500 0 0 0 0-3zm3 3.500a1.500 1.500 0 1 0 0 3 1.500 1.500 0 0 0 0-3zm3 3.500a1.500 1.500 0 1 0 0 3 1.500 1.500 0 0 0 0-3z"/><path d="M19 8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3h7a4 4 0 0 0 4-4z" opacity=".7"/>',
+  again: '<path d="M12 4a8 8 0 1 0 8 8h-3a5 5 0 1 1-5-5v4l7-5.500L12 0z"/>',
+  shield: '<path d="M12 2 3 5v7c0 5 4 8 9 10 5-2 9-5 9-10V5zm0 3v14c-3-1.500-6-3.500-6-7V7z" fill-rule="evenodd"/>',
+  steal: '<path d="M2 9h6l3 3h5a2 2 0 0 1 0 4h-5 6l4-2a1.700 1.700 0 0 1 1 3l-7 5H8l-3-2H2zM16 2l4 3-4 5-4-5z"/>',
+  bag: '<path d="M8 2h8l-2 4c5 2 7 7 6 12-.6 2.500-2 4-4 4H8c-2 0-3.400-1.500-4-4-1-5 1-10 6-12zm1 12 3 3 3-3-3-3z" fill-rule="evenodd"/>',
+  cloud: '<path d="M7 15a5 5 0 0 1-.5-10A6 6 0 0 1 18 6.500a4.300 4.300 0 0 1 0 8.500zM8 17l-2 5M13 17l-2 5M18 17l-2 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  root: '<path d="M12 2v7m0 0c0 6-8 4-9 12m9-12c0 6 8 4 9 12M12 9v13M7 14c-2-1-4 0-5 1m15-1c2-1 4 0 5 1" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linecap="round"/>',
+  map: '<path d="m2 5 6-3 8 3 6-3v17l-6 3-8-3-6 3zm6-1v13M16 6v14" stroke="rgba(0,0,0,.35)" stroke-width="1.400"/>',
+  sound: '<path d="M3 9h4l6-5v16l-6-5H3z"/><path d="M16 8c2 2 2 6 0 8M19 5c4 4 4 10 0 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  mute: '<path d="M3 9h4l6-5v16l-6-5H3z"/><path d="m16 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  help: '<path d="M8 8a4 4 0 1 1 6 3.500c-1.500 1-2 1.500-2 3.500" fill="none" stroke="currentColor" stroke-width="2.800" stroke-linecap="round"/><circle cx="12" cy="20" r="1.900"/>',
+  castle: '<path d="M2 22V8h3v2h2V4h3v2h4V4h3v6h2V8h3v14h-7v-5a3 3 0 0 0-6 0v5z"/>',
+  trap: '<path d="m2 20 3-9 3 9zm7 0 3-14 3 14zm7 0 3-9 3 9zM2 20h20v2H2z"/>',
+  portal: '<path d="M12 2a10 10 0 1 0 10 10 7 7 0 1 0-7 5 4.500 4.500 0 1 0-3-8" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linecap="round"/>',
+  shrine: '<path d="M12 2s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11zM4 20h16v2H4z"/>',
+  chest: '<path d="M4 4h16a2 2 0 0 1 2 2v5H2V6a2 2 0 0 1 2-2zM2 12.500h7V15h6v-2.500h7V20H2z"/>',
+  calm: '<path d="M12 22V10m0 4c-6 0-8-4-8-9 5 0 8 3 8 9zm0-2c0-5 3-8 8-8 0 5-2 8-8 8z" stroke="currentColor" stroke-width="1.500"/>',
+};
+export const icon = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${P[n] || P.star}</svg>`;

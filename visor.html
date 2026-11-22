@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Visor de personajes</title>
+<style>body{margin:0;overflow:hidden;background:#b9a4e6}</style>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { makePrincess, makeMage } from './src/view/characters.js';
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); document.body.append(r.domElement);
+r.setSize(innerWidth, innerHeight); r.setPixelRatio(devicePixelRatio); r.shadowMap.enabled = true; r.toneMapping = THREE.ACESFilmicToneMapping;
+const s = new THREE.Scene(); s.background = new THREE.Color('#a58ed8');
+s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture; s.environmentIntensity = .45;
+const cam = new THREE.PerspectiveCamera(28, innerWidth / innerHeight, .1, 100);
+const sun = new THREE.DirectionalLight('#ffe9c9', 2.6); sun.position.set(3, 6, 5); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera,{left:-4,right:4,top:4,bottom:-4}); sun.shadow.bias=-.0005; sun.shadow.normalBias=.02; s.add(sun);
+s.add(new THREE.HemisphereLight('#cfe0ff', '#8a6a9a', 1.1));
+const f = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, .2, 40), new THREE.MeshStandardMaterial({ color: '#7fc45e' })); f.position.y = -.1; f.receiveShadow = true; s.add(f);
+const list = [];
+const q = new URLSearchParams(location.search);
+const yaws = [0.35, 2.6];
+[makePrincess, makeMage].forEach((mk, i) => yaws.forEach((y, j) => { const c = mk(); c.root.position.set((i * 2 + j - 1.5) * 1.15, 0, 0); c.turnTo = y; c.root.rotation.y = y; s.add(c.root); list.push(c); }));
+window.list = list; window.cam = cam;
+const z = +(q.get('z') || 7.5), h = +(q.get('h') || 1.0), x = +(q.get('x') || 0);
+cam.position.set(x, h + .35, z); cam.lookAt(x, h - .05, 0);
+let last = performance.now();
+window.frame = (dt) => { list.forEach((c) => c.update(dt)); r.render(s, cam); };
+for (let i = 0; i < 60; i++) list.forEach((c) => c.update(1 / 60));
+r.setAnimationLoop((t) => { const dt = Math.min(.05, (t - last) / 1000); last = t; window.frame(Math.max(0, dt)); });
+</script>
