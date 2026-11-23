@@ -167,6 +167,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 
 /* Minijuegos */
 .pad { position: absolute; inset: 0; pointer-events: auto; touch-action: none; cursor: crosshair; }
+.dpad { position: absolute; bottom: 5%; width: min(46vw, 46vh, 250px); height: min(46vw, 46vh, 250px); } .dpad.p0 { left: 2vw; --c: var(--p0); } .dpad.p1 { right: 2vw; --c: var(--p1); }
+.dpad i { position: absolute; width: 36%; height: 36%; border-radius: 20px; background: #2a1845d9; border: 3px solid var(--c); display: grid; place-items: center; }
+.dpad i::after { content: ''; border: 13px solid transparent; border-bottom: 20px solid #fff; border-top: 0; } .dpad .d0 { top: 0; left: 32%; } .dpad .d1 { top: 32%; right: 0; } .dpad .d2 { bottom: 0; left: 32%; } .dpad .d3 { top: 32%; left: 0; }
+.dpad .d1::after { transform: rotate(90deg); } .dpad .d2::after { transform: rotate(180deg); } .dpad .d3::after { transform: rotate(-90deg); } .dpad i.on { animation: press .25s; } @keyframes press { from { background: var(--c); transform: scale(.88); } }
 .ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .ctl div { border-radius: 13px; padding: 10px; color: #fff; font-size: 17px; font-weight: 500; background: var(--cd); } .ctl b { display: flex; gap: 6px; justify-content: center; align-items: center; font: 400 22px/1.1 var(--disp); }
 .ctl .p0 { --cd: var(--p0d); } .ctl .p1 { --cd: var(--p1d); }
@@ -180,6 +184,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .time { width: min(300px, 30vw); height: 12px; margin: 9px auto 0; border-radius: 9px; background: var(--ink); border: 2px solid #fff; overflow: hidden; } .time i { display: block; height: 100%; background: var(--gold); } .time i.low { background: #ff5d6c; }
 .say { position: absolute; left: 0; right: 0; top: 24%; text-align: center; }
 .say div { display: inline-block; max-width: 92vw; color: #fff; font: 400 clamp(38px, 7vw, 76px)/1 var(--disp); text-shadow: 0 4px 0 var(--ink), 0 0 26px var(--ink); animation: drop2 .3s cubic-bezier(.2,1.6,.4,1); text-wrap: balance; } .say small { display: block; font: 700 clamp(17px, 2.4vw, 24px)/1.2 var(--body); margin-top: 8px; }
+.minihud.low .say { top: 62%; }
 @keyframes drop2 { from { opacity: 0; transform: scale(.6); } }
 .veil { position: absolute; inset: 0; background: var(--ink); opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5; } .veil.on { opacity: 1; }
 

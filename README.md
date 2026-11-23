@@ -6,7 +6,7 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 
 - Aventuras con decisiones, algunas con consecuencias turnos después.
 - Mercado, cueva del dragón, un águila que te lleva y un gusano que te traga.
-- Tres minijuegos para dos: duelo de hechizos, lluvia de gemas y hechizos al fugitivo.
+- Nueve minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón y burbuja valiente.
 - 27 cartas y gemas para gastar en pleno turno.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
@@ -32,4 +32,4 @@ npm run build    # genera dist/
 | `src/ui` | Interfaz, textos y estilos |
 | `test`, `tools` | Pruebas y simulador de partidas (`node tools/medir.js`) |
 
-`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`, `v3.0`…).
+`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`, `v3.0`, `v3.1`…).

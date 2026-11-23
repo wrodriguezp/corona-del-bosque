@@ -273,6 +273,9 @@ export class Hud {
     const ctl = {
       button: mobile ? ['Toca la mitad izquierda', 'Toca la mitad derecha'] : ['Tecla A o espacio', 'Enter o clic del mouse'],
       move: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas A y D', 'Flechas ← y →'],
+      hold: mobile ? ['Mantén el dedo en la mitad izquierda', 'Mantén el dedo en la mitad derecha'] : ['Mantén A o espacio', 'Mantén Enter o el clic del mouse'],
+      dirs: mobile ? ['Los cuatro botones de la izquierda', 'Los cuatro botones de la derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
+      move2: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
       chase: mobile ? ['Quien huye desliza abajo', 'Quien lanza toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
     }[rules.input];
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>

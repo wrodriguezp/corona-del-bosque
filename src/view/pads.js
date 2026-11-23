@@ -3,10 +3,11 @@ import { noPad } from '../core/minigames/index.js';
 // Traduce teclado, mouse y toques a los mandos de los minijuegos. Para jugar en
 // salas bastará reemplazar read() por mandos que lleguen de la red.
 const BUTTON = [['Space', 'KeyA', 'KeyS', 'KeyD', 'KeyW', 'KeyF'], ['Enter', 'NumpadEnter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyL']];
+const DIRS = [['KeyW', 'KeyD', 'KeyS', 'KeyA'], ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft']];
 const clamp = (v) => Math.max(-1, Math.min(1, v));
 
 export class Pads {
-  constructor(root, aimAt) {
+  constructor(root, aimAt, kind, mobile) {
     this.aimAt = aimAt;
     this.keys = new Set();
     this.hit = [false, false];
@@ -15,6 +16,10 @@ export class Pads {
     this.shot = null;
     this.el = document.createElement('div');
     this.el.className = 'pad';
+    this.mouse = false;
+    this.dirs = [[], []];
+    // En celular, cada mitad tiene sus cuatro botones de dirección.
+    if (kind === 'dirs' && mobile) this.el.innerHTML = [0, 1].map((i) => `<div class="dpad p${i}">${[0, 1, 2, 3].map((d) => `<i data-p="${i}" data-d="${d}" class="d${d}"></i>`).join('')}</div>`).join('');
     root.append(this.el);
     const on = (t, ev, fn) => { t.addEventListener(ev, fn, { passive: false }); this.off.push(() => t.removeEventListener(ev, fn)); };
     this.off = [];
@@ -23,15 +28,19 @@ export class Pads {
       if (/^(Arrow|Space|Enter)/.test(e.code)) e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
+      DIRS.forEach((b, i) => b.includes(e.code) && this.dirs[i].push(b.indexOf(e.code)));
       BUTTON.forEach((b, i) => b.includes(e.code) && (this.hit[i] = true));
     });
     on(window, 'keyup', (e) => this.keys.delete(e.code));
-    on(window, 'blur', () => this.keys.clear());
+    on(window, 'blur', () => { this.keys.clear(); this.mouse = false; });
+    on(window, 'pointerup', () => (this.mouse = false));
     on(this.el, 'contextmenu', (e) => e.preventDefault());
     on(this.el, 'pointerdown', (e) => {
       e.preventDefault();
+      const b = e.target.closest?.('[data-d]');
+      if (b) { this.dirs[b.dataset.p].push(+b.dataset.d); b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); return; }
       try { this.el.setPointerCapture(e.pointerId); } catch {}
-      if (e.pointerType === 'mouse') { this.aim = this.aimAt(e); this.shot = this.aim; this.hit[1] = true; return; }
+      if (e.pointerType === 'mouse') { this.aim = this.aimAt(e); this.shot = this.aim; this.hit[1] = true; this.mouse = true; return; }
       const low = e.clientY > innerHeight * 0.62, i = e.clientX < innerWidth / 2 ? 0 : 1;
       this.touch.set(e.pointerId, { i, low, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY });
       this.hit[i] = true;
@@ -56,6 +65,16 @@ export class Pads {
   read(kind, s) {
     const pads = [noPad(), noPad()];
     if (kind === 'button') pads.forEach((p, i) => (p.a = this.hit[i]));
+    if (kind === 'hold') {
+      pads.forEach((p, i) => (p.h = this.hit[i] || BUTTON[i].some((k) => this.keys.has(k)) || [...this.touch.values()].some((t) => t.i === i)));
+      if (this.mouse) pads[1].h = true;
+    }
+    if (kind === 'dirs') pads.forEach((p, i) => (p.d = this.dirs[i].shift() ?? null));
+    else this.dirs = [[], []];
+    if (kind === 'move2') {
+      pads.forEach((p, i) => { const [u, r, d, l] = DIRS[i]; p.x = this.axis([l], [r]); p.y = this.axis([u], [d]); });
+      for (const t of this.touch.values()) { pads[t.i].x = clamp((t.x - t.x0) / 34); pads[t.i].y = clamp((t.y - t.y0) / 34); }
+    }
     if (kind === 'move') {
       pads[0].x = this.axis(['KeyA'], ['KeyD']);
       pads[1].x = this.axis(['ArrowLeft'], ['ArrowRight']);

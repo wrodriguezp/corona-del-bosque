@@ -15,6 +15,12 @@ const bots = {
     } else if (rng.chance(0.03)) { p.a = true; p.aim = { x: s.x + s.vx * 0.6 + (rng.next() - 0.5) * 2, y: s.y + s.vy * 0.6 + (rng.next() - 0.5) * 2 }; }
     return p;
   }),
+  tira: () => [0, 1].map(() => { let k = 0, at = 0; return (s, rng) => { const p = noPad(); if (k < s.beats.length) { at ||= s.beats[k] + (rng.next() - 0.5) * 0.3; if (s.t >= at) { p.a = true; k++; at = 0; } } return p; }; }),
+  runas: () => [0, 1].map((i) => { let wait = 0.5; return (s, rng) => { const p = noPad(); if (s.phase !== 'play') { wait = 0.4 + rng.next() * 0.2; return p; } wait -= DT; if (wait < 0 && s.p[i].n < s.seq.length) { wait = 0.25 + rng.next() * 0.35; p.d = rng.chance(0.93) ? s.seq[s.p[i].n] : rng.int(0, 3); } return p; }; }),
+  salto: () => [0, 1].map(() => { let j = null; return (s, rng) => { const p = noPad(), m = ((s.ang % Math.PI) + Math.PI) % Math.PI, left = (s.dir > 0 ? Math.PI - m : m) / s.speed; j ??= 0.3 + (rng.next() - 0.5) * 0.42; if (left < j && left > 0.02) { p.a = true; } if (left > 0.65) j = null; return p; }; }),
+  choque: () => [0, 1].map((i) => (s, rng) => { const p = noPad(), me = s.p[i], r = s.p[1 - i], d = Math.hypot(me.x, me.y); const k = d > s.r * 0.7 ? 1 : 0; p.x = k ? -me.x : r.x - me.x + (rng.next() - 0.5); p.y = k ? -me.y : r.y - me.y + (rng.next() - 0.5); return p; }),
+  huevo: () => [0, 1].map((i) => (s, rng) => { const p = noPad(), me = s.p[i], r = s.p[1 - i], k = s.holder === i ? 1 : -1; p.x = k * (r.x - me.x) + (k < 0 ? -me.y * 0.9 - me.x * 0.3 : 0) + (rng.next() - 0.5); p.y = k * (r.y - me.y) + (k < 0 ? me.x * 0.9 - me.y * 0.3 : 0) + (rng.next() - 0.5); return p; }),
+  burbuja: () => [0, 1].map((i) => { let goal = 0; return (s, rng) => { const p = noPad(); if (s.clock < 0) goal = 0.35 + rng.next() * 0.45; p.h = s.clock > 0.1 && s.p[i].size < goal; return p; }; }),
 };
 
 function play(id, seed, make = bots[id]) {
@@ -36,7 +42,7 @@ for (const id of Object.keys(GAMES)) {
 }
 
 test('sin tocar nada no se bloquean', () => {
-  for (const id of ['duelo', 'lluvia', 'fuga']) play(id, 5, () => [noPad, noPad]);
+  for (const id of Object.keys(GAMES)) play(id, 5, () => [noPad, noPad]);
 });
 
 test('adelantarse en el duelo da la ronda al rival', () => {

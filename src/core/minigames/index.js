@@ -1,16 +1,7 @@
-import { makeRng } from '../rng.js';
+import { DT, base, clamp, emit, finish, noPad } from './kit.js';
+import { tira, runas, salto, choque, huevo, burbuja } from './nuevos.js';
 
-// Minijuegos puros y deterministas: step() avanza 1/60 s con los mandos de cada
-// jugador, pads[i] = { x, y, a, aim }. x/y van de −1 a 1, `a` vale true solo en el
-// cuadro en que se pulsa, y aim es un punto { x, y } de la arena. La vista y (a
-// futuro) la red solo necesitan mandar esos mandos.
-export const DT = 1 / 60;
-export const noPad = () => ({ x: 0, y: 0, a: false, aim: null });
-
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const emit = (s, t, o = {}) => s.events.push({ t, ...o });
-const base = (seed) => ({ rng: makeRng(seed), t: 0, events: [], done: false, winner: null, score: [0, 0], left: null });
-const finish = (s) => { s.done = true; s.winner = s.score[0] === s.score[1] ? -1 : s.score[0] > s.score[1] ? 0 : 1; };
+export { DT, noPad };
 
 /* ---------- Duelo de hechizos: reflejos, al mejor de tres ---------- */
 const duelo = {
@@ -62,7 +53,7 @@ const duelo = {
 /* ---------- Lluvia de gemas: veinte segundos en la misma isla ---------- */
 export const RAIN = { w: 5, r: 0.5, time: 20, speed: 6.4 };
 const lluvia = {
-  name: 'Lluvia de gemas', icon: 'gem', input: 'move',
+  name: 'Lluvia de gemas', icon: 'gem', input: 'move', time: RAIN.time,
   goal: 'Atrapa las gemas que caen: las normales valen 1 punto y las doradas 3. Las rocas te aturden y te quitan 1. Puedes empujar a tu rival.',
   create(seed) {
     return { ...base(seed), left: RAIN.time, p: [{ x: -2.5, v: 0, stun: 0 }, { x: 2.5, v: 0, stun: 0 }], drops: [], next: 0.3, id: 0 };
@@ -109,7 +100,7 @@ const lluvia = {
 /* ---------- Hechicera y fugitivo: dos rondas, roles cambiados ---------- */
 export const CHASE = { r: 4.6, time: 12, speed: 4.5, blast: 1.15, warn: 0.65, cool: 0.45 };
 const fuga = {
-  name: 'Hechizos al fugitivo', icon: 'flame', input: 'chase',
+  name: 'Hechizos al fugitivo', icon: 'bolt', input: 'chase', time: CHASE.time, selfStart: true,
   goal: 'Quien huye esquiva y recoge estrellas: +1 punto cada una. Quien lanza apunta hechizos: cada acierto le quita 1 punto a quien huye. Luego cambian de papel. Gana quien sume más puntos al huir.',
   create(seed) {
     const s = { ...base(seed), round: 1 };
@@ -177,4 +168,4 @@ const fuga = {
   },
 };
 
-export const GAMES = { duelo, lluvia, fuga };
+export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja };

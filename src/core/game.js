@@ -18,7 +18,7 @@ export const FAIRY = { 1: [6, 3], 2: [13, 9] };
 export const FAIRY_FROM = 4; // turnos de gracia al comenzar
 export const DUEL_GEMS = 4;
 export const CAVE = [2, 3, 3, 4, 5, 6];
-export const MINIGAMES = ['duelo', 'lluvia', 'fuga'];
+export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', 'choque', 'huevo', 'burbuja'];
 
 const TRAPS = {
   pozo: { title: 'Pozo escondido', text: 'El suelo cede. Retrocedes 3 casillas.' },

@@ -1,39 +1,17 @@
 import * as THREE from 'three';
-import { mat, matGlow, matMetal, paint, paintBy, at, loft, ico, octa, box, cone, cyl, ringGeo, star, mesh } from './geo.js';
-import { GAMES, RAIN, CHASE, DT } from '../core/minigames/index.js';
+import { matGlow, paint, paintBy, loft, ico, star, mesh } from './geo.js';
+import { GAMES, CHASE, DT } from '../core/minigames/index.js';
+import { C, V, COLORS, island } from './arena.js';
+import { NEW_VIEWS } from './minigames2.js';
 import { Pads } from './pads.js';
-import { ease } from './stage.js';
 import { sfx } from '../audio.js';
 
-const C = new THREE.Vector3(24, 1.1, 0); // centro de la isla de minijuegos
-const COLORS = ['#ff5c9e', '#4b8df7'];
 const FEINT = ['#b14be0', '#ff5d4a', '#3fb8ff'];
-
-const V = (x, y, z) => new THREE.Vector3(C.x + x, C.y + y, C.z + z);
-
-function island(kind) {
-  const g = new THREE.Group(), r = kind === 'fuga' ? 5.2 : 7, k = kind === 'lluvia' ? 0.42 : kind === 'duelo' ? 0.6 : 1;
-  const top = kind === 'fuga' ? ['#8a7fb0', '#9b90c0'] : kind === 'duelo' ? ['#5fb98a', '#6fc997'] : ['#8fd45c', '#83c952'];
-  g.add(mesh(paintBy(at(loft([{ y: -2.6, r: r * 0.5, wave: [5, 0.1] }, { y: -1.1, r: r * 0.85, wave: [6, 0.07] }, { y: -0.16, r: r * 1.02, wave: [9, 0.02] }, { y: 0, r, wave: [9, 0.015] }, { y: 0.004, r: r * 0.78 }, { y: 0.008, r: r * 0.55, wave: [5, 0.06] }, { y: 0.012, r: r * 0.3 }], 26), { s: [1, 1, k] }), (v) => (v.y > -0.1 ? top[Math.abs(Math.floor(v.x * 2.3) + Math.floor(v.z * 3.1)) % 2] : v.y > -0.5 ? '#b58a66' : '#7b5a57'))));
-  if (kind === 'fuga') {
-    g.add(mesh([paint(at(ringGeo(CHASE.r + 0.35, 0.08, 40, 4), { r: [Math.PI / 2, 0, 0], p: [0, 0.04, 0] }), '#ffc93c'), ...Array.from({ length: 6 }, (_, i) => paint(at(star(0.28, 0.03), { r: [-Math.PI / 2, 0, 0], p: [Math.sin(i * 1.047) * 2.6, 0.03, Math.cos(i * 1.047) * 2.6] }), '#b9aee0')), paint(at(ringGeo(2.6, 0.03, 36, 4), { r: [Math.PI / 2, 0, 0], p: [0, 0.025, 0] }), '#b9aee0')]));
-    g.add(mesh(paintBy(at(loft([{ y: -0.1, r: 0.9 }, { y: 0.5, r: 0.75 }, { y: 0.62, r: 0.85 }, { y: 0.7, r: 0.8 }], 8), { p: [0, 0, -5.7] }), (v) => (v.y > 0.55 ? '#efe6ff' : '#a397c9'))));
-  }
-  const deco = [];
-  for (let i = 0; i < 18; i++) {
-    const a = i * 2.399, q = r * (0.86 + (i % 3) * 0.04), x = Math.sin(a) * q, z = Math.cos(a) * q * k;
-    if (kind === 'fuga' || z > 0.6) { deco.push(paintBy(at(ico(0.16 + (i % 3) * 0.05), { p: [x, 0.06, z] }), (v) => (v.y > 0.1 ? '#c9c0d6' : '#8c8399'))); continue; }
-    if (i % 2) deco.push(paint(at(cyl(0.07, 0.1, 0.5, 6), { p: [x, 0.25, z] }), '#7b4a2d'), ...[[0.45, 0.6], [0.8, 0.48], [1.1, 0.34]].map(([y, w]) => paint(at(cone(w * 0.75, 0.6, 7), { p: [x, y + 0.2, z] }), i % 4 === 1 ? '#3aa568' : '#2f8f5b')));
-    else deco.push(paint(at(octa(0.09), { p: [x, 0.16, z] }), ['#ff7fb2', '#ffd84a', '#9d8cff'][i % 3]), paint(at(cyl(0.012, 0.015, 0.16, 4), { p: [x, 0.08, z] }), '#3f9a4b'));
-  }
-  g.add(mesh(deco));
-  g.position.copy(C);
-  return g;
-}
 
 /* ---------- Vista de cada minijuego ---------- */
 const VIEWS = {
   duelo: {
+    island: { k: 0.6, top: ['#5fb98a', '#6fc997'] }, quiet: true,
     cam: { y: 0.75, w: 7.4, pitch: 0.16, h: 4.4 },
     init(v) {
       v.heroes.forEach((h, i) => { h.root.position.copy(V(i ? 2.5 : -2.5, 0, 0)); h.turnTo = i ? -Math.PI / 2 + 0.35 : Math.PI / 2 - 0.35; });
@@ -78,6 +56,7 @@ const VIEWS = {
   },
 
   lluvia: {
+    island: { k: 0.42 },
     cam: { y: 2.0, w: 12.4, pitch: 0.14, h: 8 },
     init(v) { v.drops = new Map(); v.dir = [0, 0]; },
     make(kind) {
@@ -122,7 +101,8 @@ const VIEWS = {
   },
 
   fuga: {
-    cam: { y: 0, w: 11.2, pitch: 0.92, h: 13.4 },
+    island: { r: 5.2, top: ['#8a7fb0', '#9b90c0'], plaza: true, tower: true },
+    cam: { z: -0.7, zTall: 1.6, y: 0, w: 11.2, pitch: 0.92, h: 13.4 },
     init(v) {
       v.items = new Map();
       v.aimRing = new THREE.Mesh(new THREE.RingGeometry(CHASE.blast - 0.1, CHASE.blast, 30).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.6, depthWrite: false }));
@@ -187,6 +167,7 @@ const VIEWS = {
       if (e.t === 'end') { sfx('chest'); v.say('¡Tiempo!', v.s.round === 1 ? 'Ahora cambian de papel' : '', 1.4); }
     },
   },
+  ...NEW_VIEWS,
 };
 
 export class MiniView {
@@ -194,15 +175,16 @@ export class MiniView {
     Object.assign(this, { stage, hud, heroes, names, id: duel.game, rules: GAMES[duel.game], view: VIEWS[duel.game] });
     this.s = this.rules.create(duel.seed);
     this.group = new THREE.Group();
-    this.group.add(island(this.id));
+    if (this.view.island) this.group.add(island(this.view.island));
     stage.scene.add(this.group);
     this.pads = new Pads(hud.root, (e) => {
       const ray = new THREE.Raycaster(), p = new THREE.Vector3();
       ray.setFromCamera(stage.ndc(e), stage.camera);
       if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -C.y), p)) return null;
       return { x: p.x - C.x, y: p.z - C.z };
-    });
+    }, this.rules.input, stage.mobile);
     this.hudEl = hud.miniHud(names, this.rules.name, this.s.left);
+    this.hudEl.classList.toggle('low', !!this.view.low);
     this.view.init(this);
     heroes.forEach((h) => { h.set('idle'); h.root.scale.setScalar(1.04); });
     this.acc = 0;
@@ -215,7 +197,7 @@ export class MiniView {
   camera(now) {
     const { cam, portrait, camera } = this.stage, k = this.view.cam, t = Math.tan((camera.fov * Math.PI) / 360);
     const dist = Math.max(k.w / (2 * t * camera.aspect), k.h / (2 * t)) * 1.04;
-    cam.target.copy(V(0, k.y - 0.5, this.id !== 'fuga' ? 0 : portrait ? 1.6 : -0.7));
+    cam.target.copy(V(0, k.y - 0.5, (portrait ? k.zTall : k.z) || 0));
     if (now) cam.pos.copy(cam.target);
     Object.assign(cam, { wYaw: 0, yaw: 0, wPitch: k.pitch, pitch: k.pitch, wDist: dist, dist });
     this.stage.focusId = (this.stage.focusId || 0) + 1;
@@ -236,19 +218,19 @@ export class MiniView {
         this.rules.step(this.s, this.bot ? this.bot(this.s) : this.pads.read(this.rules.input, this.s));
       }
       for (const e of this.s.events.splice(0)) this.view.on(this, e);
-      this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.id === 'lluvia' ? RAIN.time : CHASE.time);
+      this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
       if (this.s.done) { this.running = false; this.res(this.s.winner); }
     }
     this.view.update(this, dt, time);
-    this.heroes.forEach((h) => (h.ground = h.root.position.y));
+    this.heroes.forEach((h) => (h.ground = this.view.floor ? C.y : h.root.position.y));
     if (this.stage.w !== this.lw || this.stage.h !== this.lh) { this.lw = this.stage.w; this.lh = this.stage.h; this.camera(true); }
   }
 
   async countdown() {
-    if (this.id === 'fuga') return;
+    if (this.rules.selfStart) return;
     for (const n of ['3', '2', '1']) { sfx('tick'); this.say(n, '', 0.65); await this.stage.wait(0.7); }
     sfx('go');
-    if (this.id !== 'duelo') this.say('¡Ya!', '', 0.6);
+    if (!this.view.quiet) this.say('¡Ya!', '', 0.6);
   }
 
   async celebrate(w) {

@@ -27,12 +27,16 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Presagios que avisan dos turnos antes de cada evento: vuela el dragón, camina el bosque, eclipse, gran helada y lluvia de estrellas.
 - Se conserva el equilibrio: 20 o más gemas de diferencia en el 13 % de las partidas simuladas.
 
-### V3.1 (sigue)
+### V3.1: más minijuegos (lista)
+- Seis minijuegos nuevos, nueve en total: tira y afloja al ritmo, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón y burbuja valiente.
+- Controles nuevos en PC y celular: mantener pulsado, cuatro direcciones (con botones en pantalla en el celular) y movimiento libre para cada quien.
+- Todos se prueban con jugadores simulados: terminan, son repetibles y ninguno favorece a un lado.
+
+### V3.2 (sigue)
 - Reliquias que cambian tus reglas toda la partida.
 - Maldiciones con duración limitada, que se quitan en un altar (no se contagian).
 - Misión secreta por jugador.
 - Poderes propios de cada personaje.
-- Dos minijuegos más: tira y afloja al ritmo, memoria de runas.
 - Premios finales sorpresa antes de coronar (más duelos, más caídas, más caminata).
 - Llegar a unas 30 cartas.
 
