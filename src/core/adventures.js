@@ -144,6 +144,27 @@ export const ADVENTURES = [
     { label: 'Perseguirlo', check: 4, ok: o('¡Su prisa es contagiosa!', ['fx', 'again']), fail: o('La madriguera daba a otro lado.', ['move', -2]) },
     { label: 'Quedarte su reloj', ...o('Marca la hora del té.', ['gems', 3]) },
   ] },
+  { id: 'lobo', night: true, icon: 'moon', title: 'Lobo de luna', text: 'Aúlla bajito. Parece que busca compañía.', choices: [
+    { label: 'Aullar a su lado', check: 3, ok: o('¡Te lleva a correr con la manada!', ['move', 4]), fail: o('Desafinaste. La manada te persigue.', ['move', -2]) },
+    { label: 'Darle 1 gema', cost: 1, ...o('La muerde, la aprueba y te cuida.', ['fx', 'shield'], ['star', 1]) },
+  ] },
+  { id: 'luciernagas', night: true, icon: 'star', title: 'Mil luciérnagas', text: 'Dibujan flechas en el aire. Cada una apunta a un lado distinto.', choices: [
+    { label: 'Seguirlas', check: 3, ok: o('Conocen un atajo secreto.', ['move', 5]), fail: o('Querían jugar a las vueltas.', ['star', 1]) },
+    { label: 'Pedirles luz', ...o('Iluminan todo a tu alrededor.', ['reveal', 3]) },
+  ] },
+  { id: 'baile', night: true, icon: 'sound', title: 'Baile de sombras', text: 'Tu sombra se suelta y te invita a bailar.', choices: [
+    { label: 'Bailar', check: 4, ok: o('¡Aplausos! Tu sombra te paga la entrada.', ['gems', 6]), fail: o('Tu sombra se va con parte de tu bolsa.', ['gems', -3]) },
+    { label: 'Presentarle a tu rival', ...o('«¡A competir!», dicen las sombras.', ['duel']) },
+    { label: 'Aplaudir desde lejos', ...o('Una reverencia elegante.', ['star', 1]) },
+  ] },
+  { id: 'lechuza', night: true, icon: 'eye', title: 'Lechuza bibliotecaria', text: '«Devuelva el libro», exige. No tienes ningún libro.', choices: [
+    { label: 'Pagar la multa de 2', cost: 2, ...o('Te presta otro, mucho mejor.', ['offer']) },
+    { label: 'Decir que lo tiene tu rival', check: 4, ok: o('Vuela a cobrarle la multa.', ['rival', -4]), fail: o('No se traga el cuento.', ['gems', -3]) },
+  ] },
+  { id: 'vampiro', night: true, icon: 'flame', title: 'Vampiro vegetariano', text: '«Solo jugo de remolacha, lo juro».', choices: [
+    { label: 'Brindar con él', check: 3, ok: o('¡Qué energía! Corres como murciélago.', ['fx', 'double']), fail: o('Te cayó pesado.', ['fx', 'half']) },
+    { label: 'Venderle remolachas', ...o('Paga muy bien.', ['gems', 4]) },
+  ] },
 ];
 
 export const byId = Object.fromEntries(ADVENTURES.map((a) => [a.id, a]));

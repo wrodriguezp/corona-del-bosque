@@ -1,6 +1,7 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
 import { CAVE } from '../core/game.js';
+import { DAY, EVENTS, NIGHT } from '../core/world.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
 const el = (cls, html = '', tag = 'div') => {
@@ -10,7 +11,7 @@ const el = (cls, html = '', tag = 'div') => {
   return e;
 };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'] };
+const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'] };
 const AV = ['crown', 'hat'];
 const cardHtml = (id, big) => {
   const c = CARDS[id], f = FAMILIES[c.family];
@@ -40,7 +41,13 @@ export class Hud {
       return e;
     });
     this.track = el('track', `<div class="bar"></div><i class="m0">${icon('crown')}</i><i class="m1">${icon('hat')}</i><span class="cs">${icon('castle')}</span>`);
+    this.under = el('under');
+    this.sky = el('sky');
+    this.omen = el('sky omen hidden');
     this.final = el('final hidden');
+    this.under.append(this.sky, this.omen, this.final);
+    this.time(g.turns % DAY.len, g.night);
+    this.setOmen(g.omen);
     this.act = el('act');
     this.tools = el('tools', `<button data-a="map" title="Ver el mapa (M)" aria-label="Ver el mapa">${icon('map')}</button><button data-a="sound" title="Sonido" aria-label="Sonido">${icon(isMuted() ? 'mute' : 'sound')}</button><button data-a="help" title="Cómo se juega (H)" aria-label="Cómo se juega">${icon('help')}</button>`);
     this.tools.onclick = (e) => {
@@ -52,7 +59,7 @@ export class Hud {
       if (b.dataset.a === 'map') this.on.map?.();
       if (b.dataset.a === 'help') this.help();
     };
-    this.game.append(this.track, this.final, this.act, this.tools);
+    this.game.append(this.track, this.under, this.act, this.tools);
     this.game.classList.remove('hidden');
     this.refresh();
   }
@@ -102,6 +109,20 @@ export class Hud {
     this.act.className = `act p${i}`;
     this.final.classList.toggle('hidden', left == null);
     if (left != null) this.final.textContent = left === 1 ? '¡Último turno!' : `Quedan ${left} turnos`;
+  }
+
+  // Indicadores de día o noche y del próximo evento del mundo.
+  time(clock, night) {
+    const left = (night ? DAY.len : DAY.night) - clock;
+    this.sky.className = `sky ${night ? 'n' : ''}`;
+    this.sky.innerHTML = `${icon(night ? 'moon' : 'sun')}<span>${night ? 'Amanece' : 'Anochece'} en ${left} ${left === 1 ? 'turno' : 'turnos'}</span>`;
+    this.sky.title = night ? `De noche: +${NIGHT.gem} gemas en casillas de gemas y las trampas quitan ${NIGHT.trap} más` : 'De día: todo tranquilo';
+  }
+  setOmen(o) {
+    this.omen.classList.toggle('hidden', !o);
+    if (!o) return;
+    const E = EVENTS[o.id], left = Math.max(1, o.at - this.g.turns);
+    this.omen.innerHTML = `${icon(E.icon)}<span>${E.chip} en ${left} ${left === 1 ? 'turno' : 'turnos'}</span>`;
   }
 
   async banner(i, text, small) {
@@ -240,11 +261,11 @@ export class Hud {
   }
 
   cave(c, player) {
-    const next = CAVE[Math.min(5, c.grabs)], risk = c.grabs, dice = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<i>${a + i}</i>`).join('');
+    const next = CAVE[Math.min(5, c.grabs)], risk = this.g.caveRisk(), dice = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<i>${a + i}</i>`).join('');
     const s = el('tale', `<div class="orn">${icon('flame')}</div><h2>Cueva del dragón</h2>
-      <p>${c.grabs ? `Tu bolsa tiene <b>${c.bag} gemas</b>, pero solo son tuyas si sales. Para tomar más se tira un dado:` : `El dragón duerme sobre su tesoro. Esta primera vez no hay riesgo; después, un dado decide si despierta.`}</p>
-      ${c.grabs ? `<div class="risk"><div class="bad"><span>${dice(1, risk)}</span><p><b>Despierta:</b> pierdes la bolsa y retrocedes 2</p></div>${risk < 6 ? `<div class="ok"><span>${dice(risk + 1, 6)}</span><p><b>Sigue dormido:</b> +${next} gemas</p></div>` : ''}</div>` : ''}
-      <div class="picks"><button class="pick" data-i="grab" ${risk > 5 ? 'disabled' : ''}><b>1</b><span>${c.grabs ? `Arriesgarte por ${next} gemas más` : `Tomar ${next} gemas`}</span></button><button class="pick" data-i="leave"><b>2</b><span>${c.bag ? `Salir y quedarte con ${c.bag} gemas` : 'Irte sin tocar nada'}</span></button></div>`);
+      <p>${c.grabs ? `Tu bolsa tiene <b>${c.bag} gemas</b>, pero solo son tuyas si sales. ${risk ? 'Para tomar más se tira un dado:' : 'De noche duerme profundo: esta vez tampoco hay riesgo.'}` : `El dragón duerme sobre su tesoro. Esta primera vez no hay riesgo; después, un dado decide si despierta.`}</p>
+      ${risk ? `<div class="risk"><div class="bad"><span>${dice(1, risk)}</span><p><b>Despierta:</b> pierdes la bolsa y retrocedes 2</p></div>${c.grabs < 6 ? `<div class="ok"><span>${dice(risk + 1, 6)}</span><p><b>Sigue dormido:</b> +${next} gemas</p></div>` : ''}</div>` : ''}
+      <div class="picks"><button class="pick" data-i="grab" ${c.grabs > 5 ? 'disabled' : ''}><b>1</b><span>${c.grabs ? `Arriesgarte por ${next} gemas más` : `Tomar ${next} gemas`}</span></button><button class="pick" data-i="leave"><b>2</b><span>${c.bag ? `Salir y quedarte con ${c.bag} gemas` : 'Irte sin tocar nada'}</span></button></div>`);
     return this.ask(s, 'low');
   }
 
@@ -310,7 +331,9 @@ export class Hud {
       ${li('star', '#d8981a', '<b>3 estrellas</b> te dan una carta. Ganas una estrella por turno.')}
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada.')}
-      ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano o dragón.')}
+      ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
+      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada o lluvia de estrellas.')}
+      ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón o fuego.')}
       </ul>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);

@@ -22,8 +22,12 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Se mide con `node tools/medir.js`: partidas con 20 o más gemas de diferencia, de 26 % a 13 %.
 
 ## V3: un mundo que cambia
-- Ciclo de día y noche: de noche hay más peligro y mejores premios.
-- Eventos cada pocas rondas: el bosque camina, vuela el dragón, eclipse, cumbres heladas.
+### V3.0: mundo vivo (lista)
+- Ciclo de día y noche (6 turnos de día y 4 de noche): de noche hay más peligro y mejores premios, faroles, luna y cinco aventuras propias.
+- Presagios que avisan dos turnos antes de cada evento: vuela el dragón, camina el bosque, eclipse, gran helada y lluvia de estrellas.
+- Se conserva el equilibrio: 20 o más gemas de diferencia en el 13 % de las partidas simuladas.
+
+### V3.1 (sigue)
 - Reliquias que cambian tus reglas toda la partida.
 - Maldiciones con duración limitada, que se quitan en un altar (no se contagian).
 - Misión secreta por jugador.

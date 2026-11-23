@@ -41,6 +41,34 @@ export function pathTo(parent, fromId, toId) {
   return path.slice(1);
 }
 
+// Vuelve a conectar las casillas transitables tras cambiar el terreno.
+export function relink(board) {
+  for (const t of board.tiles) t.links = t.kind === 'path' ? board.around(t).filter((n) => n.kind === 'path').map((n) => n.id) : [];
+}
+
+export const isConnected = (board) => bfs(board, board.startId).dist.size === board.tiles.filter((t) => t.kind === 'path').length;
+
+// Distancia al castillo y cuánto se desvía cada casilla de la ruta más corta.
+export function measure(board) {
+  const dC = bfs(board, board.castleId).dist, dS = bfs(board, board.startId).dist;
+  board.length ??= dC.get(board.startId);
+  const now = dC.get(board.startId);
+  for (const t of board.tiles) {
+    t.dist = dC.get(t.id) ?? null;
+    t.detour = t.dist == null ? 0 : t.dist + dS.get(t.id) - now;
+  }
+  return dS;
+}
+
+export function makeContent(rng, t) {
+  const type = rng.weighted(t.detour <= 1
+    ? { adventure: 32, gem: 18, trap: 19, chest: 9, shrine: 5, duel: 10, calm: 7 }
+    : { adventure: 30, gem: 28, trap: 11, chest: 13, shrine: 6, duel: 9, calm: 3 });
+  if (type === 'gem') return { type, n: t.detour <= 1 ? rng.int(2, 4) : rng.int(3, 6) };
+  if (type === 'trap') return { type, trap: rng.pick(['pozo', 'zarzas', 'duende', 'urraca']) };
+  return { type };
+}
+
 export function makeBoard(seed, len = 28) {
   const rng = makeRng(seed);
   const tiles = [];
@@ -72,18 +100,9 @@ export function makeBoard(seed, len = 28) {
   const start = byKey.get(key(0, center(0)));
   const castle = byKey.get(key(len - 1, center(len - 1)));
 
-  const relink = () => {
-    for (const t of tiles)
-      t.links = t.kind !== 'path' ? [] : neighborCoords(t.c, t.row)
-        .map(([c, r]) => byKey.get(key(c, r)))
-        .filter((n) => n && n.kind === 'path').map((n) => n.id);
-  };
-  relink();
   const board = { seed, len, tiles, startId: start.id, castleId: castle.id, byKey };
-  const connected = () => {
-    const walk = tiles.filter((t) => t.kind === 'path').length;
-    return bfs(board, start.id).dist.size === walk;
-  };
+  board.around = (t) => neighborCoords(t.c, t.row).map(([c, r]) => byKey.get(key(c, r))).filter(Boolean);
+  relink(board);
 
   // Obstáculos: parten el terreno y crean bifurcaciones reales.
   for (let c = 4; c < len - 3; c += rng.int(2, 3)) {
@@ -100,20 +119,14 @@ export function makeBoard(seed, len = 28) {
     const guarded = [start, castle];
     if (blob.some((b) => guarded.includes(b))) continue;
     blob.forEach((b) => (b.kind = kind));
-    relink();
-    if (!connected()) {
+    relink(board);
+    if (!isConnected(board)) {
       blob.forEach((b) => (b.kind = 'path'));
-      relink();
+      relink(board);
     }
   }
 
-  const dCastle = bfs(board, castle.id).dist;
-  const dStart = bfs(board, start.id).dist;
-  board.length = dCastle.get(start.id);
-  for (const t of tiles) {
-    t.dist = dCastle.get(t.id) ?? null;
-    t.detour = t.dist == null ? 0 : t.dist + dStart.get(t.id) - board.length;
-  }
+  const dStart = measure(board);
 
   // Orilla decorativa alrededor del camino.
   for (const t of [...tiles])
@@ -166,12 +179,7 @@ export function makeBoard(seed, len = 28) {
 
   for (const t of playable) {
     if (t.content) continue;
-    const type = rng.weighted(t.detour <= 1
-      ? { adventure: 32, gem: 18, trap: 19, chest: 9, shrine: 5, duel: 10, calm: 7 }
-      : { adventure: 30, gem: 28, trap: 11, chest: 13, shrine: 6, duel: 9, calm: 3 });
-    if (type === 'gem') t.content = { type, n: t.detour <= 1 ? rng.int(2, 4) : rng.int(3, 6) };
-    else if (type === 'trap') t.content = { type, trap: rng.pick(['pozo', 'zarzas', 'duende', 'urraca']) };
-    else t.content = { type };
+    t.content = makeContent(rng, t);
   }
   start.revealed = castle.revealed = true;
   return board;

@@ -42,7 +42,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .track .cs { position: absolute; right: 0; top: 2px; font-size: 27px; color: var(--ink); }
 .track i { position: absolute; top: 2px; width: 30px; height: 30px; margin-left: -15px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 17px; border: 2px solid #fff; transition: left .7s cubic-bezier(.3,1.4,.5,1); }
 .track .m0 { background: var(--p0); } .track .m1 { background: var(--p1); }
-.final { position: absolute; top: calc(var(--pad) + 56px); left: 50%; transform: translateX(-50%); background: #b3204f; color: #fff; padding: 3px 14px; border-radius: 99px; font-weight: 700; white-space: nowrap; }
+.under { position: absolute; top: calc(var(--pad) + 52px); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; width: min(560px, calc(100vw - 530px)); pointer-events: none; }
+.sky { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 9px; border-radius: 99px; background: var(--ink); color: #ffe9b8; font-weight: 700; white-space: nowrap; transition: background .8s; }
+.sky .ic { color: var(--gold2); } .sky.n { background: #2a2f7a; color: #dfe4ff; } .sky.n .ic { color: #c9d4ff; }
+.sky.omen { background: #7a2fa8; color: #fff; animation: omen 1.6s ease-in-out infinite; } .sky.omen .ic { color: #ffd6ff; }
+@keyframes omen { 50% { box-shadow: 0 0 0 4px rgba(200, 120, 255, .35); } }
+.final { background: #b3204f; color: #fff; padding: 3px 14px; border-radius: 99px; font-weight: 700; white-space: nowrap; }
 
 .tools { position: absolute; right: var(--pad); bottom: max(14px, env(safe-area-inset-bottom)); display: flex; gap: 8px; }
 .tools button { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--gold2); font-size: 20px; display: grid; place-items: center; border: 2px solid var(--ink2); }
@@ -186,7 +191,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
   .pl .nm { font-size: 19px; } .pl .hn { display: none; } .pl .row { gap: 8px; margin-top: 2px; } .pl .gm { font-size: 17px; } .pl .st { font-size: 14px; }
   .fx { margin-left: -38px; } .fx span { font-size: 12px; padding: 0 6px; }
   .track { left: 18px; right: 18px; top: calc(var(--pad) + 102px); transform: scale(.85); }
-  .final { top: calc(var(--pad) + 140px); }
+  .under { top: calc(var(--pad) + 136px); width: calc(100vw - 130px); } .sky, .final { font-size: 15px; }
   .tools { bottom: auto; top: calc(var(--pad) + 142px); flex-direction: column; } .tools button { width: 42px; height: 42px; }
   .roll { font-size: 25px; padding: 11px 24px 13px; }
   .hand { gap: 6px; } .hand .card { width: 23vw; max-width: 120px; min-height: 66px; padding: 5px 6px; } .hand .card .d { display: none; } .hand .card .t { font-size: 15px; flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -202,7 +207,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 }
 @media (max-width: 560px) { .minihud > .mid { top: calc(var(--pad) + 54px); font-size: 20px; } .time { width: 60vw; } }
 @media (max-height: 520px) and (min-width: 600px) {
-  .track { left: 220px; right: 220px; top: var(--pad); } .tools { top: calc(var(--pad) + 80px); } .final { top: calc(var(--pad) + 40px); }
+  .track { left: 220px; right: 220px; top: var(--pad); } .tools { top: calc(var(--pad) + 80px); } .under { top: calc(var(--pad) + 36px); width: calc(100vw - 450px); } .sky, .final { font-size: 14px; }
   .offer { flex-wrap: nowrap; } .offer .card { width: 200px; display: flex; align-items: center; text-align: center; } .offer .card .big { font-size: 30px; } .offer .card .fam { order: -1; }
   .sheet > p { margin-bottom: 8px; } .names { flex-direction: row; } .title h1 { font-size: 46px; } .scroll { top: 14%; } .help ul { grid-template-columns: 1fr 1fr; }
 }

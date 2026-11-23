@@ -89,6 +89,48 @@ export function makeDragon() {
   return g;
 }
 
+// Dragón en vuelo: mira hacia +z, alas de membrana y cola larga.
+export function makeFlyingDragon() {
+  const g = new THREE.Group();
+  const scale = (v) => (v.y > 0.16 ? '#4fbf8d' : v.y > -0.18 ? '#39a37a' : '#e9d58a');
+  g.add(mesh([
+    paintBy(tube([[0, 0.25, -3.1], [0.1, 0.1, -2.3], [0, 0, -1.4], [0, 0, -0.5], [0, 0.05, 0.4], [0, 0.35, 1.1], [0, 0.62, 1.6]], [0.02, 0.12, 0.26, 0.46, 0.52, 0.26, 0.22], 10, 30), scale),
+    paint(at(cone(0.22, 0.45, 3), { r: [-Math.PI / 2, 0, 0], s: [1, 0.3, 1], p: [0, 0.27, -3.2] }), '#ffb13d'),
+    ...Array.from({ length: 10 }, (_, i) => paint(at(cone(0.1, 0.3, 4), { r: [-0.25, 0, 0], p: [0, 0.2 + Math.sin(0.4 + i * 0.28) * 0.32, -1.9 + i * 0.3] }), '#ffb13d')),
+    paintBy(at(loft([{ y: -0.3, rx: 0.24, rz: 0.22 }, { y: 0, rx: 0.32, rz: 0.27 }, { y: 0.35, rx: 0.2, rz: 0.17 }, { y: 0.7, rx: 0.16, rz: 0.12 }, { y: 0.76, rx: 0.08, rz: 0.06 }], 9), { r: [Math.PI / 2 + 0.2, 0, 0], p: [0, 0.75, 1.75] }), (v) => (v.y > 0.6 ? '#4fbf8d' : '#e9d58a')),
+    paint(at(loft([{ y: -0.1, rx: 0.14, rz: 0.06 }, { y: 0.5, rx: 0.1, rz: 0.04 }], 7), { r: [Math.PI / 2 + 0.5, 0, 0], p: [0, 0.48, 1.95] }), '#e9d58a'),
+    ...[1, -1].flatMap((s) => [
+      paint(tube([[s * 0.16, 0.95, 1.6], [s * 0.26, 1.2, 1.3], [s * 0.22, 1.3, 1.0]], [0.08, 0.06, 0.005], 5, 6), '#fff1c9'),
+      paint(tube([[s * 0.3, -0.3, 0.1], [s * 0.4, -0.6, -0.1], [s * 0.36, -0.7, -0.45]], [0.15, 0.1, 0.06], 6, 6), '#2c8f6c'),
+      paint(tube([[s * 0.3, -0.2, -0.9], [s * 0.42, -0.5, -1.1], [s * 0.38, -0.55, -1.5]], [0.17, 0.11, 0.06], 6, 6), '#2c8f6c'),
+    ]),
+  ]));
+  g.add(mesh([1, -1].map((s) => paint(at(ball(0.075, 7, 5), { p: [s * 0.24, 0.9, 1.9] }), '#ffe14a')), matGlow));
+  const fin = (pts, c) => { // membrana plana
+    const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, z)));
+    return paint(new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: false }).rotateX(Math.PI / 2), c);
+  };
+  const wings = [1, -1].map((s) => {
+    const w = new THREE.Group(), tip = new THREE.Group();
+    w.position.set(s * 0.35, 0.3, 0.2);
+    tip.position.set(s * 1.6, 0, 0.25);
+    w.add(mesh([fin([[0, 0.3], [s * 1.6, 0.45], [s * 1.6, -1.1], [s * 0.8, -0.75], [0, -1.0]], '#ffb765'), paint(tube([[0, 0.05, 0.3], [s * 0.8, 0.14, 0.42], [s * 1.6, 0.04, 0.4]], [0.13, 0.1, 0.07], 6, 8), '#2c8f6c'), paint(tube([[s * 1.6, 0, 0.4], [s * 1.6, 0, -1.1]], [0.06, 0.01], 5, 4), '#2c8f6c')]));
+    tip.add(mesh([fin([[0, 0.2], [s * 1.9, -0.5], [s * 1.25, -0.75], [s * 0.9, -1.25], [s * 0.45, -1.05], [0, -1.35]], '#ff9a5c'), paint(tube([[0, 0.04, 0.16], [s * 1, 0.06, 0.05], [s * 1.95, 0, -0.5]], [0.08, 0.06, 0.01], 6, 8), '#2c8f6c'), paint(tube([[0, 0, 0.1], [s * 0.9, 0, -1.25]], [0.05, 0.01], 5, 4), '#2c8f6c')]));
+    w.add(tip);
+    g.add(w);
+    return { w, tip, s };
+  });
+  g.userData.flap = (t, k = 1) => { for (const { w, tip, s } of wings) { w.rotation.z = s * (0.15 + Math.sin(t) * 0.5 * k); tip.rotation.z = s * (Math.sin(t - 0.9) * 0.5 * k - 0.08); } };
+  return g;
+}
+
+export function starMesh() {
+  const g = new THREE.Group(), m = mesh(paint(star(0.3, 0.12), '#ffe27a'), matGlow, false);
+  g.add(m);
+  g.userData.star = m;
+  return g;
+}
+
 const rock = (x, y, z, s, c) => paintBy(at(ico(s, 0), { r: [x * 3, z * 5, y], s: [1, 0.9, 1], p: [x, y, z] }), (v) => (v.y > y + s * 0.25 ? c[1] : c[0]));
 
 export function caveMesh() {

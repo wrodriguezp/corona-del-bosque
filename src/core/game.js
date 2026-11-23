@@ -1,6 +1,7 @@
 import { makeRng } from './rng.js';
 import { makeBoard, bfs, pathTo } from './board.js';
 import { CARDS, COMMON, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
+import { DAY, NIGHT, worldTick } from './world.js';
 import { ADVENTURES, byId, describe } from './adventures.js';
 
 // Reglas puras: sin gráficos. Toda jugada entra por apply(acción) y devuelve una
@@ -57,6 +58,11 @@ export class Game {
     this.cave = null;
     this.duel = null;
     this.aid = [0, 0];
+    this.wasNight = false;
+    this.nights = 0;
+    this.deck = [];
+    this.omen = null;
+    this.nextEvent = 5;
     this.usedAdventures = [];
     this.bag = [];
     this.finalTurns = null;
@@ -65,6 +71,7 @@ export class Game {
   }
 
   get player() { return this.players[this.turn]; }
+  get night() { return this.turns % DAY.len >= DAY.night; }
   get rival() { return this.players[1 - this.turn]; }
   tile(id) { return this.board.tiles[id]; }
 
@@ -88,7 +95,7 @@ export class Game {
   look(id) {
     const ids = [];
     for (const [t, d] of bfs(this.board, id).dist)
-      if (d <= SIGHT && !this.tile(t).seen) { this.tile(t).seen = true; ids.push(t); }
+      if (d <= SIGHT - (this.night ? 1 : 0) && !this.tile(t).seen) { this.tile(t).seen = true; ids.push(t); }
     return ids;
   }
 
@@ -190,6 +197,7 @@ export class Game {
     this.phase = 'ready';
     ev.push({ t: 'turn', p: p.id, extra, left: this.first != null ? this.finalTurns : null });
     this.updateFairy(ev);
+    if (!extra) worldTick(this, ev);
     if (!extra && this.first == null && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
       this.lastTourney = this.turns;
       this.startDuel(ev, 'torneo');
@@ -418,6 +426,7 @@ export class Game {
       ev.push({ t: 'step', p: p.id, id: step, last: step === id || caught });
       const ids = this.look(step);
       if (ids.length) ev.push({ t: 'seen', ids });
+      if (t.star) { t.star = false; ev.push({ t: 'starpick', id: step }); this.addStar(ev, p); }
       if (caught) {
         t.snare = null;
         ev.push({ t: 'trap', p: p.id, id: step, trap: 'red' });
@@ -451,7 +460,7 @@ export class Game {
     const clear = () => { t.content = { type: 'visited' }; ev.push({ t: 'clear', id: t.id }); };
     switch (c.type) {
       case 'gem': {
-        let n = c.n;
+        let n = c.n + (this.night ? NIGHT.gem : 0);
         if (p.fx.golden) { n *= 2; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡Las gemas se duplican! Recoges ${n}.`, true); }
         clear();
         if (this.aid[p.id]) { n += this.aid[p.id]; ev.push({ t: 'fairy', kind: 'regala', p: p.id, n: this.aid[p.id] }); }
@@ -463,7 +472,9 @@ export class Game {
         ev.push({ t: 'trap', p: p.id, id: t.id, trap: c.trap });
         this.msg(ev, 'trap', tr.title, tr.text);
         if (this.shielded(ev, p, tr.title)) return false;
-        if (c.trap === 'duende') this.addGems(ev, p, -4, 'lost');
+        const extra = this.night ? NIGHT.trap : 0;
+        if (extra && c.trap !== 'duende') this.addGems(ev, p, -extra, 'lost');
+        if (c.trap === 'duende') this.addGems(ev, p, -4 - extra, 'lost');
         if (c.trap === 'zarzas') p.fx.half = true;
         if (c.trap === 'pozo') this.shove(ev, p, -3);
         if (c.trap === 'urraca') {
@@ -515,7 +526,8 @@ export class Game {
         ev.push({ t: 'cave' });
         return true;
       default:
-        this.msg(ev, 'calm', 'Descanso', `${this.rng.pick(CALM)} Ganas una estrella.`, true);
+        this.msg(ev, 'calm', this.night ? 'Fogata en la noche' : 'Descanso', `${this.rng.pick(CALM)} Ganas una estrella${this.night ? ` y ${NIGHT.rest} gemas` : ''}.`, true);
+        if (this.night) this.addGems(ev, p, NIGHT.rest, 'tile');
         this.addStar(ev, p);
         return false;
     }
@@ -524,7 +536,7 @@ export class Game {
   /* ---------- Aventuras ---------- */
   startAdventure(ev, t) {
     const p = this.player;
-    const open = (a) => !this.usedAdventures.includes(a.id) && (a.biome == null || a.biome === t.biome);
+    const open = (a) => !this.usedAdventures.includes(a.id) && (a.biome == null || a.biome === t.biome) && (!a.night || this.night);
     const follow = ADVENTURES.filter((a) => a.need && p.flags[a.need] && p.flags[a.need] < this.turns);
     let list = follow.length && this.rng.chance(0.75) ? follow : ADVENTURES.filter((a) => !a.need && open(a));
     if (!list.length) { this.usedAdventures = []; list = ADVENTURES.filter((a) => !a.need && open(a)); }
@@ -607,6 +619,9 @@ export class Game {
     return ev;
   }
 
+  // Números del dado que despiertan al dragón: de noche duerme más profundo.
+  caveRisk() { return Math.max(0, this.cave.grabs - (this.night ? 1 : 0)); }
+
   caveAct(what) {
     if (this.phase !== 'cave') return [];
     const p = this.player, c = this.cave, ev = [];
@@ -615,9 +630,9 @@ export class Game {
       return ev.concat(this.endTurn());
     }
     if (c.grabs >= CAVE.length) return [];
-    const die = this.rng.int(1, 6), need = c.grabs + 1; // despierta si el dado no supera los intentos
-    const ok = c.grabs === 0 || die > c.grabs;
-    if (c.grabs > 0) ev.push({ t: 'check', p: p.id, die, need, ok, cave: true });
+    const die = this.rng.int(1, 6), risk = this.caveRisk(), need = risk + 1; // despierta si el dado no supera el riesgo
+    const ok = die > risk;
+    if (risk > 0) ev.push({ t: 'check', p: p.id, die, need, ok, cave: true });
     c.grabs++;
     if (ok) {
       const n = CAVE[c.grabs - 1];

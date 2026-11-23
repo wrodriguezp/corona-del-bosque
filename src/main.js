@@ -11,12 +11,13 @@ import { CARDS, FAMILIES } from './core/cards.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
-import { makeEagle, makeFairy, makeWorm } from './view/creatures.js';
+import { DAY, EVENTS } from './core/world.js';
+import { makeEagle, makeFairy, makeFlyingDragon, makeWorm } from './view/creatures.js';
 import { MiniView } from './view/minigames.js';
 import { DiceTable } from './view/dice.js';
 import { Hud } from './ui/hud.js';
 import { icon } from './ui/icons.js';
-import { sfx, unlock } from './audio.js';
+import { setNight, sfx, unlock } from './audio.js';
 
 const COLORS = ['#ff5c9e', '#4b8df7'];
 const stage = new Stage(document.getElementById('lienzo'));
@@ -55,6 +56,16 @@ const fairy = {
 };
 stage.updaters.push((dt, t) => fairy.update(dt, t));
 
+// Hora del día según el turno: la última parte de la tarde se tiñe de naranja.
+const moodOf = () => (g.night ? 'night' : g.turns % DAY.len >= DAY.night - 2 ? 'dusk' : 'day');
+const skyNow = (dur) => { setNight(g.night); return stage.setMood(moodOf(), dur); };
+stage.updaters.push((dt, t) => heroes?.forEach((h, i) => {
+  const l = stage.lamps[i], p = h.root.position;
+  const w = stage.cam.yaw; // siempre del lado de la cámara, para alumbrar la cara
+  l.position.set(p.x + Math.sin(w) * 0.9, p.y + 1.7, p.z + Math.cos(w) * 0.9);
+  l.intensity = h.root.visible ? stage.lamp * (11 + Math.sin(t * 9 + i * 2) * 0.6) : 0;
+}));
+
 const newSeed = () => Math.floor(Math.random() * 1e9);
 const baseYaw = () => (stage.portrait ? Math.PI / 2 * -1 : -0.16);
 
@@ -83,6 +94,8 @@ function setup(opts, session = new Session(opts)) {
     return r;
   });
   arrange(true);
+  view.setZone(g.omen?.data.zone);
+  skyNow(0);
   heroes.forEach((h) => (h.turnTo = stage.cam.yaw));
   fairy.seen = false;
   g.aid.forEach((k, i) => { if (k) { fairy.seen = true; fairy.put(i, k, true); } });
@@ -143,6 +156,107 @@ const play = {
     hud.float(head(e.p), e.kind === 'dado' ? '¡El hada voltea el dado!' : e.kind === 'cuida' ? `El hada salva ${e.n} ${icon('gem')}` : `El hada suma ${e.n} ${icon('gem')}`, 'star');
     await sleep(0.8);
   },
+  async time(e) {
+    hud.time(e.clock, e.night);
+    hud.setOmen(g.omen);
+    const m = moodOf();
+    if (stage.moodName === m) return;
+    skyNow(e.changed ? 2.6 : 2);
+    if (!e.changed) return;
+    sfx(e.night ? 'night' : 'dawn');
+    hud.banner(e.p ?? g.turn, e.night ? 'Cae la noche' : 'Amanece', e.night ? 'Más premios, más peligro' : 'El reino despierta');
+    await sleep(1.7);
+  },
+  async omen(e) {
+    sfx('omen');
+    stage.shake(0.15);
+    await sleep(0.4);
+    hud.setOmen(g.omen);
+    view.setZone(e.zone);
+    if (!e.zone) return;
+    const box = new THREE.Box3().setFromPoints(e.zone.map((id) => view.pos(id)));
+    await stage.focus(box.getCenter(new THREE.Vector3()), { dist: stage.portrait ? 19 : 16, pitch: 0.9, dur: 1 });
+  },
+  async event(e) { hud.clearAct(); hud.setOmen(null); hud.banner(g.turn, EVENTS[e.id].title); await sleep(0.9); },
+  async flight(e) {
+    const pts = e.zone.map((id) => view.pos(id)), mid = new THREE.Box3().setFromPoints(pts).getCenter(new THREE.Vector3());
+    await stage.focus(mid.clone().add(new THREE.Vector3(0, 1, 0)), { dist: stage.portrait ? 21 : 17, pitch: 0.62, dur: 0.8 });
+    const d = makeFlyingDragon(), dir = stage.cam.wYaw + Math.PI / 2, f = new THREE.Vector3(Math.sin(dir), 0, Math.cos(dir));
+    d.scale.setScalar(1.05);
+    stage.scene.add(d);
+    sfx('roar');
+    let fl = 0, flap = 0, roar = false;
+    const hit = new Set();
+    await stage.tween(3.4, (k, t) => {
+      const s = (t - 0.5) * 34, p = mid.clone().addScaledVector(f, s);
+      p.y = mid.y + 3.1 + (Math.abs(s) / 17) ** 2 * 5;
+      d.position.copy(p);
+      d.rotation.set(0, dir, Math.sin(t * 9) * 0.1);
+      fl += 0.17; d.userData.flap(fl, 1);
+      if (t * 3.4 > flap) { flap += 0.5; sfx('flap'); }
+      if (Math.abs(s) > 8) return;
+      if (!roar) { roar = true; sfx('fire'); stage.shake(0.5); }
+      const mouth = p.clone().addScaledVector(f, 2.3).setY(p.y + 0.5);
+      for (let i = 0; i < 4; i++) stage.sparks.emit({ x: mouth.x, y: mouth.y, z: mouth.z, vx: f.x * 4 + (Math.random() - 0.5) * 4, vy: -5.5 - Math.random() * 2, vz: f.z * 4 + (Math.random() - 0.5) * 4, color: ['#ff7a2b', '#ffd05a', '#ff4d3d'][i % 3], size: 0.5, life: 0.65, grow: 0.5 });
+      e.zone.forEach((id, i) => {
+        if (hit.has(id) || pts[i].clone().sub(mid).dot(f) > s + 1.5) return;
+        hit.add(id);
+        const v = pts[i];
+        view.recolor([id]);
+        stage.sparks.burst(v.x, v.y + 0.2, v.z, 12, { color: ['#ff7a2b', '#ffd05a', '#ff4d3d'], speed: 1.6, up: 1.8, g: 0.5, life: 0.9, size: 0.36 });
+        stage.smoke.burst(v.x, v.y + 0.3, v.z, 3, { color: '#4b3f4d', speed: 0.7, up: 1.2, life: 1.8, size: 0.5, grow: 0.5, alpha: 0.6 });
+      });
+    }, ease.lin);
+    stage.scene.remove(d);
+    d.traverse((o) => o.geometry?.dispose());
+    view.setZone(null);
+    view.recolor(e.zone);
+    await sleep(0.3);
+  },
+  async burn(e) {
+    heroes[e.p].set('hurt', 1.4);
+    sfx('fire');
+    await follow(e.p, { dur: 0.6 });
+    const p = heroes[e.p].root.position;
+    stage.sparks.burst(p.x, p.y + 0.6, p.z, 40, { color: ['#ff7a2b', '#ffd05a'], speed: 1.8, up: 2, g: 0, life: 1, size: 0.34 });
+  },
+  async forest(e) {
+    if (!e.moves.length) return;
+    const pts = e.moves.flatMap((m) => [view.pos(m.from), view.pos(m.to)]);
+    const box = new THREE.Box3().setFromPoints(pts), size = box.getSize(new THREE.Vector3());
+    await stage.focus(box.getCenter(new THREE.Vector3()), { dist: THREE.MathUtils.clamp(Math.max(size.x, size.z) * (stage.portrait ? 2 : 1.25) + 8, 14, 40), pitch: 0.75, dur: 1 });
+    sfx('rumble');
+    stage.shake(0.3);
+    await view.walkForest(e.moves);
+    sfx('star');
+    await sleep(0.4);
+  },
+  async eclipse() {
+    sfx('omen');
+    await stage.setMood('eclipse', 1.8);
+    heroes.forEach((h, i) => { h.set('cheer', 1); sparkle(i, ['#e07bff', '#8fe0ff'], 36); });
+    sfx('portal');
+    hud.refresh();
+    await sleep(0.7);
+  },
+  async freeze(e) {
+    stage.setMood('frost', 1.2);
+    sfx('frost');
+    const far = (v) => Math.min(...heroes.map((h) => v.distanceTo(h.root.position)));
+    const lakes = e.ids.map((id) => view.pos(id)).sort((a, b) => far(a) - far(b)), c = lakes[0];
+    const box = new THREE.Box3().setFromPoints(lakes.filter((v) => v.distanceTo(c) < 9));
+    await stage.focus(box.getCenter(new THREE.Vector3()), { dist: stage.portrait ? 24 : 19, pitch: 0.8, dur: 1.1 });
+    for (let i = 0; i < 160; i++) stage.smoke.emit({ x: c.x - 14 + Math.random() * 24, y: 2 + Math.random() * 5, z: c.z + (Math.random() - 0.5) * 18, vx: 4, vy: -0.9, color: '#ffffff', size: 0.16, life: 2.6, drag: 0.1, delay: Math.random() * 1.6 });
+    await view.freeze(e.ids);
+  },
+  async starfall(e) {
+    if (!e.ids.length) return;
+    const box = new THREE.Box3().setFromPoints(e.ids.map((id) => view.pos(id))), size = box.getSize(new THREE.Vector3());
+    await stage.focus(box.getCenter(new THREE.Vector3()), { dist: THREE.MathUtils.clamp(Math.max(size.x, size.z) * (stage.portrait ? 2 : 1.2) + 9, 14, 40), pitch: 0.7, dur: 1 });
+    await Promise.all(e.ids.map((id, i) => view.addStar(id, i + 1).then(() => sfx('star'))));
+    await sleep(0.4);
+  },
+  async starpick(e) { view.takeStar(e.id); },
   async star(e) {
     hud.star(e.p, e.n);
     if (e.p === acting) { const s = head(e.p); hud.float(s, `+${e.n} ${icon('star')}`, 'star'); sfx('star'); await sleep(0.3); }
@@ -390,6 +504,7 @@ const play = {
     for (let i = 0; i < 4; i++) { stage.sparks.burst(v.x + Math.random() * 3, v.y + 2.5 + Math.random() * 1.8, v.z + (Math.random() - 0.5) * 3, 60, { color: ['#ffd84a', COLORS[e.p], '#ffffff', '#8fe0ff'], speed: 4, g: 2.5, life: 1.5, size: 0.34 }); await sleep(0.4); }
   },
   async hud() { hud.refresh(); },
+  async eventEnd() { hud.refresh(); hud.setOmen(g.omen); skyNow(1.8); follow(g.turn, { yaw: baseYaw() }); },
   async over(e) {
     hud.clearAct();
     view.showOptions([], '#fff');
@@ -442,6 +557,7 @@ async function minigame(d) {
   await hud.fade(true);
   hud.game.classList.add('hidden');
   stage.locked = true;
+  stage.setMood('day', 0); // la arena siempre se juega con buena luz
   view.group.visible = false;
   mini = new MiniView(stage, hud, heroes, names, d);
   await hud.fade(false);
@@ -451,6 +567,7 @@ async function minigame(d) {
   await hud.fade(true);
   mini.dispose();
   mini = null;
+  skyNow(0);
   view.group.visible = true;
   hud.game.classList.remove('hidden');
   Object.assign(stage.cam, { wYaw: cam.wYaw, yaw: cam.wYaw, wPitch: cam.wPitch, pitch: cam.wPitch, wDist: cam.wDist, dist: cam.wDist });
