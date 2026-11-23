@@ -33,20 +33,24 @@ export class Session {
 
   save() {
     if (this.game.phase === 'over') this.store?.clear();
-    else this.store?.write({ v: SAVE_VERSION, opts: this.opts, log: this.log });
+    else this.store?.write({ v: SAVE_VERSION, build: this.store.build, opts: this.opts, log: this.log });
   }
 
   static load(store) {
     const d = store.read();
-    if (!d || d.v !== SAVE_VERSION || !d.log?.length) return null;
+    if (!d) return null;
+    // Guardado de otra versión del juego, vacío o que ya no se puede repetir: se borra.
+    const drop = () => { store.clear(); return null; };
+    if (d.v !== SAVE_VERSION || (store.build && d.build !== store.build) || !d.log?.length) return drop();
     try {
       const s = new Session(d.opts, { log: d.log, store });
-      return s.game.phase === 'over' ? null : s;
-    } catch { return null; }
+      return s.game.phase === 'over' ? drop() : s;
+    } catch { return drop(); }
   }
 }
 
-export const localStore = (key = 'corona-partida') => ({
+export const localStore = (key = 'corona-partida', build = null) => ({
+  build,
   read() { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
   write(d) { try { localStorage.setItem(key, JSON.stringify(d)); } catch {} },
   clear() { try { localStorage.removeItem(key); } catch {} },

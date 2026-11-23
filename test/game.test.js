@@ -160,3 +160,14 @@ test('quien llega primero juega desde el castillo y las cartas sobrantes se vuel
   }
   assert.ok(seen > 20);
 });
+
+test('una partida guardada con otra versión del juego se borra al abrir', () => {
+  let saved = null;
+  const mem = (build) => ({ build, read: () => saved, write: (d) => (saved = d), clear: () => (saved = null) });
+  const s = new Session({ names: ['A', 'B'], len: 20, seed: 3 }, { store: mem('v1') });
+  s.dispatch({ type: 'begin' });
+  assert.ok(saved?.log.length);
+  assert.ok(Session.load(mem('v1')));
+  assert.equal(Session.load(mem('v2')), null);
+  assert.equal(saved, null);
+});

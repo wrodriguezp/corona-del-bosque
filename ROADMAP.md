@@ -45,12 +45,15 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Siete minijuegos nuevos, dieciséis en total: el dragón dormido (avanzar solo mientras duerme), cuenta conejos (contar los blancos), la pesca (paciencia), ritmo de hongos (tres carriles al compás), pinta el claro (territorio), topos del jardín (reflejos) y la torre de piedras (precisión).
 - Todos se miden con jugadores simulados: duran entre 15 y 31 segundos y ninguno favorece a un lado.
 
-### V3.2.1: más minijuegos (sigue)
-- Defiende tu nido, y en equipo: contra la Sombra y el puente.
-- Variantes de los que ya existen (hielo, noche, señales falsas…).
-- Ideas por probar: catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+### V3.2.1: salir y guardar (lista)
+- Botón para salir al menú en plena partida: queda guardada y se puede continuar, empezar otra o cambiar los nombres.
+- Cada versión publicada lleva una huella de su código: si el juego se actualiza, la partida guardada con la versión anterior se borra sola.
 
-### V3.3: la Sombra y las criaturas
+### V3.3: juntos contra la Sombra (sigue)
+- Minijuegos en equipo: ganan o pierden los dos juntos contra la Sombra.
+- Más adelante: defiende tu nido, variantes de los que ya existen (hielo, noche, señales falsas…), catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+
+### V3.4: la Sombra y las criaturas
 - Una sombra que avanza desde la salida y se acelera; si te alcanza pierdes gemas y te escupe hacia adelante.
 - Criaturas malas (troll del puente, lobos) y buenas (conejos, hadas) que aparecen al explorar.
 - Premios que crecen cerca del castillo, medidos con el simulador.

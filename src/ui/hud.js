@@ -51,7 +51,7 @@ export class Hud {
     this.time(g.turns % DAY.len, g.night);
     this.setOmen(g.omen);
     this.act = el('act');
-    this.tools = el('tools', `<button data-a="map" title="Ver el mapa (M)" aria-label="Ver el mapa">${icon('map')}</button><button data-a="sound" title="Sonido" aria-label="Sonido">${icon(isMuted() ? 'mute' : 'sound')}</button><button data-a="help" title="Cómo se juega (H)" aria-label="Cómo se juega">${icon('help')}</button>`);
+    this.tools = el('tools', `<button data-a="map" title="Ver el mapa (M)" aria-label="Ver el mapa">${icon('map')}</button><button data-a="sound" title="Sonido" aria-label="Sonido">${icon(isMuted() ? 'mute' : 'sound')}</button><button data-a="help" title="Cómo se juega (H)" aria-label="Cómo se juega">${icon('help')}</button><button data-a="exit" title="Salir al menú" aria-label="Salir al menú">${icon('exit')}</button>`);
     this.tools.onclick = (e) => {
       const b = e.target.closest('button');
       if (!b) return;
@@ -60,6 +60,7 @@ export class Hud {
       if (b.dataset.a === 'sound') { setMuted(!isMuted()); b.innerHTML = icon(isMuted() ? 'mute' : 'sound'); }
       if (b.dataset.a === 'map') this.on.map?.();
       if (b.dataset.a === 'help') this.help();
+      if (b.dataset.a === 'exit') this.leave();
     };
     this.game.append(this.track, this.under, this.act, this.tools);
     this.game.classList.remove('hidden');
@@ -387,6 +388,20 @@ export class Hud {
     this.closeHelp = () => { this.helpOpen = false; m.remove(); };
     s.querySelector('.close').onclick = this.closeHelp;
     m.onclick = (e) => e.target === m && this.closeHelp();
+  }
+
+  // Salir al menú: la partida queda guardada y se puede continuar desde el inicio.
+  leave() {
+    if (this.leaving) return;
+    this.leaving = true;
+    const s = el('sheet', `<h2>¿Salir al menú?</h2><p>La partida queda guardada: desde el menú puedes continuarla, empezar otra o cambiar los nombres.</p><div class="line"><button class="cta" data-a="go">Salir al menú</button><button class="link" data-a="stay">Seguir jugando</button></div>`);
+    const m = this.modal(s, 'leave');
+    s.onclick = (e) => {
+      const a = e.target.closest('button')?.dataset.a;
+      if (!a) return;
+      sfx('click'); m.remove(); this.leaving = false;
+      if (a === 'go') this.on.exit?.();
+    };
   }
 
   title(defaults, saved, skins) {

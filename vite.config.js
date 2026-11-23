@@ -1,4 +1,16 @@
 import { defineConfig } from 'vite';
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Huella del código del juego: cambia solo si cambia algún archivo de src.
+const stamp = (dir = 'src', h = createHash('sha1')) => {
+  for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) stamp(p, h); else h.update(p).update(readFileSync(p));
+  }
+  return h;
+};
 
 // La versión compilada es un script clásico con fuentes incrustadas:
 // así dist/index.html se puede abrir con doble clic, sin servidor.
@@ -10,8 +22,11 @@ const openFromDisk = {
   transformIndexHtml: (html) => html.replace(/<script type="module" crossorigin/g, '<script defer').replace(/<link rel="stylesheet" crossorigin/g, '<link rel="stylesheet"'),
 };
 
-export default defineConfig({
+// Cada build lleva su propio sello: si el juego se actualiza, la partida guardada
+// con la versión anterior se borra en vez de repetirse mal.
+export default defineConfig(({ command }) => ({
   base: './',
+  define: { __BUILD__: JSON.stringify(command === 'build' ? stamp().digest('hex').slice(0, 10) : 'dev') },
   server: { port: 5173, host: true, strictPort: true },
   build: {
     target: 'es2020',
@@ -21,4 +36,4 @@ export default defineConfig({
     rollupOptions: { output: { format: 'iife', entryFileNames: 'juego-[hash].js', assetFileNames: 'juego-[hash][extname]' } },
   },
   plugins: [openFromDisk],
-});
+}));

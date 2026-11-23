@@ -23,7 +23,7 @@ import { setNight, sfx, unlock } from './audio.js';
 const COLORS = ['#ff5c9e', '#4b8df7'];
 const stage = new Stage(document.getElementById('lienzo'));
 const hud = new Hud(document.getElementById('ui'));
-const store = localStore();
+const store = localStore('corona-partida', typeof __BUILD__ === 'string' ? __BUILD__ : null);
 let S, g, view, dice, heroes, rings, busy = true, mini = null;
 
 addEventListener('pointerdown', unlock);
@@ -674,6 +674,7 @@ async function minigame(d) {
 /* ---------- Entrada ---------- */
 let mapOn = false;
 hud.on = {
+  exit: () => location.reload(),
   roll: () => { if (!busy && g.phase === 'ready') { sfx('click'); act({ type: 'roll' }); } },
   buy: (what) => { if (!busy && g.canBuy(what)) { view.showOptions([], '#fff'); act({ type: 'buy', what }); } },
   skin: (id) => { prefs.skin = id; try { localStorage.setItem('corona-skin', id); } catch {} preview(prefs.len, false); },
