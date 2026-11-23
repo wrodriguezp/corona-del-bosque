@@ -57,7 +57,7 @@ export function makeBoard(seed, len = 28) {
     const t = {
       id: tiles.length, c, row,
       x: Math.sqrt(3) * (c + (row & 1) * 0.5), z: 1.5 * row,
-      links: [], kind: 'path', content: null, revealed: false, seen: false, clue: null,
+      links: [], kind: 'path', content: null, revealed: false, seen: false,
       ...extra,
     };
     tiles.push(t);
@@ -131,37 +131,47 @@ export function makeBoard(seed, len = 28) {
     t.rand = rng.next();
   }
 
-  // Contenidos: los atajos son peligrosos, los rodeos dan más gemas.
+  // Lugares visibles desde lejos: dan metas y motivos para desviarse.
   const playable = tiles.filter((t) => t.kind === 'path' && t !== start && t !== castle && dStart.get(t.id) > 1);
-  const free = rng.shuffle(playable.filter((t) => t.dist > 1));
-  let pairs = 0;
-  for (let i = 0; i < free.length && pairs < 4; i++) {
-    const a = free[i];
-    if (a.content) continue;
-    const b = free.find((x) => !x.content && x !== a && Math.abs(x.dist - a.dist) >= 4 && Math.abs(x.dist - a.dist) <= 8);
-    if (!b) continue;
-    a.content = { type: 'portal', to: b.id };
-    b.content = { type: 'portal', to: a.id };
-    pairs++;
-  }
+  const place = (frac, type) => {
+    const goal = board.length * frac;
+    const spots = playable.filter((t) => !t.content && t.dist > 2 && Math.abs(t.dist - goal) <= 2)
+      .filter((t) => !tiles.some((o) => o.landmark && Math.hypot(o.x - t.x, o.z - t.z) < 4));
+    if (!spots.length) return;
+    const aside = spots.filter((t) => t.detour >= 1 && t.detour <= 4);
+    const t = rng.pick(aside.length ? aside : spots);
+    t.content = { type, done: [false, false] };
+    t.landmark = t.revealed = true;
+  };
+  place(0.82, 'cave'); place(0.66, 'shop'); place(0.48, 'cave'); place(0.3, 'shop'); place(0.16, 'cave');
+
+  // Saltos largos, como serpientes y escaleras: águilas, gusanos y portales.
+  const free = rng.shuffle(playable.filter((t) => t.dist > 2));
+  const leap = (type, min, max, count) => {
+    let made = 0;
+    for (const a of free) {
+      if (made >= count) break;
+      if (a.content) continue;
+      const to = free.find((b) => !b.content && b.dist - a.dist >= min && b.dist - a.dist <= max);
+      if (!to) continue;
+      a.content = { type, to: to.id };
+      if (type === 'portal') to.content = { type, to: a.id };
+      made++;
+    }
+  };
+  const k = Math.max(2, Math.round(len / 9));
+  leap('eagle', -8, -5, k);
+  leap('worm', 4, 6, k);
+  leap('portal', 3, 7, k);
+
   for (const t of playable) {
     if (t.content) continue;
-    const direct = t.detour <= 1;
-    const type = rng.weighted(direct
-      ? { gem: 26, trap: 24, chest: 13, shrine: 7, calm: 30 }
-      : { gem: 46, trap: 13, chest: 16, shrine: 9, calm: 16 });
-    if (type === 'gem') t.content = { type, n: direct ? rng.int(1, 3) : rng.int(2, 5) };
-    else if (type === 'trap') t.content = { type, trap: rng.pick(['pozo', 'zarzas', 'duende']) };
+    const type = rng.weighted(t.detour <= 1
+      ? { adventure: 32, gem: 18, trap: 19, chest: 9, shrine: 5, duel: 10, calm: 7 }
+      : { adventure: 30, gem: 28, trap: 11, chest: 13, shrine: 6, duel: 9, calm: 3 });
+    if (type === 'gem') t.content = { type, n: t.detour <= 1 ? rng.int(2, 4) : rng.int(3, 6) };
+    else if (type === 'trap') t.content = { type, trap: rng.pick(['pozo', 'zarzas', 'duende', 'urraca']) };
     else t.content = { type };
-  }
-
-  // Pistas a través de la niebla: casi siempre dicen la verdad… casi.
-  for (const t of playable) {
-    const honest = { gem: 'brillo', chest: 'brillo', shrine: 'brillo', trap: 'humo', portal: 'remolino', calm: null }[t.content.type];
-    t.clue = honest;
-    if (t.content.type === 'trap' && rng.chance(0.25)) t.clue = 'brillo';
-    if (t.content.type === 'gem' && rng.chance(0.15)) t.clue = 'humo';
-    if (t.content.type === 'calm' && rng.chance(0.25)) t.clue = 'humo';
   }
   start.revealed = castle.revealed = true;
   return board;

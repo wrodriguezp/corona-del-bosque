@@ -80,9 +80,16 @@ function handGeo(skin, side) {
   ];
 }
 
-export function makePrincess() {
+// Apariencias: se agregan aquí y el botón de la portada las recorre.
+export const PRINCESS_SKINS = [
+  { id: 'noche', name: 'Cabello de noche', hair: '#24140f', hair2: '#38211a', iris: '#4a2614', brow: '#1d100c' },
+  { id: 'castana', name: 'Cabello castaño', hair: '#7a3b1e', hair2: '#9a4f27', iris: '#2e9d6b', brow: '#7a3b1e' },
+];
+
+export function makePrincess(skinId) {
   const R = rig();
-  const P = { main: '#ff6fae', deep: '#e0417f', light: '#ffc4dd', cream: '#fff3ee', hair: '#7a3b1e', hair2: '#9a4f27' };
+  const skin = PRINCESS_SKINS.find((s) => s.id === skinId) ?? PRINCESS_SKINS[0];
+  const P = { main: '#ff6fae', deep: '#e0417f', light: '#ffc4dd', cream: '#fff3ee', hair: skin.hair, hair2: skin.hair2 };
 
   // Piernas y zapatos (asoman al caminar).
   for (const [L, s] of [[R.legL, 1], [R.legR, -1]]) {
@@ -158,9 +165,9 @@ export function makePrincess() {
   // Cabeza y rostro.
   const H = R.head;
   H.add(mesh(headShape(SKIN_P, 0.95), matSmooth));
-  R.eyes = [makeEye(H, 1, { iris: '#2e9d6b', lash: '#3c1a12', scale: 0.9, long: true }), makeEye(H, -1, { iris: '#2e9d6b', lash: '#3c1a12', scale: 0.9, long: true })];
+  R.eyes = [makeEye(H, 1, { iris: skin.iris, lash: '#2a130d', scale: 0.9, long: true }), makeEye(H, -1, { iris: skin.iris, lash: '#2a130d', scale: 0.9, long: true })];
   H.add(mesh([
-    ...[1, -1].map((s) => paint(tube([[s * 0.08, 0.525, 0.385], [s * 0.16, 0.555, 0.365], [s * 0.25, 0.525, 0.31]], [0.012, 0.018, 0.008], 5, 6), P.hair)),
+    ...[1, -1].map((s) => paint(tube([[s * 0.08, 0.525, 0.385], [s * 0.16, 0.555, 0.365], [s * 0.25, 0.525, 0.31]], [0.012, 0.018, 0.008], 5, 6), skin.brow)),
     ...[1, -1].map((s) => paint(at(ball(0.07, 10, 6), { s: [1, 0.62, 0.25], r: [0, s * 0.6, 0], p: [s * 0.235, 0.215, 0.275] }), '#ff9fae')),
     paint(at(cone(0.034, 0.07, 5), { r: [-0.35, 0, 0], p: [0, 0.255, 0.4] }), '#f7c3a8'),
     paint(tube([[-0.075, 0.155, 0.335], [-0.03, 0.125, 0.365], [0.03, 0.125, 0.365], [0.075, 0.155, 0.335]], [0.007, 0.02, 0.02, 0.007], 6, 8), '#d9366b'),
