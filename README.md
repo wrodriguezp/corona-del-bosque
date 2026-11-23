@@ -37,4 +37,4 @@ npm run build    # genera dist/
 | `src/ui` | Interfaz, textos y estilos |
 | `test`, `tools` | Pruebas y simulador de partidas (`node tools/medir.js`) |
 
-`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`, `v3.0`, `v3.1`, `v3.1.1`…).
+`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md); cómo trabajar, observaciones de las pruebas y pendientes, en [CLAUDE.md](CLAUDE.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`, `v3.0`, `v3.1`, `v3.1.1`…).
