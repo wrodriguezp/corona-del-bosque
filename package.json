@@ -15,5 +15,9 @@
   },
   "devDependencies": {
     "vite": "^7.3.8"
+  },
+  "description": "Juego de tablero 3D de aventura mágica para dos personas",
+  "engines": {
+    "node": ">=20.19"
   }
 }

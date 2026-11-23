@@ -1,14 +1,34 @@
-# La Corona del Bosque Errante
+# 👑 La Corona del Bosque Errante
 
-Juego de tablero 3D para dos jugadores en un mismo equipo. Todo está hecho con código (Three.js): sin imágenes ni archivos de audio.
+Juego de tablero 3D de aventura mágica para dos personas en la misma pantalla, en PC o celular. Cada reino se genera al azar y **todo está hecho con código**: modelos, sonidos, efectos e iconos, sin imágenes ni archivos de audio.
 
-- **Jugar sin servidor:** abre `dist/index.html`.
-- **Desarrollar:** `npm install` y `npm run dev` (http://localhost:5173). `visor.html` muestra los personajes.
-- **Compilar:** `npm run build` · **Pruebas:** `npm test`
+Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tiren el dado, elijan camino y junten gemas: gana quien termine con más, no solo quien llegue primero.
 
-`src/core` contiene las reglas puras (sin gráficos), `src/view` el mundo 3D y `src/ui` la interfaz.
+- Aventuras con decisiones, algunas con consecuencias turnos después.
+- Mercado, cueva del dragón, un águila que te lleva y un gusano que te traga.
+- Tres minijuegos para dos: duelo de hechizos, lluvia de gemas y hechizos al fugitivo.
+- 27 cartas y gemas para gastar en pleno turno.
+- Un hada madrina que le da una mano a quien va atrás.
+- Partida guardada automáticamente.
 
-## Qué hay en la V2
-Cada casilla es una sorpresa: aventuras con decisiones, mercado, cueva del dragón, águila, gusano gigante, trampas y cartas. Tres minijuegos para dos (duelo, lluvia de gemas y hechizos al fugitivo), con teclado y mouse o táctiles. La partida se guarda sola.
+## Jugar y desarrollar
+Requiere Node 20.19 o posterior.
 
-El plan de las siguientes entregas está en [ROADMAP.md](ROADMAP.md). Cada entrega tiene su etiqueta en git: `git checkout v1` vuelve a la primera.
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm test         # reglas, equilibrio y minijuegos
+npm run build    # genera dist/
+```
+
+`dist/` es un sitio estático con rutas relativas: se puede abrir con doble clic en `dist/index.html` o subir a cualquier alojamiento estático (comando de compilación `npm run build`, carpeta `dist`).
+
+## Cómo está organizado
+| Carpeta | Contenido |
+|---|---|
+| `src/core` | Reglas puras, sin gráficos: cada acción entra por `Session.dispatch` y devuelve eventos |
+| `src/view` | Mundo 3D con Three.js: tablero, personajes, criaturas, dados, minijuegos |
+| `src/ui` | Interfaz, textos y estilos |
+| `test`, `tools` | Pruebas y simulador de partidas (`node tools/medir.js`) |
+
+`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`…).
