@@ -11,7 +11,7 @@ const el = (cls, html = '', tag = 'div') => {
   return e;
 };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'] };
+const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'], sun: ['sun', '#d8981a'] };
 const AV = ['crown', 'hat'];
 // Resumen dibujado de un efecto: «{rival} −3 {gem}» → avatar del rival, número grande e ícono.
 export const bigLine = (str, p) => str.replace(/\{(\w+)\}/g, (_, k) => (k === 'rival' ? `<span class="av p${1 - (p ?? 0)}">${icon(AV[1 - (p ?? 0)])}</span>` : icon(k)));
@@ -42,7 +42,7 @@ export class Hud {
       this.game.append(e);
       return e;
     });
-    this.track = el('track', `<div class="bar"></div><i class="m0">${icon('crown')}</i><i class="m1">${icon('hat')}</i><span class="cs">${icon('castle')}</span>`);
+    this.track = el('track', `<div class="bar"></div><div class="shade" title="La Sombra"></div><i class="m0">${icon('crown')}</i><i class="m1">${icon('hat')}</i><span class="cs">${icon('castle')}</span>`);
     this.under = el('under');
     this.sky = el('sky');
     this.omen = el('sky omen hidden');
@@ -63,6 +63,7 @@ export class Hud {
       if (b.dataset.a === 'exit') this.leave();
     };
     this.game.append(this.track, this.under, this.act, this.tools);
+    this.shade(g.shade || 0);
     this.game.classList.remove('hidden');
     this.refresh();
   }
@@ -96,6 +97,13 @@ export class Hud {
   place(i, tileId) {
     const g = this.g, f = 1 - Math.min(1, g.tile(tileId).dist / g.board.length);
     this.track.querySelector('.m' + i).style.left = `calc(15px + (100% - 60px) * ${f})`;
+  }
+
+  // Hasta dónde llegó la Sombra en la barra del recorrido.
+  shade(front) {
+    const f = Math.min(1, front / this.g.board.length);
+    const el = this.track.querySelector('.shade');
+    el.style.width = front > 0 ? `calc(15px + (100% - 60px) * ${f})` : '0';
   }
 
   gems(i, n) {
@@ -380,8 +388,11 @@ export class Hud {
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada.')}
       ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
-      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada o lluvia de estrellas.')}
-      ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón o fuego.')}
+      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque de la Sombra (juegan juntos).')}
+      ${li('omen', '#3d2b5c', '<b>La Sombra</b> avanza desde la salida, cada vez más rápido (se ve en la barra de arriba). Si te alcanza, pierdes hasta 3 gemas y te escupe hacia adelante.')}
+      ${li('tree', '#3f8f4f', '<b>Criaturas.</b> Basta pasar por su casilla: el conejo suma 2 a tu próxima tirada y el hada te da una carta; el lobo te quita 3 gemas y el troll te detiene y cobra 2.')}
+      ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo.')}
+      ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);

@@ -3,6 +3,9 @@ import { mat, matMetal, matGlow, paint, paintBy, at, loft, tube, merge, ball, ic
 import { caveMesh, shopMesh, nestMesh, holeMesh, arenaMesh, fireMesh, bookMesh, starMesh } from './creatures.js';
 import { ease } from './stage.js';
 import { makeRng } from '../core/rng.js';
+import { makeCritter } from './critters.js';
+
+const SHADE_COL = new THREE.Color('#2e2342');
 
 const GROUND = [
   ['#7cc752', '#70bc48', '#89d260'],
@@ -176,6 +179,8 @@ export class BoardView {
     this.group = new THREE.Group();
     stage.scene.add(this.group);
     this.contents = new Map();
+    this.critters = new Map();
+    this.shade = 0;
     this.rng = makeRng(board.seed + 99);
     this.buildTiles();
     this.buildProps();
@@ -199,6 +204,8 @@ export class BoardView {
 
     const xs = board.tiles.map((q) => q.x), zs = board.tiles.map((q) => q.z);
     stage.bounds = { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) };
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    for (let i = 0; i < this.board.tiles.length; i++) this.gloom.setMatrixAt(i, zero);
     this.upd = (dt, time) => this.update(dt, time);
     stage.updaters.push(this.upd);
   }
@@ -227,7 +234,8 @@ export class BoardView {
     const c = new THREE.Color(this.baseColor(t));
     const k = t.revealed && t.content && TYPE_COLOR[t.content.type];
     if (t.burnt) c.lerp(new THREE.Color('#4a3a44'), 0.6);
-    return k ? c.lerp(new THREE.Color(k), 0.62) : c;
+    if (k) c.lerp(new THREE.Color(k), 0.62);
+    return this.shaded(t) ? c.lerp(SHADE_COL, 0.7) : c;
   }
 
   buildTiles() {
@@ -307,6 +315,13 @@ export class BoardView {
     this.mistData = new Map();
     list.forEach((t, i) => this.mistData.set(t.id, { i, s: 0.95 + t.rand * 0.3, r: t.rand * 6, goal: 1, k: 1 }));
     this.group.add(this.mist);
+    // Niebla oscura de la Sombra: una nube baja por casilla, que crece al cubrirla.
+    const dark = merge([[0, 0, 0, 0.7], [0.5, -0.1, 0.25, 0.5], [-0.5, -0.08, 0.2, 0.52], [0.1, -0.1, -0.5, 0.5]].map(([x, y, z, s]) => paintBy(at(ico(s, 1), { s: [1, 0.45, 1], p: [x, y, z] }), (v) => (v.y > 0.05 ? '#4b3a66' : '#2a1f3c'))));
+    this.gloom = new THREE.InstancedMesh(dark, mat, this.board.tiles.length);
+    this.gloom.frustumCulled = false;
+    this.gloomK = new Float32Array(this.board.tiles.length);
+    this.gloomGoal = new Float32Array(this.board.tiles.length);
+    this.group.add(this.gloom);
   }
 
   // Signo de pregunta grabado: todas las casillas sin explorar lucen igual.
@@ -360,6 +375,69 @@ export class BoardView {
     this.zoneMesh.renderOrder = 1;
     this.group.add(this.zoneMesh);
     this.optIds = [];
+  }
+
+  /* ---------- La Sombra ---------- */
+  // Pasos desde la salida; lo que no es camino toma el valor de su vecino de camino más atrasado.
+  progOf(t) {
+    const L = this.board.length;
+    if (t.dist != null) return L - t.dist;
+    const near = this.board.around(t).filter((n) => n.dist != null).map((n) => L - n.dist);
+    return near.length ? Math.min(...near) : null;
+  }
+  shaded(t) { const p = this.shade > 0 ? this.progOf(t) : null; return p != null && p < this.shade; }
+
+  async setShade(front, anim) {
+    const was = new Set(this.board.tiles.filter((t) => this.shaded(t)).map((t) => t.id));
+    this.shade = front;
+    const now = this.board.tiles.filter((t) => this.shaded(t) && !was.has(t.id));
+    if (!anim) { this.recolor(now.map((t) => t.id)); now.forEach((t) => { this.gloomGoal[t.id] = 1; this.gloomK[t.id] = 1; }); return; }
+    const p0 = Math.min(...now.map((t) => this.progOf(t)));
+    await Promise.all(now.map((t) => this.stage.wait((this.progOf(t) - p0) * 0.25 + t.rand * 0.15).then(() => {
+      this.recolor([t.id]);
+      this.gloomGoal[t.id] = 1;
+      this.stage.smoke.burst(t.x, t.h + 0.2, t.z, 3, { color: ['#2e2342', '#4b3a66'], speed: 0.5, up: 0.9, life: 1.4, size: 0.6, grow: 0.5, alpha: 0.75 });
+    })));
+  }
+
+  /* ---------- Criaturas ---------- */
+  critterPos(id) { return this.pos(id).add(new THREE.Vector3(0.18, 0, -0.12)); }
+
+  addCritter(c, pop) {
+    const m = makeCritter(c.kind);
+    m.position.copy(this.critterPos(c.tile));
+    m.rotation.y = this.rng.next() * 6.283;
+    m.userData.phase = this.rng.next() * 6;
+    this.group.add(m);
+    this.critters.set(c.id, m);
+    if (!pop) return Promise.resolve();
+    const p = m.position;
+    this.stage.sparks.burst(p.x, p.y + 0.4, p.z, 18, { color: ['#fff3a0', '#ffffff'], speed: 1.6, up: 1.4, g: 2, life: 0.8, size: 0.22 });
+    return this.stage.tween(0.45, (k) => m.scale.setScalar(Math.max(0.01, k)), ease.back);
+  }
+
+  moveCritters(moves) {
+    return Promise.all(moves.map(({ id, to }, i) => {
+      const m = this.critters.get(id);
+      if (!m) return null;
+      const a = m.position.clone(), b = this.critterPos(to), top = Math.max(0, b.y - a.y) + 0.35;
+      return this.stage.wait(i * 0.08).then(() => {
+        m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+        return this.stage.tween(0.4, (k) => { m.position.lerpVectors(a, b, k); m.position.y += Math.sin(k * Math.PI) * top; }, ease.lin);
+      });
+    }));
+  }
+
+  // happy: se va dando saltos de alegría; si no, se esfuma entre humo.
+  async removeCritter(id, happy) {
+    const m = this.critters.get(id);
+    if (!m) return;
+    this.critters.delete(id);
+    const p = m.position.clone();
+    if (happy) this.stage.sparks.burst(p.x, p.y + 0.5, p.z, 24, { color: ['#fff3a0', '#ffb3e0', '#b8f4ff'], speed: 2, up: 1.6, g: 2, life: 1, size: 0.24 });
+    else this.stage.smoke.burst(p.x, p.y + 0.3, p.z, 10, { color: ['#4b3a66', '#6c6a86'], speed: 1, up: 1, life: 0.9, size: 0.45, grow: 0.4, alpha: 0.8 });
+    await this.stage.tween(0.45, (k) => { m.position.y = p.y + (happy ? k * 1.4 : 0); m.rotation.y += 0.25; m.scale.setScalar(Math.max(0.01, 1 - k * k)); }, ease.lin);
+    this.group.remove(m);
   }
 
   // Casillas que el dragón va a quemar.
@@ -558,6 +636,14 @@ export class BoardView {
       this.mist.setMatrixAt(d.i, m.compose(new THREE.Vector3(t.x + Math.sin(time * 0.4 + d.r) * 0.1, t.h + 0.42 + Math.sin(time * 0.8 + d.r) * 0.07 + (1 - d.k) * 0.8, t.z), q.setFromAxisAngle(up, d.r + time * 0.05), new THREE.Vector3(s, s, s)));
     }
     this.mist.instanceMatrix.needsUpdate = true;
+    if (this.shade > 0) {
+      for (const t of this.board.tiles) {
+        const k = (this.gloomK[t.id] += (this.gloomGoal[t.id] - this.gloomK[t.id]) * (1 - Math.exp(-2.5 * dt)));
+        const s = (0.9 + t.rand * 0.3) * k + 0.0001;
+        this.gloom.setMatrixAt(t.id, m.compose(new THREE.Vector3(t.x + Math.sin(time * 0.5 + t.rand * 9) * 0.08, t.h + 0.12 + (t.kind === 'path' ? 0 : 0.25) + Math.sin(time * 0.9 + t.rand * 6) * 0.05, t.z), q.setFromAxisAngle(up, t.rand * 6 + time * 0.08), new THREE.Vector3(s, s, s)));
+      }
+      this.gloom.instanceMatrix.needsUpdate = true;
+    }
 
     this.zoneMat.opacity = 0.46 + Math.sin(time * 4) * 0.16;
     for (const [, s] of this.stars) { s.userData.star.rotation.y = time * 2; s.position.y = s.userData.y + Math.sin(time * 2.4 + s.position.x) * 0.07; }
@@ -589,6 +675,7 @@ export class BoardView {
       this.mystery.setMatrixAt(i, m.compose(new THREE.Vector3(t.x, t.h + 0.03, t.z), q.setFromAxisAngle(up, this.stage.cam.yaw), new THREE.Vector3(s, s, s)));
     }
     this.mystery.instanceMatrix.needsUpdate = true;
+    for (const [, m] of this.critters) m.userData.idle(time + m.userData.phase);
     const cr = this.castle.userData.crown;
     cr.rotation.y += dt * 0.9;
     cr.position.y = 2.4 + Math.sin(time * 1.6) * 0.1;
@@ -601,6 +688,12 @@ export class BoardView {
         if (g.userData.dragon && Math.random() < 0.14) this.stage.smoke.emit({ x: t.x + 0.4, y: t.h + 0.5, z: t.z, vx: 0.15, vy: 0.5, color: '#e9e4f5', size: 0.14, life: 1.6, grow: 0.12, alpha: 0.7 });
         if (g.userData.cat && Math.random() < 0.3) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5), y: t.h + 0.6 + Math.random(), z: t.z - 0.3, vy: 0.4, color: '#ffd36b', size: 0.2, life: 1.2 });
         if (t.content?.type === 'calm' && Math.random() < 0.5) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5) * 0.2, y: t.h + 0.4, z: t.z - 0.42, vy: 0.9, color: '#ff9a3d', size: 0.14, life: 0.9 });
+      }
+      // Jirones de sombra en el borde de la Sombra.
+      if (this.shade > 0 && Math.random() < 0.6) {
+        const edge = this.board.tiles.filter((t) => t.kind === 'path' && this.progOf(t) === this.shade - 1);
+        const t = edge[Math.floor(Math.random() * edge.length)];
+        if (t) this.stage.smoke.emit({ x: t.x + (Math.random() - 0.5), y: t.h + 0.2, z: t.z + (Math.random() - 0.5), vx: 0.2, vy: 0.5, color: Math.random() < 0.5 ? '#2e2342' : '#4b3a66', size: 0.5, life: 1.6, grow: 0.5, alpha: 0.7 });
       }
       for (const [id, g] of this.contents) if (g.userData.portal) { const t = this.board.tiles[id], b = Math.random() * 6.283; this.stage.sparks.emit({ x: t.x + Math.sin(b) * 0.5, y: t.h + 0.1, z: t.z + Math.cos(b) * 0.5, cx: t.x, cz: t.z, vy: 0.9, swirl: 4, color: '#c79bff', size: 0.22, life: 1.1 }); }
       // Luciérnagas, hojas y nieve según el bioma, cerca de la cámara.

@@ -1,4 +1,5 @@
 import { bfs, makeContent, measure, relink, isConnected } from './board.js';
+import { critterTick, shadeTick } from './critters.js';
 
 // El mundo vivo: día, noche y eventos que cambian el tablero. Todo sale del azar de
 // la partida (g.rng), así que se repite igual al reanudar.
@@ -17,7 +18,7 @@ const near = (g, t, d) => open(g).some((p) => Math.abs(g.tile(p.tile).c - t.c) <
 function loose(g) {
   const targets = new Set(g.board.tiles.map((t) => t.content?.to).filter((x) => x != null));
   return g.board.tiles.filter((t) => t.kind === 'path' && t.id !== g.board.startId && t.id !== g.board.castleId && t.dist > 2 && !t.landmark
-    && !LEAPS.includes(t.content?.type) && !targets.has(t.id) && t.snare == null && !t.star && !g.players.some((p) => p.tile === t.id));
+    && !LEAPS.includes(t.content?.type) && !targets.has(t.id) && t.snare == null && !t.star && !g.players.some((p) => p.tile === t.id) && !g.critters.some((c) => c.tile === t.id));
 }
 
 const lakes = (g) => {
@@ -166,6 +167,8 @@ export function worldTick(g, ev) {
     g.nights += night ? 1 : 0;
     if (night && g.nights === 1) g.msg(ev, 'moon', 'Cae la noche', 'Todo brilla más, y muerde más.', false, `Casillas de gemas: +${NIGHT.gem} · Fogatas: +${NIGHT.rest} gemas · Trampas: quitan ${NIGHT.trap} gemas más · Cueva: menos riesgo · Se ve menos lejos`);
   }
+  shadeTick(g, ev);
+  critterTick(g, ev);
   if (g.omen && g.turns >= g.omen.at) {
     const { id, data } = g.omen;
     g.omen = null;

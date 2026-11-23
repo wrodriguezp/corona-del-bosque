@@ -3,6 +3,7 @@ import { makeBoard, bfs, pathTo } from './board.js';
 import { CARDS, COMMON, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
 import { DAY, NIGHT, worldTick } from './world.js';
 import { ADVENTURES, byId, describe } from './adventures.js';
+import { critterAt, meet, progress } from './critters.js';
 
 // Reglas puras: sin gráficos. Toda jugada entra por apply(acción) y devuelve una
 // lista de eventos que la vista anima en orden. Con la misma semilla y las mismas
@@ -25,6 +26,7 @@ export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', '
 export const TEAM_GAMES = ['faroles', 'remar', 'escudo'];
 export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
 export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
+export const NEAR = [0.5, 0.72]; // tramos del camino donde los premios crecen
 
 const TRAPS = {
   pozo: { title: 'Pozo escondido', text: 'El suelo cede. Retrocedes 3 casillas.' },
@@ -73,6 +75,9 @@ export class Game {
     this.bag = [];
     this.finalTurns = null;
     this.first = null;
+    this.shade = 0;
+    this.critters = [];
+    this.critterId = 0;
     this.look(this.board.startId);
   }
 
@@ -195,6 +200,12 @@ export class Game {
 
   // ¿Trae el hada una carta de remontada a esta oferta?
   helps(p) { return this.aid[p.id] > 0 && this.rng.chance(this.aid[p.id] * 0.5); }
+
+  // Cerca del castillo los premios crecen: +1 desde la mitad del camino, +2 en el último tramo.
+  nearCastle(t) {
+    const k = progress(this, t) / this.board.length;
+    return k >= NEAR[1] ? 2 : k >= NEAR[0] ? 1 : 0;
+  }
 
   /* ---------- Turnos ---------- */
   startTurn(extra = false) {
@@ -442,6 +453,8 @@ export class Game {
       const ids = this.look(step);
       if (ids.length) ev.push({ t: 'seen', ids });
       if (t.star) { t.star = false; ev.push({ t: 'starpick', id: step }); this.addStar(ev, p); }
+      const cr = critterAt(this, step);
+      if (cr && meet(this, ev, p, cr)) return ev.concat(this.endTurn());
       if (caught) {
         t.snare = null;
         ev.push({ t: 'trap', p: p.id, id: step, trap: 'red' });
@@ -475,7 +488,7 @@ export class Game {
     const clear = () => { t.content = { type: 'visited' }; ev.push({ t: 'clear', id: t.id }); };
     switch (c.type) {
       case 'gem': {
-        let n = c.n + (this.night ? NIGHT.gem : 0);
+        let n = c.n + (this.night ? NIGHT.gem : 0) + this.nearCastle(t);
         if (p.fx.golden) { n *= 2; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡Las gemas se duplican! Recoges ${n}.`, true); }
         clear();
         if (this.aid[p.id]) { n += this.aid[p.id]; ev.push({ t: 'fairy', kind: 'regala', p: p.id, n: this.aid[p.id] }); }
@@ -540,11 +553,13 @@ export class Game {
         this.phase = 'cave';
         ev.push({ t: 'cave' });
         return true;
-      default:
-        this.msg(ev, 'calm', this.night ? 'Fogata en la noche' : 'Descanso', `${this.rng.pick(CALM)} Ganas una estrella${this.night ? ` y ${NIGHT.rest} gemas` : ''}.`, true);
-        if (this.night) this.addGems(ev, p, NIGHT.rest, 'tile');
+      default: {
+        const n = (this.night ? NIGHT.rest : 0) + this.nearCastle(t);
+        this.msg(ev, 'calm', this.night ? 'Fogata en la noche' : 'Descanso', `${this.rng.pick(CALM)} Ganas una estrella${n ? ` y ${n} ${n === 1 ? 'gema' : 'gemas'}` : ''}.`, true);
+        if (n) this.addGems(ev, p, n, 'tile');
         this.addStar(ev, p);
         return false;
+      }
     }
   }
 

@@ -96,6 +96,8 @@ function setup(opts, session = new Session(opts)) {
   });
   arrange(true);
   view.setZone(g.omen?.data.zone);
+  view.setShade(g.shade);
+  g.critters.forEach((c) => view.addCritter(c));
   skyNow(0);
   heroes.forEach((h) => (h.turnTo = stage.cam.yaw));
   fairy.seen = false;
@@ -256,6 +258,34 @@ const play = {
     await stage.focus(box.getCenter(new THREE.Vector3()), { dist: THREE.MathUtils.clamp(Math.max(size.x, size.z) * (stage.portrait ? 2 : 1.2) + 9, 14, 40), pitch: 0.7, dur: 1 });
     await Promise.all(e.ids.map((id, i) => view.addStar(id, i + 1).then(() => sfx('star'))));
     await sleep(0.4);
+  },
+  async shade(e) {
+    hud.shade(e.front);
+    if (view.shade > 0) { view.setShade(e.front, true); return; }
+    const edge = g.board.tiles.filter((t) => t.kind === 'path' && g.board.length - t.dist < e.front).map((t) => view.pos(t.id));
+    if (edge.length) await stage.focus(new THREE.Box3().setFromPoints(edge).getCenter(new THREE.Vector3()), { dist: stage.portrait ? 18 : 15, pitch: 0.8, dur: 1 });
+    sfx('omen');
+    stage.shake(0.25);
+    await view.setShade(e.front, true);
+    await sleep(0.3);
+  },
+  async shadeCatch(e) {
+    const h = heroes[e.p];
+    await follow(e.p, { dur: 0.6 });
+    sfx('curse');
+    h.set('hurt', 1.6);
+    const p = h.root.position;
+    stage.smoke.burst(p.x, p.y + 0.5, p.z, 40, { color: ['#2e2342', '#4b3a66', '#1c1528'], speed: 1.6, up: 1.4, life: 1.4, size: 0.6, grow: 0.6, alpha: 0.85 });
+    await sleep(0.8);
+  },
+  async critter(e) { if (g.tile(e.tile).seen) sfx('star'); view.addCritter(e, true); },
+  async critterMove(e) { view.moveCritters(e.moves); },
+  async critterGone(e) { view.removeCritter(e.id, false); },
+  async meet(e) {
+    const h = heroes[e.p];
+    if (e.good) { sfx('star'); h.set('cheer', 1); sparkle(e.p, ['#fff3a0', '#ffb3e0', '#b8f4ff'], 30); }
+    else { sfx(e.kind === 'lobo' ? 'roar' : 'boing'); stage.shake(0.35); h.set('hurt', 1.2); }
+    await view.removeCritter(e.id, e.good);
   },
   async starpick(e) { view.takeStar(e.id); },
   async star(e) {

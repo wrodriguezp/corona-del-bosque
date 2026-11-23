@@ -61,10 +61,11 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
 - Variantes de los que ya existen (hielo, noche, señales falsas…).
 
-### V3.4: la Sombra y las criaturas
-- Una sombra que avanza desde la salida y se acelera; si te alcanza pierdes gemas y te escupe hacia adelante.
-- Criaturas malas (troll del puente, lobos) y buenas (conejos, hadas) que aparecen al explorar.
-- Premios que crecen cerca del castillo, medidos con el simulador.
+### V3.4: la Sombra y las criaturas (lista)
+- La Sombra avanza desde la salida desde el turno 6 y se acelera; se ve en el tablero y en la barra de recorrido. Si te alcanza pierdes hasta 3 gemas y sales 2 casillas por delante de ella. Alcanza a alguien en un tercio de las partidas.
+- Criaturas que aparecen en lo ya explorado y vagan por el tablero: conejo (+2 a la próxima tirada), hada (una carta), lobo (−3 gemas; de noche persigue) y troll (te detiene y cobra 2). Basta pasar por su casilla.
+- Cerca del castillo las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo.
+- Se conserva el equilibrio: 20 o más gemas de diferencia en el 14 % de las partidas simuladas.
 
 ### Después
 - Reliquias, misión secreta, poderes propios, más cartas (unas 40).

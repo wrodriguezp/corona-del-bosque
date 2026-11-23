@@ -39,6 +39,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 /* Camino al castillo */
 .track { position: absolute; top: calc(var(--pad) + 12px); left: 264px; right: 264px; max-width: 520px; margin: 0 auto; height: 34px; }
 .track .bar { position: absolute; left: 0; right: 30px; top: 14px; height: 8px; border-radius: 9px; background: var(--ink); border: 2px solid var(--ink2); }
+.track .shade { position: absolute; left: 0; top: 14px; width: 0; height: 8px; border-radius: 9px; background: repeating-linear-gradient(-45deg, #6a3fa0 0 6px, #2e1f4a 6px 12px); border: 2px solid #b48cf0; box-shadow: 0 0 10px #8a5cc4; transition: width 1.2s ease; }
 .track .cs { position: absolute; right: 0; top: 2px; font-size: 27px; color: var(--ink); }
 .track i { position: absolute; top: 2px; width: 30px; height: 30px; margin-left: -15px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 17px; border: 2px solid #fff; transition: left .7s cubic-bezier(.3,1.4,.5,1); }
 .track .m0 { background: var(--p0); } .track .m1 { background: var(--p1); }
