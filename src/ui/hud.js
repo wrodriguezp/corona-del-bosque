@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { CARDS, FAMILIES } from '../core/cards.js';
+import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
 const el = (cls, html = '', tag = 'div') => {
@@ -9,7 +9,7 @@ const el = (cls, html = '', tag = 'div') => {
   return e;
 };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const KIND = { gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'] };
+const KIND = { gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'] };
 const AV = ['crown', 'hat'];
 const cardHtml = (id, big) => {
   const c = CARDS[id], f = FAMILIES[c.family];
@@ -66,6 +66,9 @@ export class Hud {
       if (f.shield) L.push(['good', 'Escudo']);
       if (f.golden) L.push(['good', `Doble gema ×${f.golden}`]);
       if (f.magnet) L.push(['good', 'Imán']);
+      if (f.map) L.push(['good', 'Mapa']);
+      if (f.die) L.push(['good', `Dado ${f.die}`]);
+      if (f.locked) L.push(['bad', 'Candado']);
       if (f.plus) L.push(['good', `+${f.plus}`]);
       if (f.double) L.push(['good', 'Doble dado']);
       if (f.fixed) L.push(['good', `Saldrá ${f.fixed}`]);
@@ -105,6 +108,14 @@ export class Hud {
     setTimeout(() => b.remove(), 1600);
   }
 
+  buyButton(what, ic, label, key) {
+    const b = el('buy', `${icon(ic)}<span>${label}</span><b>${PRICES[what]}${icon('gem')}</b>`, 'button');
+    b.title = `${label} (${key})`;
+    b.disabled = !this.g.canBuy(what);
+    b.onclick = () => this.on.buy?.(what);
+    return b;
+  }
+
   showRoll(p, playable) {
     this.act.innerHTML = '';
     if (p.hand.length) {
@@ -119,9 +130,18 @@ export class Hud {
       });
       this.act.append(h);
     }
+    const row = el('row2');
     const r = el('roll', `${icon('dice')}Tirar el dado`, 'button');
     r.onclick = () => this.on.roll?.();
-    this.act.append(r);
+    row.append(this.buyButton('sobre', 'bag', 'Sobre misterioso', 'B'), r, this.buyButton('trampa', 'trap', 'Trampa escondida', 'T'));
+    this.act.append(row);
+  }
+
+  showMove(n, text) {
+    this.showHint(text || `<b>${n}</b> ${n === 1 ? 'paso' : 'pasos'}: elige una casilla iluminada`);
+    const row = el('row2');
+    row.append(this.buyButton('repetir', 'again', 'Repetir tirada', 'R'), this.buyButton('paso', 'boot', 'Un paso más', 'P'));
+    this.act.append(row);
   }
 
   showHint(html) { this.act.innerHTML = `<div class="hint">${html}</div>`; }
@@ -137,7 +157,7 @@ export class Hud {
     const f = el(`float ${cls}`, text);
     f.style.left = pos.x + 'px';
     f.style.top = pos.y + 'px';
-    this.game.append(f);
+    this.root.append(f);
     setTimeout(() => f.remove(), 1500);
   }
 
@@ -178,6 +198,88 @@ export class Hud {
     });
   }
 
+  // Ventana genérica: los botones con data-i responden al clic y a las teclas 1, 2, 3…
+  ask(inner, cls = '') {
+    return new Promise((res) => {
+      const m = this.modal(inner, cls), bs = [...inner.querySelectorAll('[data-i]')];
+      const end = (b) => { if (!b || b.disabled) return; this.pickKey = this.okKey = null; m.remove(); sfx('click'); res(b.dataset.i); };
+      bs.forEach((b) => (b.onclick = () => end(b)));
+      const nums = bs.filter((b) => !b.dataset.ok);
+      this.pickKey = (i) => end(nums[i]);
+      const ok = bs.find((b) => b.dataset.ok);
+      if (ok) this.okKey = () => end(ok);
+    });
+  }
+
+  adventure(a, player, can) {
+    const s = el('tale', `<div class="orn">${icon(a.icon)}</div><h2>${esc(a.title)}</h2><p>${esc(a.text)}</p><div class="picks"></div><small>${esc(player.name)} decide · ${player.gems} ${icon('gem')}</small>`);
+    a.choices.forEach((c, i) => {
+      const tags = [c.cost ? `<i class="cost">${c.cost}${icon('gem')}</i>` : '', c.check ? `<i class="die" title="Necesitas ${c.check} o más">${icon('dice')}${c.check}+</i>` : ''].join('');
+      const b = el('pick', `<b>${i + 1}</b><span>${esc(c.label)}</span>${tags}`, 'button');
+      b.dataset.i = i;
+      b.disabled = !can(i);
+      s.querySelector('.picks').append(b);
+    });
+    return this.ask(s).then(Number);
+  }
+
+  shop(shop, player) {
+    const full = player.hand.length >= HAND_LIMIT;
+    const s = el('sheet', `<h2>Mercado del gato</h2><p>${full ? 'Tienes la mano llena: ya no puedes comprar.' : `${esc(player.name)}, tienes ${player.gems} gemas.`}</p><div class="offer"></div><button class="cta" data-i="out" data-ok="1">Seguir el viaje</button>`);
+    shop.items.forEach((it, i) => {
+      const b = el('card', cardHtml(it.card, true) + `<span class="price">${it.sold ? 'Vendida' : `${it.price}${icon('gem')}`}</span>`, 'button');
+      b.style.setProperty('--f', FAMILIES[CARDS[it.card].family].color);
+      b.dataset.i = i;
+      b.disabled = it.sold || full || player.gems < it.price;
+      s.querySelector('.offer').append(b);
+    });
+    return this.ask(s).then((v) => (v === 'out' ? null : +v));
+  }
+
+  cave(c, player) {
+    const next = [2, 3, 3, 4, 5, 6][Math.min(5, c.grabs)], risk = c.grabs;
+    const s = el('tale', `<div class="orn">${icon('flame')}</div><h2>Cueva del dragón</h2>
+      <p>${c.grabs ? `Llevas <b>${c.bag} gemas</b> en la bolsa. El dragón se despierta si sacas <b>${risk === 1 ? '1' : `${risk} o menos`}</b>.` : `El dragón ronca sobre su tesoro. La primera vez es fácil; después, cada intento es más arriesgado.`}</p>
+      <div class="risk">${[1, 2, 3, 4, 5, 6].map((n) => `<i class="${n <= risk ? 'bad' : ''}">${n}</i>`).join('')}</div>
+      <div class="picks"><button class="pick" data-i="grab"><b>1</b><span>Tomar ${next} gemas</span></button><button class="pick" data-i="leave"><b>2</b><span>${c.bag ? `Salir con ${c.bag} gemas` : 'Irse sin hacer ruido'}</span></button></div>`);
+    return this.ask(s, 'low');
+  }
+
+  miniIntro(rules, why, names, mobile, prize) {
+    const ctl = {
+      button: mobile ? ['Toca la mitad izquierda', 'Toca la mitad derecha'] : ['Tecla A o espacio', 'Enter o clic del mouse'],
+      move: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas A y D', 'Flechas ← y →'],
+      chase: mobile ? ['Quien huye desliza abajo', 'Quien lanza toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
+    }[rules.input];
+    const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>
+      <div class="ctl">${ctl.map((c, i) => `<div class="p${i}">${rules.input === 'chase' ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${c}</div>`).join('')}</div>
+      <p class="prize">${icon('crown')}${prize}</p><button class="cta" data-i="go" data-ok="1">¡Listos!</button>`);
+    return this.ask(s);
+  }
+
+  miniHud(names, title, left) {
+    const m = el('minihud', `<div class="sc p0">${icon('crown')}<span>${esc(names[0])}</span><b>0</b></div><div class="mid"><span>${title}</span>${left != null ? '<div class="time"><i></i></div>' : ''}</div><div class="sc p1"><b>0</b><span>${esc(names[1])}</span>${icon('hat')}</div><div class="say"></div>`);
+    this.root.append(m);
+    return m;
+  }
+  miniScore(m, score, left, total) {
+    [0, 1].forEach((i) => { const b = m.querySelector(`.p${i} b`); if (b.textContent !== String(score[i])) { b.textContent = score[i]; b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); } });
+    const t = m.querySelector('.time i');
+    if (t && left != null) { t.style.width = `${(left / total) * 100}%`; t.classList.toggle('low', left < 5); }
+  }
+  miniSay(m, text, small, secs) {
+    const s = m.querySelector('.say');
+    s.innerHTML = `<div>${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}</div>`;
+    clearTimeout(this.sayT);
+    this.sayT = setTimeout(() => (s.innerHTML = ''), secs * 1000);
+  }
+
+  async fade(on) {
+    this.veil ||= this.root.appendChild(el('veil'));
+    this.veil.classList.toggle('on', on);
+    await new Promise((r) => setTimeout(r, this.fast ? 1 : 330));
+  }
+
   number() {
     return new Promise((res) => {
       const s = el('sheet', `<h2>Dado encantado</h2><p>¿Qué número quieres que salga?</p><div class="nums">${[1, 2, 3, 4, 5, 6].map((n) => `<button>${n}</button>`).join('')}</div><button class="link">Cancelar</button>`);
@@ -196,17 +298,16 @@ export class Hud {
     const s = el('help', `<h2>Cómo se juega</h2>
       <p>Tira el dado y elige a qué casilla iluminada ir. Llegar primero al castillo da <b>8 gemas</b>; después, tu rival tiene <b>3 turnos más</b>. <b>Gana quien tenga más gemas.</b></p>
       <ul>
-      ${li('gem', '#1f9d63', '<b>Gemas.</b> Los rodeos suelen tener más.')}
-      ${li('chest', '#c47a1e', '<b>Cofre.</b> Eliges 1 de 3 cartas.')}
-      ${li('trap', '#b3204f', '<b>Trampa.</b> Abunda en los atajos.')}
-      ${li('portal', '#7c3fd0', '<b>Portal.</b> Adelante o atrás.')}
-      ${li('shrine', '#139a94', '<b>Santuario.</b> Ayuda a los dos.')}
-      ${li('calm', '#3f9a4b', '<b>Descanso.</b> Ganas una estrella.')}
+      ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
+      ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
+      ${li('coin', '#b5811a', '<b>Mercado.</b> Se ve desde lejos. Puedes detenerte al pasar.')}
+      ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas sin despertar al dragón.')}
+      ${li('eagle', '#2b7fd0', '<b>Águila</b> te lleva adelante; el <b>gusano</b>, atrás.')}
+      ${li('duel', '#d2452f', '<b>Minijuegos.</b> Torneo cada 8 turnos, arenas y al alcanzar a tu rival.')}
       ${li('star', '#d8981a', '<b>3 estrellas</b> dan una carta. Ganas una por turno.')}
-      ${li('steal', '#8d2bb8', '<b>Encuentro.</b> Cae sobre tu rival y quítale 2 gemas.')}
+      ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       </ul>
-      <p><b>Pistas en la niebla:</b> brillo dorado = algo bueno; humo oscuro = peligro; remolino = portal. A veces engañan.</p>
-      <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
+      <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);
     const m = this.modal(s);
     this.closeHelp = () => { this.helpOpen = false; m.remove(); };
@@ -214,13 +315,13 @@ export class Hud {
     m.onclick = (e) => e.target === m && this.closeHelp();
   }
 
-  title(defaults) {
+  title(defaults, saved, skins) {
     return new Promise((res) => {
       const s = el('title', `<h1>La Corona<small>del Bosque Errante</small></h1>
         <div class="setup">
           <div class="names"><label>${icon('crown')}<input maxlength="12" aria-label="Nombre de la princesa" value="${esc(defaults.names[0])}"></label><label>${icon('hat')}<input maxlength="12" aria-label="Nombre del mago" value="${esc(defaults.names[1])}"></label></div>
-          <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button></div>
-          <button class="cta">Comenzar la aventura</button>
+          <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button></div>
+          <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button></div>
         </div>`);
       this.root.append(s);
       let len = defaults.len;
@@ -230,7 +331,13 @@ export class Hud {
       seg.forEach((b) => (b.onclick = () => { len = +b.dataset.l; mark(); sfx('click'); this.on.preview?.(len, false); }));
       s.querySelector('[data-a=new]').onclick = () => { sfx('flip'); this.on.preview?.(len, true); };
       s.querySelector('[data-a=help]').onclick = () => this.help();
-      s.querySelector('.cta').onclick = () => {
+      const sk = s.querySelector('[data-a=skin]');
+      const paintSkin = () => { const k = skins.find((q) => q.id === defaults.skin) || skins[0]; sk.innerHTML = `<i style="background:${k.hair}"></i>${k.name}`; sk.title = 'Cambiar la apariencia de la princesa'; };
+      paintSkin();
+      sk.onclick = () => { sfx('card'); defaults.skin = skins[(skins.findIndex((q) => q.id === defaults.skin) + 1) % skins.length].id; paintSkin(); this.on.skin?.(defaults.skin); };
+      const resume = s.querySelector('[data-a=resume]');
+      if (resume) resume.onclick = () => { s.remove(); res('resume'); };
+      s.querySelector('[data-a=start]').onclick = () => {
         const names = [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
         s.remove();
         res({ names, len });
@@ -254,11 +361,13 @@ export class Hud {
       if (e.target.tagName === 'INPUT' || e.repeat) return;
       const n = +e.key;
       if (this.helpOpen) { if (['Escape', 'Enter', ' ', 'h', 'H'].includes(e.key)) { e.preventDefault(); this.closeHelp(); } return; }
-      if (this.pickKey) { if (n >= 1) this.pickKey(n - 1); return; }
+      if (this.pickKey) { if (n >= 1) this.pickKey(n - 1); else if (this.okKey && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); this.okKey(); } return; }
+      if (this.root.querySelector('.pad')) return;
       if (this.skip && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); this.skip(); return; }
       if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
       if (e.key === ' ') { e.preventDefault(); this.on.roll?.(); }
       else if (n >= 1 && n <= 4) this.on.card?.(n - 1);
+      else if (/^[btrp]$/i.test(e.key)) this.on.buy?.({ b: 'sobre', t: 'trampa', r: 'repetir', p: 'paso' }[e.key.toLowerCase()]);
       else if (e.key === 'm' || e.key === 'M') this.on.map?.();
       else if (e.key === 'h' || e.key === 'H') this.help();
       else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') { if (this.on.cycle?.(1)) e.preventDefault(); }

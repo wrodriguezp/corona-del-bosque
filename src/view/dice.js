@@ -3,24 +3,27 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { paint, at, cyl, mesh, ringGeo, star, matMetal } from './geo.js';
 import { ease } from './stage.js';
 
-const NORMAL = { 1: [0, 1, 0], 6: [0, -1, 0], 2: [1, 0, 0], 5: [-1, 0, 0], 3: [0, 0, 1], 4: [0, 0, -1] };
-const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+const NORMAL = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [0, 0, -1], [-1, 0, 0], [0, -1, 0]];
+export const FACES = { normal: [1, 2, 3, 4, 5, 6], prudente: [2, 3, 4, 4, 3, 2], loco: [0, 7, 1, 1, 8, 9] };
+const TINT = { prudente: '#2fa56d', loco: '#f0742b' };
+const GRID = [-1, 0, 1].flatMap((x) => [-1, 0, 1].map((z) => [x, z]));
+const PIPS = { 0: [], 9: GRID, 8: GRID.filter(([x, z]) => x || z), 7: [[-1, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [1, 1]], 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
 
-function makeDie(color) {
+function makeDie(color, faces) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new RoundedBoxGeometry(1, 1, 1, 3, 0.16), new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.05 }));
   body.castShadow = true;
   g.add(body);
   const geos = [];
-  for (let f = 1; f <= 6; f++) {
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...NORMAL[f]));
+  faces.forEach((f, k) => {
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...NORMAL[k]));
     for (const [x, z] of PIPS[f]) {
       const p = paint(cyl(f === 1 ? 0.15 : 0.1, f === 1 ? 0.15 : 0.1, 0.02, 14), '#fff8e6');
       p.translate(x * 0.25, 0.5, z * 0.25);
       p.applyQuaternion(q);
       geos.push(p);
     }
-  }
+  });
   g.add(mesh(geos, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, emissive: '#fff3d0', emissiveIntensity: 0.12 }), false));
   return g;
 }
@@ -38,7 +41,8 @@ export class DiceTable {
     this.rune = new THREE.Group();
     this.rune.add(mesh([paint(at(ringGeo(1.55, 0.035, 36), { r: [Math.PI / 2, 0, 0] }), '#ffc93c'), paint(at(ringGeo(1.15, 0.018, 30), { r: [Math.PI / 2, 0, 0] }), '#ffc93c'), ...Array.from({ length: 6 }, (_, i) => paint(at(star(0.12, 0.02), { r: [-Math.PI / 2, 0, 0], p: [Math.sin(i * 1.047) * 1.35, 0.01, Math.cos(i * 1.047) * 1.35] }), '#ffe066'))], matMetal, false));
     this.root.add(disc, this.rune);
-    this.sets = colors.map((c) => [0, 1, 2].map(() => { const d = makeDie(c); d.visible = false; this.root.add(d); return d; }));
+    this.colors = colors;
+    this.sets = {};
     this.upd = (dt) => { this.rune.rotation.y += dt * 0.5; if (this.root.visible) this.place(); };
     stage.updaters.push(this.upd);
   }
@@ -56,19 +60,23 @@ export class DiceTable {
     this.root.rotation.y = this.stage.cam.yaw;
   }
 
-  async roll(p, values, onHit) {
-    const st = this.stage;
-    for (const s of this.sets) s.forEach((d) => (d.visible = false));
+  dice(p, kind) {
+    return (this.sets[p + kind] ||= [0, 1, 2].map(() => { const d = makeDie(TINT[kind] || this.colors[p], FACES[kind]); d.visible = false; this.root.add(d); return d; }));
+  }
+
+  async roll(p, values, onHit, kind = 'normal') {
+    const st = this.stage, set = this.dice(p, kind), faces = FACES[kind];
+    for (const s of Object.values(this.sets)) s.forEach((d) => (d.visible = false));
     this.root.visible = true;
     this.place();
     st.tween(0.25, (k) => this.root.scale.setScalar(0.02 + k * 0.4), ease.back);
     await Promise.all(values.map((v, i) => {
-      const d = this.sets[p][i];
+      const d = set[i], hits0 = faces.flatMap((f, k) => (f === v ? [k] : [])), face = hits0[Math.floor(Math.random() * hits0.length)];
       d.visible = true;
       d.scale.setScalar(0.85);
       const x1 = values.length === 1 ? 0 : (i - (values.length - 1) / 2) * 0.98, z1 = values.length === 1 ? 0 : (i % 2) * 0.35 - 0.15;
       const rest = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (Math.random() - 0.5) * 0.9)
-        .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...NORMAL[v]), new THREE.Vector3(0, 1, 0)));
+        .multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...NORMAL[face]), new THREE.Vector3(0, 1, 0)));
       const axis = new THREE.Vector3(Math.random() - 0.3, Math.random() * 0.6, -1).normalize();
       const q = new THREE.Quaternion();
       let hits = 0;

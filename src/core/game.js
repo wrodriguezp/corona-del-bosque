@@ -309,14 +309,14 @@ export class Game {
       if (fx.double) mods.push('Doble dado');
       if (fx.worst) mods.push('Nube gris: sin el mayor');
     }
-    const natural = total;
+    const natural = total, kind = fx.fixed ? null : fx.die;
     if (fx.plus) { total += fx.plus; mods.push(`Impulso +${fx.plus}`); }
     if (fx.minus) { total = Math.max(1, total - fx.minus); mods.push(`Raíces −${fx.minus}`); }
     if (fx.half) { total = Math.max(1, Math.ceil(total / 2)); mods.push('Enredo: la mitad'); }
     Object.assign(fx, { plus: 0, minus: 0, half: false, worst: false, double: false, fixed: 0, die: null });
     this.total = total;
     this.phase = 'move';
-    ev.push({ t: 'roll', p: p.id, dice, total, mods });
+    ev.push({ t: 'roll', p: p.id, dice, total, mods, kind });
     if (natural === 1 && !again) {
       this.msg(ev, 'star', 'Consuelo de las hadas', 'Sacaste 1: ganas una estrella extra.', true);
       this.addStar(ev, p);
@@ -426,6 +426,7 @@ export class Game {
         if (c.type === 'worm' && this.shielded(ev, p, 'El gran gusano')) return false;
         p.tile = to.id;
         ev.push({ t: c.type === 'portal' ? 'teleport' : c.type, p: p.id, from: t.id, id: to.id });
+        if (c.type === 'portal') this.reveal(ev, to.id);
         const ids = this.look(to.id);
         if (ids.length) ev.push({ t: 'seen', ids });
         return false;

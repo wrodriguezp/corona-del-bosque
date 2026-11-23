@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mat, matMetal, matGlow, paint, paintBy, at, loft, tube, merge, ball, ico, octa, box, cone, cyl, ringGeo, star, mesh } from './geo.js';
+import { caveMesh, shopMesh, nestMesh, holeMesh, arenaMesh, fireMesh, bookMesh } from './creatures.js';
 import { ease } from './stage.js';
 import { makeRng } from '../core/rng.js';
 
@@ -9,8 +10,8 @@ const GROUND = [
   ['#f0b24e', '#e6a343', '#f5bf62'],
   ['#e3ecff', '#d3dffa', '#f2f6ff'],
 ];
-const TYPE_COLOR = { gem: '#ffe07a', trap: '#b8556b', chest: '#ffb35c', shrine: '#8ef0e2', portal: '#b98aff', calm: null };
-const CLUE = { brillo: '#ffd84a', humo: '#4a3a55', remolino: '#b27bff' };
+const TYPE_COLOR = { gem: '#ffe07a', trap: '#b8556b', chest: '#ffb35c', shrine: '#8ef0e2', portal: '#b98aff', eagle: '#9fd8ff', worm: '#a8765c', duel: '#ff9a7a', adventure: '#ffd0e4', shop: '#ffc27a', cave: '#8f86b5' };
+const MODEL = { gem: (c) => gemMesh(c.n), chest: chestMesh, trap: (c) => trapMesh(c.trap), portal: portalMesh, shrine: shrineMesh, shop: shopMesh, cave: caveMesh, eagle: nestMesh, worm: holeMesh, duel: arenaMesh, calm: fireMesh, adventure: bookMesh };
 const HEX = 0.93;
 
 const prism = (top, bottom, h) => loft([
@@ -68,6 +69,19 @@ function trapMesh(kind) {
       const a = (i / 5) * 6.283, p = (q, r, y) => [Math.sin(a + q) * r, y, Math.cos(a + q) * r];
       return [paint(tube([p(0, 0.55, 0), p(0.3, 0.45, 0.28), p(0.8, 0.4, 0.2), p(1.2, 0.5, 0)], [0.05, 0.04, 0.035, 0.02], 5, 9), '#5b2a55'), ...[0.25, 0.55, 0.85].map((q) => paint(at(cone(0.03, 0.14, 4), { r: [q, a, 0.6], p: p(q, 0.46, 0.3 - Math.abs(q - 0.45) * 0.25) }), '#e0447c'))];
     })));
+  } else if (kind === 'urraca') {
+    const b = new THREE.Group();
+    b.add(mesh([
+      paint(tube([[0, 0, 0], [0.03, 0.3, 0], [-0.1, 0.55, 0], [0.12, 0.72, 0]], [0.06, 0.045, 0.035, 0.015], 5, 8), '#6e4026'),
+      paint(at(loft([{ y: -0.22, r: 0.02 }, { y: -0.05, rx: 0.12, rz: 0.11 }, { y: 0.1, rx: 0.1, rz: 0.1 }, { y: 0.2, r: 0.04 }], 8), { r: [0.9, 0, 0], p: [0, 0.86, 0] }), '#f4f1ff'),
+      paintBy(at(loft([{ y: -0.2, r: 0.02 }, { y: 0, rx: 0.14, rz: 0.06 }, { y: 0.12, r: 0.03 }], 7), { r: [0.9, 0, 0], p: [0, 0.93, -0.04] }), () => '#2a2440'),
+      paint(at(ico(0.11, 1), { p: [0, 1.02, 0.13] }), '#2a2440'),
+      paint(at(cone(0.04, 0.14, 4), { r: [Math.PI / 2, 0, 0], p: [0, 1.0, 0.28] }), '#ffbe2e'),
+      paint(at(box(0.09, 0.02, 0.42), { r: [-0.4, 0, 0], p: [0, 0.86, -0.32] }), '#3d4f9e'),
+    ]));
+    b.add(mesh([paint(at(octa(0.07), { p: [0, 0.94, 0.33] }), '#ffd84a'), ...[1, -1].map((s) => paint(at(ball(0.022, 6, 4), { p: [s * 0.08, 1.06, 0.19] }), '#fff6c9'))], matGlow));
+    b.position.set(0, 0, -0.45);
+    g.add(b);
   } else {
     // Duende asomado con orejas, capucha y ojos brillantes.
     const b = new THREE.Group();
@@ -166,7 +180,9 @@ export class BoardView {
     this.buildTiles();
     this.buildProps();
     this.buildMist();
+    this.buildMystery();
     this.buildHighlights();
+    for (const t of board.tiles) if (t.revealed) this.spawn(t, true);
 
     const t = board.tiles[board.castleId], s = board.tiles[board.startId];
     this.castle = castleMesh();
@@ -234,7 +250,7 @@ export class BoardView {
     const add = (name, x, y, z, s, r) => (put[name] ||= []).push([x, y, z, s, r]);
     const R = this.rng;
     for (const t of this.board.tiles) {
-      if (t.id === this.board.castleId || t.id === this.board.startId) continue;
+      if (t.id === this.board.castleId || t.id === this.board.startId || t.landmark) continue;
       if (t.c < 2 && t.kind !== 'path') { if (R.chance(0.6)) add('flowers', t.x, t.h, t.z, 1, t.rand * 6); continue; }
       const scatter = (name, n, rad, s0, s1) => {
         const off = R.next() * 6.283;
@@ -274,13 +290,28 @@ export class BoardView {
   // Niebla: nubecitas sobre lo que nadie ha explorado.
   buildMist() {
     const geo = merge([[0, 0, 0, 0.62], [0.5, -0.08, 0.2, 0.42], [-0.45, -0.06, 0.25, 0.45], [0.1, -0.08, -0.5, 0.44]].map(([x, y, z, s]) => paintBy(at(ico(s, 1), { s: [1, 0.68, 1], p: [x, y, z] }), (v) => (v.y > 0.12 ? '#fdf6ff' : v.y > -0.1 ? '#e6d6f5' : '#c9b3e4'))));
-    const list = this.board.tiles.filter((t) => t.kind === 'path' && !t.seen && t.id !== this.board.castleId);
+    const list = this.board.tiles.filter((t) => t.kind === 'path' && !t.seen && !t.landmark && t.id !== this.board.castleId);
     this.mist = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length));
     this.mist.frustumCulled = false;
     this.mistData = new Map();
     list.forEach((t, i) => this.mistData.set(t.id, { i, s: 0.95 + t.rand * 0.3, r: t.rand * 6, goal: 1, k: 1 }));
     this.group.add(this.mist);
   }
+
+  // Signo de pregunta grabado: todas las casillas sin explorar lucen igual.
+  buildMystery() {
+    const geo = merge([
+      paint(tube([[-0.15, 0, -0.17], [-0.12, 0, -0.3], [0.02, 0, -0.36], [0.15, 0, -0.27], [0.12, 0, -0.12], [0.01, 0, -0.02], [0, 0, 0.1]], [0.05, 0.055, 0.055, 0.05], 5, 14, 0.55), '#fff6df'),
+      paint(at(octa(0.07), { s: [1, 0.6, 1], p: [0, 0, 0.25] }), '#fff6df'),
+    ]);
+    const list = this.board.tiles.filter((t) => this.hidden(t));
+    this.mystery = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length));
+    this.mystery.frustumCulled = false;
+    this.mystery.castShadow = true;
+    this.mystIds = new Map(list.map((t, i) => [t.id, i]));
+    this.group.add(this.mystery);
+  }
+  hidden(t) { return t.kind === 'path' && t.content && t.content.type !== 'visited' && !t.revealed; }
 
   buildHighlights() {
     const g = loft([{ y: 0, r: 0.8 }, { y: 0.05, r: 0.86 }, { y: 0.05, r: 0.74 }, { y: 0, r: 0.72 }], 6, { capTop: false, capBottom: false });
@@ -355,7 +386,7 @@ export class BoardView {
     const c = t.content;
     let swapped = false;
     const color = this.topColor(t);
-    if (c && c.type !== 'calm') this.stage.sparks.burst(t.x, t.h + 0.2, t.z, 16, { color: TYPE_COLOR[c.type] || '#fff', speed: 2.2, up: 1.6, life: 0.8, size: 0.22, g: 3 });
+    if (c && c.type !== 'visited') this.stage.sparks.burst(t.x, t.h + 0.2, t.z, 16, { color: TYPE_COLOR[c.type] || '#fff', speed: 2.2, up: 1.6, life: 0.8, size: 0.22, g: 3 });
     const p = this.stage.tween(0.5, (k) => {
       if (k > 0.45 && !swapped) { swapped = true; this.tiles.setColorAt(id, color); this.tiles.instanceColor.needsUpdate = true; this.spawn(t); }
       this.placeTile(t, (1 - k) * Math.PI * 0.12 * Math.sin(k * 14), Math.sin(k * Math.PI) * 0.35);
@@ -363,15 +394,14 @@ export class BoardView {
     return p;
   }
 
-  spawn(t) {
+  spawn(t, now) {
     const c = t.content;
-    if (!c || this.contents.has(t.id)) return;
-    const g = c.type === 'gem' ? gemMesh(c.n) : c.type === 'chest' ? chestMesh() : c.type === 'trap' ? trapMesh(c.trap) : c.type === 'portal' ? portalMesh() : c.type === 'shrine' ? shrineMesh() : null;
-    if (!g) return;
+    if (!c || this.contents.has(t.id) || !MODEL[c.type]) return;
+    const g = MODEL[c.type](c);
     g.position.set(t.x, t.h, t.z);
     this.group.add(g);
     this.contents.set(t.id, g);
-    this.stage.tween(0.5, (k) => g.scale.setScalar(Math.max(0.01, k)), ease.back);
+    if (!now) this.stage.tween(0.5, (k) => g.scale.setScalar(Math.max(0.01, k)), ease.back);
   }
 
   async clear(id) {
@@ -410,23 +440,32 @@ export class BoardView {
     this.dots.instanceMatrix.needsUpdate = true;
 
     for (const [, g] of this.contents) {
-      if (g.userData.spin) g.rotation.y += dt * g.userData.spin;
-      if (g.userData.portal) g.userData.portal.value = time;
+      const u = g.userData;
+      if (u.spin) g.rotation.y += dt * u.spin;
+      if (u.portal) u.portal.value = time;
+      if (u.dragon) u.dragon.userData.breathe(time);
+      if (u.cat) { u.cat.position.y = Math.abs(Math.sin(time * 2)) * 0.03; u.cat.rotation.y = Math.sin(time * 0.8) * 0.3; }
+      if (u.eagle) { u.eagle.userData.flap(time * 1.5, 0.25); u.eagle.position.y = 0.62 + Math.sin(time * 1.5) * 0.02; }
+      if (u.worm) u.worm.userData.pose(0.35 + Math.sin(time * 1.3) * 0.6, time * 0.5);
     }
+    for (const [id, i] of this.mystIds) {
+      const t = this.board.tiles[id], d = this.mistData.get(id);
+      const s = this.hidden(t) && t.seen && !(this.optIds.includes(id)) ? 1 - Math.min(1, d ? d.k * 1.5 : 0) : 0;
+      this.mystery.setMatrixAt(i, m.compose(new THREE.Vector3(t.x, t.h + 0.03, t.z), q.setFromAxisAngle(up, this.stage.cam.yaw), new THREE.Vector3(s, s, s)));
+    }
+    this.mystery.instanceMatrix.needsUpdate = true;
     const cr = this.castle.userData.crown;
     cr.rotation.y += dt * 0.9;
     cr.position.y = 2.4 + Math.sin(time * 1.6) * 0.1;
 
-    // Pistas: brillo, humo o remolino en casillas vistas pero sin revelar.
-    this.clueT = (this.clueT || 0) - dt;
-    if (this.clueT < 0) {
-      this.clueT = 0.16;
-      for (const t of this.board.tiles) {
-        if (!t.seen || t.revealed || !t.clue) continue;
-        const a = Math.random() * 6.283, r = Math.random() * 0.45, x = t.x + Math.sin(a) * r, z = t.z + Math.cos(a) * r;
-        if (t.clue === 'brillo' && Math.random() < 0.6) this.stage.sparks.emit({ x, y: t.h + 0.1, z, vy: 0.55, color: CLUE.brillo, size: 0.3, life: 1.1, drag: 0.3 });
-        if (t.clue === 'humo' && Math.random() < 0.55) this.stage.smoke.emit({ x: t.x + (x - t.x) * 0.5, y: t.h + 0.1, z: t.z + (z - t.z) * 0.5, vy: 0.75, vx: 0.1, color: Math.random() < 0.5 ? CLUE.humo : '#7a5596', size: 0.2, life: 1.7, grow: 0.16, alpha: 0.8 });
-        if (t.clue === 'remolino') { const b = Math.random() * 6.283; this.stage.sparks.emit({ x: t.x + Math.sin(b) * 0.55, y: t.h + 0.12, z: t.z + Math.cos(b) * 0.55, cx: t.x, cz: t.z, vy: 0.4, swirl: 4, color: CLUE.remolino, size: 0.24, life: 1.2, drag: 0.1 }); }
+    this.ambT = (this.ambT || 0) - dt;
+    if (this.ambT < 0) {
+      this.ambT = 0.16;
+      for (const [id, g] of this.contents) {
+        const t = this.board.tiles[id];
+        if (g.userData.dragon && Math.random() < 0.14) this.stage.smoke.emit({ x: t.x + 0.4, y: t.h + 0.5, z: t.z, vx: 0.15, vy: 0.5, color: '#e9e4f5', size: 0.14, life: 1.6, grow: 0.12, alpha: 0.7 });
+        if (g.userData.cat && Math.random() < 0.3) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5), y: t.h + 0.6 + Math.random(), z: t.z - 0.3, vy: 0.4, color: '#ffd36b', size: 0.2, life: 1.2 });
+        if (t.content?.type === 'calm' && Math.random() < 0.5) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5) * 0.2, y: t.h + 0.4, z: t.z - 0.42, vy: 0.9, color: '#ff9a3d', size: 0.14, life: 0.9 });
       }
       for (const [id, g] of this.contents) if (g.userData.portal) { const t = this.board.tiles[id], b = Math.random() * 6.283; this.stage.sparks.emit({ x: t.x + Math.sin(b) * 0.5, y: t.h + 0.1, z: t.z + Math.cos(b) * 0.5, cx: t.x, cz: t.z, vy: 0.9, swirl: 4, color: '#c79bff', size: 0.22, life: 1.1 }); }
       // Luciérnagas, hojas y nieve según el bioma, cerca de la cámara.

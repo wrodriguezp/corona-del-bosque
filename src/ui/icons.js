@@ -24,5 +24,15 @@ const P = {
   shrine: '<path d="M12 2s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11zM4 20h16v2H4z"/>',
   chest: '<path d="M4 4h16a2 2 0 0 1 2 2v5H2V6a2 2 0 0 1 2-2zM2 12.500h7V15h6v-2.500h7V20H2z"/>',
   calm: '<path d="M12 22V10m0 4c-6 0-8-4-8-9 5 0 8 3 8 9zm0-2c0-5 3-8 8-8 0 5-2 8-8 8z" stroke="currentColor" stroke-width="1.500"/>',
+  coin: '<path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 3a7 7 0 1 1 0 14 7 7 0 0 1 0-14z"/><path d="m12 7 3.500 4-3.500 6-3.500-6z"/>',
+  flame: '<path fill-rule="evenodd" d="M13 1c1 5 7 7 7 14a8 8 0 0 1-16 0c0-4 2-5 3-8 1 1 2 2 2 4 3-2 4-6 4-10zm-1 12c-1 2-3 3-3 5a3 3 0 0 0 6 0c0-2-2-3-3-5z"/>',
+  eye: '<path fill-rule="evenodd" d="M12 5c6 0 10 7 10 7s-4 7-10 7S2 12 2 12s4-7 10-7zm0 2.500a4.500 4.500 0 1 0 0 9 4.500 4.500 0 0 0 0-9z"/><circle cx="12" cy="12" r="2.300"/>',
+  worm: '<path d="M4 20c0-5 4-4 4-8s4-4 4 0 4 4 4 0V7" fill="none" stroke="currentColor" stroke-width="4.500" stroke-linecap="round"/><circle cx="16" cy="5.500" r="4"/><circle cx="17.200" cy="4.700" r="1.100" fill="#fff"/>',
+  swap: '<path d="M7 3 2 8l5 5v-3.500h9v-3H7zm10 8 5 5-5 5v-3.500H8v-3h9z"/>',
+  lock: '<path fill-rule="evenodd" d="M6 10V7a6 6 0 0 1 12 0v3h2v12H4V10zm3 0h6V7a3 3 0 0 0-6 0zm3 4a2 2 0 0 0-1 3.700V20h2v-2.300A2 2 0 0 0 12 14z"/>',
+  duel: '<path d="m2 2 4 .6L18 15l2-2 1.500 1.500-2.500 2.500 3 3-2 2-3-3-2.500 2.500L13 20l2-2L2.600 6zm20 0-4 .6-5 5.100 3.300 3.300L21.400 6zM9.700 11 6 15l-2-2-1.500 1.500L5 17l-3 3 2 2 3-3 2.500 2.500L11 20l-2-2 4-3.700z"/>',
+  eagle: '<path d="M1 6c4 0 7 1 9 4 .5-1.500 1-3 3-3.500 2-.4 3 .5 4 1.500l2.500 1-2.500 1c0 3 3 1 6-2-1 6-4 9-8 9l2 4-4-2-3 2v-4C6 17 3 13 1 6z"/>',
+  bolt: '<path d="M13 1 4 14h6l-1 9 10-14h-7z"/>',
+  mirror: '<path d="M12 2a6 7 0 0 1 1.500 13.800V22h-3v-6.200A6 7 0 0 1 12 2zm0 2.500a3.700 4.500 0 1 0 0 9 3.700 4.500 0 0 0 0-9z" fill-rule="evenodd"/>',
 };
 export const icon = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${P[n] || P.star}</svg>`;

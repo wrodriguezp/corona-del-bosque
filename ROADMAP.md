@@ -5,7 +5,7 @@ Cada entrega se guarda en git con una etiqueta (`v1`, `v2`, …).
 ## V1 (lista)
 Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 12 cartas, princesa y mago.
 
-## V2: misterio y minijuegos
+## V2: misterio y minijuegos (lista)
 - Sin pistas: cada casilla es una sorpresa y solo se revela al caer en ella.
 - Lugares visibles a lo lejos que dan metas: mercader y cueva del dragón.
 - Aventuras con decisiones, algunas con consecuencias turnos después.
