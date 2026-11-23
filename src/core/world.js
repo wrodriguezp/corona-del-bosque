@@ -177,7 +177,11 @@ export function worldTick(g, ev) {
     EVENTS[id].run(g, ev, data);
     ev.push({ t: 'eventEnd' });
   } else if (!g.omen && g.turns >= g.nextEvent - WARNING) {
-    if (!g.deck.length) g.deck = g.rng.shuffle(Object.keys(EVENTS));
+    if (!g.deck.length) {
+      // La Sombra ataca siempre como segundo evento de cada vuelta: todas las partidas traen un minijuego en equipo.
+      g.deck = g.rng.shuffle(Object.keys(EVENTS).filter((id) => id !== 'sombra'));
+      g.deck.splice(1, 0, 'sombra');
+    }
     const i = g.deck.findIndex((id) => EVENTS[id].can(g));
     if (i < 0) { g.deck = []; return; }
     const [id] = g.deck.splice(i, 1);

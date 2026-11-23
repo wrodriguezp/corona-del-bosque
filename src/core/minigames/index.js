@@ -8,7 +8,7 @@ export { DT, noPad };
 /* ---------- Duelo de hechizos: reflejos, al mejor de tres ---------- */
 const duelo = {
   name: 'Duelo de hechizos', icon: 'bolt', input: 'button',
-  goal: 'Espera la estrella dorada y lanza tu hechizo antes que tu rival. Si te adelantas, la ronda es para tu rival. Gana quien llegue a dos rondas.',
+  goal: ['Están frente a frente y, entre los dos, hay una esfera mágica que destella de colores. En algún momento aparece una gran estrella dorada.', 'No pulses cuando destella de otros colores: son engaños. Apenas veas la estrella dorada, pulsa tu botón lo más rápido que puedas.', 'Gana la ronda quien pulse primero. Si pulsas antes de tiempo, la ronda es para tu rival. Gana quien gane 2 rondas.'],
   create(seed) {
     const s = { ...base(seed), phase: 'wait', round: 1, clock: 0, idle: 0 };
     duelo.arm(s);
@@ -56,7 +56,7 @@ const duelo = {
 export const RAIN = { w: 5, r: 0.5, time: 20, speed: 6.4 };
 const lluvia = {
   name: 'Lluvia de gemas', icon: 'gem', input: 'move', time: RAIN.time,
-  goal: 'Atrapa las gemas que caen: las normales valen 1 punto y las doradas 3. Las rocas te aturden y te quitan 1. Puedes empujar a tu rival.',
+  goal: ['Del cielo caen gemas y algunas rocas. Cada quien mueve a su personaje de lado a lado, abajo.', 'Ponte debajo de las gemas para atraparlas y quítate de donde caen las rocas.', 'Gema normal: 1 punto. Gema dorada: 3 puntos. Si te cae una roca, te quedas mareado un momento y pierdes 1 punto. Gana quien tenga más puntos al acabarse el tiempo.'],
   create(seed) {
     return { ...base(seed), left: RAIN.time, p: [{ x: -2.5, v: 0, stun: 0 }, { x: 2.5, v: 0, stun: 0 }], drops: [], next: 0.3, id: 0 };
   },
@@ -103,7 +103,7 @@ const lluvia = {
 export const CHASE = { r: 4.6, time: 12, speed: 4.5, blast: 1.15, warn: 0.65, cool: 0.45 };
 const fuga = {
   name: 'Hechizos al fugitivo', icon: 'bolt', input: 'chase', time: CHASE.time, selfStart: true,
-  goal: 'Quien huye esquiva y recoge estrellas: +1 punto cada una. Quien lanza apunta hechizos: cada acierto le quita 1 punto a quien huye. Luego cambian de papel. Gana quien sume más puntos al huir.',
+  goal: ['Una persona corre por la arena y la otra apunta desde fuera, como una cazadora. Después cambian de papel.', 'Si corres: recoge las estrellas y esquiva los hechizos. Si apuntas: toca donde crees que va a pasar tu rival para lanzarle un hechizo.', 'Quien corre gana 1 punto por estrella y pierde 1 por cada hechizo que le acierta. Al final gana quien juntó más puntos cuando le tocó correr.'],
   create(seed) {
     const s = { ...base(seed), round: 1 };
     s.runner = s.rng.int(0, 1);

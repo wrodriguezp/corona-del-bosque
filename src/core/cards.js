@@ -8,7 +8,7 @@ export const FAMILIES = {
 
 export const CARDS = {
   cosecha: { family: 'fortuna', name: 'Cosecha', icon: 'gem', big: '+4 {gem}', text: 'Ganas 4 gemas ahora mismo.' },
-  dorado: { family: 'fortuna', name: 'Toque dorado', icon: 'hand', big: '{gem} ×2 · 2 veces', text: 'Las próximas 2 casillas de gemas que encuentres te dan el doble.' },
+  dorado: { family: 'fortuna', name: 'Toque dorado', icon: 'hand', big: '+3 {gem} · 2 veces', text: 'Las próximas 2 veces que caigas en una casilla de gemas, ganas 3 gemas más.' },
   iman: { family: 'fortuna', name: 'Imán de gemas', icon: 'magnet', big: '+1 {gem} por paso', text: 'Este turno ganas 1 gema por casilla que avances (máx. 6).' },
   apuesta: { family: 'fortuna', name: 'Apuesta del hada', icon: 'coin', big: '{crown} +8 {gem} · {moon} −3 {gem}', text: 'Se lanza una moneda: cara, ganas 8 gemas; cruz, pierdes 3.' },
   trueque: { family: 'fortuna', name: 'Diezmo real', icon: 'crown', big: '+{gem} (máx. 6)', text: 'Ganas 1 gema por cada 3 que tenga tu rival (máx. 6). Tu rival no pierde nada.' },

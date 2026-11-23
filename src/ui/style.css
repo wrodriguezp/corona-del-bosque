@@ -180,6 +180,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .ctl div { border-radius: 13px; padding: 10px; color: #fff; font-size: 17px; font-weight: 500; background: var(--cd); } .ctl b { display: flex; gap: 6px; justify-content: center; align-items: center; font: 400 22px/1.1 var(--disp); }
 .ctl .p0 { --cd: var(--p0d); } .ctl .p1 { --cd: var(--p1d); }
+.how { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 9px; text-align: left; font-size: 17px; line-height: 1.3; }
+.how li { display: flex; gap: 10px; align-items: flex-start; } .how li > .ic { flex: none; width: 26px; height: 26px; color: #c98a12; margin-top: 2px; }
+.how b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
 .tale.mini small { margin: 0 0 2px; } .prize { display: grid; gap: 4px; justify-content: center; margin: 0 0 16px; font-size: 17px; font-weight: 700; } .prize span { display: flex; gap: 7px; align-items: center; text-align: left; } .prize .p0 { color: #a81d5c; } .prize .p1 { color: #1d4fa8; } .prize .team { color: #9a6a00; } .prize .shadow { color: #4a3a78; }
 .minihud { position: absolute; inset: 0; pointer-events: none; }
 .minihud > .sc, .minihud > .mid { position: absolute; top: var(--pad); color: #fff; }
@@ -214,7 +217,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
   .score div { padding: 10px 16px; min-width: 120px; font-size: 21px; }
   .buy { flex-direction: column; gap: 1px; font-size: 13px; max-width: 23vw; padding: 7px 8px; text-align: center; } .row2 { gap: 8px; }
   .risk > div { grid-template-columns: 1fr; gap: 3px; } .risk span { justify-content: center; } .risk p { text-align: center; font-size: 16px; } .tale .risk p { margin: 0; } .prize { font-size: 15px; }
-  .tale { padding: 40px 16px 14px; } .tale p { font-size: 17px; margin-bottom: 11px; } .pick { font-size: 17px; padding: 8px 10px; gap: 9px; }
+  .tale { padding: 40px 16px 14px; } .tale p { font-size: 17px; margin-bottom: 11px; } .how { font-size: 15px; gap: 6px; } .pick { font-size: 17px; padding: 8px 10px; gap: 9px; }
   .sc { font-size: 17px; padding: 5px 10px; gap: 6px; border-width: 2px; } .sc b { font-size: 30px; min-width: 20px; }
   .ctl div { font-size: 15px; } .go .cta { font-size: 23px; padding: 10px 20px 13px; } .offer .card .price { grid-column: 2; font-size: 17px; }
 }
@@ -259,3 +262,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .offer .card .efx { font-size: 24px; margin: 2px 0 4px; }
 @media (max-width: 860px), (max-height: 520px) { .offer .card .efx { grid-column: 2; justify-content: flex-start; font-size: 20px; } .hand .card .efx { font-size: 15px; } .scroll .efx { font-size: 28px; } }
 .efx .ic { color: inherit; } .efx .av .ic { color: #fff; } .efx > .ic { color: #1f9d63; }
+/* Celular acostado: los tres pasos del minijuego van en columnas para que quepan. */
+@media (max-height: 500px) and (min-width: 640px) {
+  .tale.mini { width: min(880px, 96vw); padding-top: 30px; }
+  .tale.mini h2 { margin-bottom: 6px; }
+  .how { grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 13.5px; margin-bottom: 8px; }
+  .how li { flex-direction: column; gap: 2px; } .how li > .ic { width: 20px; height: 20px; }
+  .tale.mini .prize { margin-bottom: 8px; }
+}

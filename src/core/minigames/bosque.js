@@ -7,7 +7,7 @@ import { steer } from './nuevos.js';
 export const SLEEPY = { goal: 10, speed: 1.05, warn: 0.55, grace: 0.12, back: 4, stun: 0.7, time: 40 };
 export const dragon = {
   name: 'El dragón dormido', icon: 'flame', input: 'hold', time: SLEEPY.time,
-  goal: 'Mantén pulsado para acercarte al tesoro y suelta cuando el dragón se remueva: si te ve moviéndote con el ojo abierto, retrocedes. A veces solo se acomoda. Gana quien llegue primero al tesoro.',
+  goal: ['Un dragón duerme sobre un tesoro y los dos se acercan a escondidas, cada quien por su camino.', 'Mantén pulsado para caminar. Cuando el dragón se mueva, suelta y quédate quieto: si abre el ojo y te ve caminando, te devuelve atrás. A veces solo se acomoda y vuelve a dormir.', 'Gana quien llegue primero al tesoro.'],
   create(seed) {
     const s = { ...base(seed), left: SLEEPY.time, pos: [0, 0], stun: [0, 0], seen: [0, 0], moving: [false, false] };
     dragon.sleep(s);
@@ -47,7 +47,7 @@ export const dragon = {
 export const HARE = { rounds: 2, run: 11, reveal: 3.2 };
 export const conejos = {
   name: 'Cuenta conejos', icon: 'eye', input: 'button',
-  goal: 'Por el prado cruzan conejos. Pulsa una vez por cada conejo BLANCO (¡ojo con los cafés de orejas blancas!). Al final se muestra la cuenta: quien acierta justo gana 2 puntos; si nadie acierta, 1 punto para quien quedó más cerca. Son dos rondas.',
+  goal: ['Por un prado pasan corriendo conejos blancos y cafés, mezclados.', 'Pulsa tu botón una vez por cada conejo BLANCO que veas. Ojo: algunos cafés tienen las orejas blancas, y esos no cuentan.', 'Al final se cuentan los conejos. Si aciertas el número exacto: 2 puntos. Si nadie acierta, 1 punto para quien estuvo más cerca. Son 2 rondas.'],
   create(seed) {
     const s = { ...base(seed), round: 0 };
     conejos.begin(s);
@@ -95,7 +95,7 @@ export const conejos = {
 export const FISH = { time: 30, window: 0.7, scare: 1.4, rest: 0.8 };
 export const pesca = {
   name: 'La pesca', icon: 'calm', input: 'button', time: FISH.time,
-  goal: 'Mira tu corcho. Los tironcitos son de mentira: tira (pulsa) solo cuando se hunda de verdad con un chapuzón. Si tiras antes, el pez se espanta. Gana quien pesque más.',
+  goal: ['Cada quien tiene su caña y un corcho flotando en el agua.', 'Mira tu corcho. Si solo tiembla un poquito, es un engaño: espera. Cuando se hunda de golpe con un chapuzón, pulsa para sacar el pez.', 'Si pulsas antes, el pez se asusta y tienes que esperar al siguiente. Gana quien pesque más peces.'],
   create(seed) {
     const s = { ...base(seed), left: FISH.time };
     s.plan = Array.from({ length: 30 }, () => {
@@ -131,7 +131,7 @@ export const BEAT = { lead: 1.5, good: 0.16, perfect: 0.07, notes: 30 };
 const LANES = [3, 0, 1];
 export const hongos = {
   name: 'Ritmo de hongos', icon: 'sound', input: 'dirs',
-  goal: 'Los hongos bajan por tres carriles. Pulsa ←, ↑ o → justo cuando cada hongo toque la línea. A tiempo: 1 punto. Perfecto: 2. Si pulsas el carril equivocado o fuera de ritmo, pierdes 1.',
+  goal: ['Es un juego de música. Por tres carriles (izquierda, centro y derecha) bajan hongos hacia una línea, al ritmo de la canción.', 'Cuando un hongo llegue a la línea, pulsa la dirección de su carril: izquierda, arriba (para el del centro) o derecha. No mantengas apretado: es un toque por cada hongo.', 'A tiempo: 1 punto. Justo en el momento: 2. Si pulsas cuando no hay hongo, o en el carril equivocado, pierdes 1. Gana quien tenga más puntos al terminar la canción.'],
   create(seed) {
     const s = { ...base(seed), notes: [], next: 0 };
     let t = 2, lane = 1;
@@ -170,7 +170,7 @@ export const hongos = {
 export const PAINT = { cols: 12, rows: 8, size: 0.8, time: 25, speed: 4.4, grip: 0.12, body: 0.45 };
 export const pinta = {
   name: 'Pinta el claro', icon: 'tree', input: 'move2', time: PAINT.time,
-  goal: 'Corre por el claro: cada baldosa que pisas queda de tu color (también las de tu rival). Si tomas una flor mágica, pintas todo a su alrededor. Gana quien tenga más baldosas al final.',
+  goal: ['El suelo es un tablero de baldosas. Cada quien deja su color por donde camina, como un pincel.', 'Corre por todas partes para pintar baldosas, y pasa por encima de las de tu rival para volverlas tuyas. Si aparece una flor mágica, tómala: pinta todo a su alrededor.', 'Gana quien tenga más baldosas de su color cuando se acabe el tiempo.'],
   create(seed) {
     const s = { ...base(seed), left: PAINT.time, tiles: new Array(PAINT.cols * PAINT.rows).fill(-1), flower: null, next: 4, id: 0 };
     s.p = [-1, 1].map((k) => ({ x: k * 3.6, y: 0, vx: 0, vy: 0 }));
@@ -217,7 +217,7 @@ export const pinta = {
 export const MOLE = { time: 25 };
 export const topos = {
   name: 'Topos del jardín', icon: 'worm', input: 'dirs', time: MOLE.time,
-  goal: 'Cuando asome un topo, pulsa la dirección de su agujero (↑ → ↓ ←). Topo café: 1 punto. Dorado: 2. ¡Al erizo no lo toques! Pulsar un agujero vacío o al erizo resta 1.',
+  goal: ['Hay cuatro agujeros: arriba, abajo, izquierda y derecha. De ellos asoman topos, y a veces un erizo.', 'Cuando asome un topo, pulsa la dirección de ese agujero para atraparlo. Al erizo no lo toques.', 'Topo café: 1 punto. Topo dorado: 2. Si pulsas un agujero vacío o donde está el erizo, pierdes 1. Gana quien tenga más puntos.'],
   create(seed) {
     const s = { ...base(seed), left: MOLE.time, pops: [] };
     let t = 1.2;
@@ -251,7 +251,7 @@ export const topos = {
 export const STACK = { time: 25, w: 1.6, amp: 1.5, speed: 2.1, up: 0.17, perfect: 0.07, miss: 0.9 };
 export const torre = {
   name: 'La torre de piedras', icon: 'castle', input: 'button', time: STACK.time,
-  goal: 'Una piedra se balancea sobre tu torre: pulsa para soltarla. Lo que sobresale se cae y la torre se angosta; si cae justo al centro, la piedra crece un poco. Gana la torre más alta.',
+  goal: ['Cada quien construye una torre. Arriba, una piedra se mueve de lado a lado.', 'Pulsa para soltar la piedra cuando esté justo encima de tu torre. La parte que queda fuera se cae, y la torre se va angostando. Si la dejas justo en el centro, la piedra crece un poco.', 'Gana la torre más alta.'],
   create(seed) {
     const s = { ...base(seed), left: STACK.time };
     s.p = [0, 1].map(() => ({ w: STACK.w, cx: 0, ph: Math.PI / 2, wait: 0.6, level: 0 }));

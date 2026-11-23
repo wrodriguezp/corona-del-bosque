@@ -25,7 +25,8 @@ export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.
     else if (g.phase === 'castle') act({ type: 'castle', what: rng.chance(0.5) ? 'cofre' : 'torre' });
     else if (g.phase === 'duel') act({ type: 'duel', winner: g.duel.team ? (rng.chance(0.65) ? -1 : -2) : rng.chance(0.1) ? -1 : rng.chance(skill) ? 0 : 1 });
     else if (g.phase === 'ready') {
-      if (p.hand.length && !g.cardPlayed && !p.fx.locked && rng.chance(0.6)) act({ type: 'card', i: rng.int(0, p.hand.length - 1), value: rng.int(1, 6) });
+      const ok = p.hand.map((c, i) => (g.canCard(c) ? i : -1)).filter((i) => i >= 0);
+      if (ok.length && !g.cardPlayed && !p.fx.locked && rng.chance(0.6)) act({ type: 'card', i: rng.pick(ok), value: rng.int(1, 6) });
       else if (g.canBuy('sobre') && rng.chance(0.15)) act({ type: 'buy', what: 'sobre' });
       else if (g.canBuy('trampa') && rng.chance(0.1)) act({ type: 'buy', what: 'trampa' });
       else { act({ type: 'roll' }); rolls++; }

@@ -9,7 +9,7 @@ import { critterAt, meet, progress } from './critters.js';
 // lista de eventos que la vista anima en orden. Con la misma semilla y las mismas
 // acciones se obtiene siempre la misma partida (guardado, repetición, en línea).
 
-export const ARRIVE_FIRST = 6;
+export const ARRIVE_FIRST = 10;
 export const ARRIVE_SECOND = 4;
 export const FINAL_TURNS = 3;
 export const CARD_GEMS = 2; // cada carta que sobra al final vale 2 gemas
@@ -26,7 +26,8 @@ export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', '
 export const TEAM_GAMES = ['faroles', 'remar', 'escudo'];
 export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
 export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
-export const NEAR = [0.5, 0.72]; // tramos del camino donde los premios crecen
+export const NEAR = [0.5, 0.72];
+export const GOLDEN = 3; // gemas extra del «Toque dorado» en cada casilla de gemas // tramos del camino donde los premios crecen
 
 const TRAPS = {
   pozo: { title: 'Pozo escondido', text: 'El suelo cede. Retrocedes 3 casillas.' },
@@ -187,7 +188,7 @@ export class Game {
       const was = this.aid[p.id], gap = this.behind(p);
       let now = 0;
       for (const k of [1, 2]) if (gap >= FAIRY[k][was >= k ? 1 : 0]) now = k;
-      if (p.arrived) now = 0;
+      if (p.arrived || this.first != null) now = 0; // en el tramo final el hada ya no ayuda
       if (now === was) continue;
       this.aid[p.id] = now;
       ev.push({ t: 'fairy', kind: now ? 'llega' : 'adios', p: p.id, level: now, was });
@@ -202,7 +203,9 @@ export class Game {
   helps(p) { return this.aid[p.id] > 0 && this.rng.chance(this.aid[p.id] * 0.5); }
 
   // Cerca del castillo los premios crecen: +1 desde la mitad del camino, +2 en el último tramo.
+  // Se apagan cuando alguien llega: el tramo final no premia a quien va lento.
   nearCastle(t) {
+    if (this.first != null) return 0;
     const k = progress(this, t) / this.board.length;
     return k >= NEAR[1] ? 2 : k >= NEAR[0] ? 1 : 0;
   }
@@ -282,15 +285,18 @@ export class Game {
   }
 
   /* ---------- Cartas y compras ---------- */
+  // En el castillo se está a salvo: las cartas contra el rival no sirven si ya llegó.
+  canCard(card) { return !(this.rival.arrived && (CARDS[card].family === 'travesura' || card === 'cometa')); }
+
   playCard(i, value) {
     const p = this.player, r = this.rival, card = p.hand[i];
     if (this.phase !== 'ready' || this.cardPlayed || p.fx.locked || !card) return [];
     if (CARDS[card].choose && !(value >= 1 && value <= 6)) return [];
+    if (!this.canCard(card)) return [];
     p.hand.splice(i, 1);
     this.cardPlayed = true;
     const ev = [{ t: 'card', p: p.id, card }];
     const hit = (fn) => {
-      if (r.arrived && !['robo', 'maleta', 'peaje', 'cometa'].includes(card)) { this.msg(ev, 'calm', 'Sin efecto', `${r.name} ya está a salvo en el castillo.`, true); return; }
       if (!this.shielded(ev, r, CARDS[card].name)) fn();
     };
     const curse = () => ev.push({ t: 'curse', p: r.id });
@@ -489,7 +495,7 @@ export class Game {
     switch (c.type) {
       case 'gem': {
         let n = c.n + (this.night ? NIGHT.gem : 0) + this.nearCastle(t);
-        if (p.fx.golden) { n *= 2; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡Las gemas se duplican! Recoges ${n}.`, true); }
+        if (p.fx.golden) { n += GOLDEN; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡${GOLDEN} gemas de regalo! Recoges ${n}.`, true); }
         clear();
         if (this.aid[p.id]) { n += this.aid[p.id]; ev.push({ t: 'fairy', kind: 'regala', p: p.id, n: this.aid[p.id] }); }
         this.addGems(ev, p, n, 'tile');
@@ -735,7 +741,7 @@ export class Game {
       this.first = p.id;
       this.turn = this.rival.id;
       this.finalTurns = FINAL_TURNS + (this.aid[this.turn] === 2 ? 1 : 0);
-      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas y juega desde el castillo. A ${this.player.name} le quedan ${this.finalTurns} turnos: si no llega, pierde ${LATE} gemas.`);
+      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas y queda a salvo: nadie le puede quitar gemas. Juega desde el castillo. A ${this.player.name} le quedan ${this.finalTurns} turnos: si no llega, pierde ${LATE} gemas.`);
       return ev.concat(this.startTurn());
     }
     return ev.concat(this.finish());

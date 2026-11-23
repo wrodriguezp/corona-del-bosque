@@ -11,7 +11,7 @@ const end = (s, won) => { s.done = true; s.won = won; s.winner = won ? -1 : -2; 
 export const LAMP = { r: 4.6, time: 25, speed: 4.3, grip: 0.16, touch: 0.62, core: 0.75, lives: 3 };
 export const faroles = {
   name: 'Faroles contra la Sombra', icon: 'sun', input: 'move2', time: LAMP.time, team: true,
-  goal: 'Juegan en equipo. Manchas de sombra reptan hacia la llama del centro: tóquenlas para deshacerlas. Si tres llegan a la llama, se apaga y gana la Sombra. Si la llama sigue encendida al final, ganan los dos.',
+  goal: ['Juegan en equipo. En el centro hay una llama, y manchas de sombra se arrastran hacia ella desde los bordes.', 'Muevan a sus personajes y toquen las manchas para deshacerlas antes de que lleguen a la llama. Repártanse los lados.', 'Si 3 manchas llegan a la llama, se apaga y gana la Sombra. Si la llama sigue encendida al acabarse el tiempo, ganan los dos.'],
   create(seed) {
     const s = { ...base(seed), left: LAMP.time, lives: LAMP.lives, blobs: [], next: 1, id: 0 };
     s.p = [-1, 1].map((k) => ({ x: k * 1.6, y: 0.4, vx: 0, vy: 0 }));
@@ -55,7 +55,7 @@ export const faroles = {
 export const ROW = { goal: 60, stroke: 1.05, drag: 0.75, rest: 0.22, shadow: -7, chase: 3.8, faster: 0.12, time: 30 };
 export const remar = {
   name: 'Remar juntos', icon: 'again', input: 'button', time: ROW.time, team: true,
-  goal: 'Juegan en equipo. Remen por turnos, una vez cada quien: así la barca avanza. Si alguien rema dos veces seguidas, la barca se tambalea y frena. Lleguen a la orilla antes de que la Sombra los alcance.',
+  goal: ['Juegan en equipo. Van los dos en una barca y la Sombra los persigue por detrás.', 'Remen por turnos: primero uno, después el otro, y así. Si la misma persona rema dos veces seguidas, la barca se tambalea y frena.', 'Ganan los dos si llegan a la orilla antes de que la Sombra los alcance.'],
   create(seed) {
     return { ...base(seed), left: ROW.time, x: 0, v: 0, shade: ROW.shadow, last: -1, rest: [0, 0], wob: 0 };
   },
@@ -84,7 +84,7 @@ export const remar = {
 export const SHIELD = { time: 24, base: 0.165, surge: 0.4, push: 0.2, drain: 0.3, regain: 0.24, wake: 0.3, warn: 0.9, long: 1.7 };
 export const escudo = {
   name: 'El escudo de luz', icon: 'shield', input: 'hold', time: SHIELD.time, team: true,
-  goal: 'Juegan en equipo. Mantén pulsado para empujar el escudo contra la Sombra, pero cansa: túrnense para descansar. Cuando la Sombra se encrespa (el cielo se pone rojo), empujen los dos a la vez. Si la Sombra rompe el escudo, gana ella.',
+  goal: ['Juegan en equipo. Entre los dos sostienen un escudo de luz, y la Sombra empuja del otro lado.', 'Mantén pulsado para empujar, pero quien empuja se cansa: túrnense para descansar. Cuando el cielo se pone rojo, la Sombra empuja más fuerte: ahí empujen los dos a la vez.', 'Si aguantan hasta el final, ganan los dos. Si la Sombra rompe el escudo, gana ella.'],
   create(seed) {
     const s = { ...base(seed), left: SHIELD.time, b: 0.25, en: [1, 1], tired: [false, false], push: [false, false], held: [0, 0], mode: 'calm', clock: 0 };
     s.next = 3 + s.rng.next() * 2;

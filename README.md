@@ -9,10 +9,10 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - Dieciséis minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón, burbuja valiente, el dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, topos del jardín y la torre de piedras.
 - La Sombra avanza desde la salida, cada vez más rápido: si te alcanza, pierdes gemas y te escupe hacia adelante.
 - Criaturas que vagan por el tablero: conejos y hadas que ayudan, lobos y trolls que estorban.
-- Cerca del castillo las gemas y las fogatas dan más.
-- Tres minijuegos en equipo contra la Sombra (faroles, remar juntos y el escudo de luz): cuando el presagio anuncia un ataque de la Sombra, ganan o pierden los dos juntos.
+- Cerca del castillo las gemas y las fogatas dan más, hasta que alguien llega.
+- Tres minijuegos en equipo contra la Sombra (faroles, remar juntos y el escudo de luz): la Sombra ataca en cada partida y ganan o pierden los dos juntos.
 - 28 cartas y gemas para gastar en pleno turno.
-- Un final justo: quien llega primero sigue jugando desde el castillo con su cofre y su torre.
+- Un final justo: quien llega primero gana 10 gemas, queda a salvo y sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
 - Partida guardada automáticamente.

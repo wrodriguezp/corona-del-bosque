@@ -22,6 +22,10 @@ const cardHtml = (id, big, p) => {
     : `<span class="t">${icon(c.icon)}${c.name}</span><span class="efx">${bigLine(c.big, p)}</span>`;
 };
 
+// Instrucciones de un minijuego en tres pasos: qué ves, qué haces y cómo se gana.
+const HOW = [['eye', 'Así es'], ['hand', 'Qué haces'], ['crown', 'Cómo se gana']];
+const howTo = (goal) => `<ol class="how">${goal.map((t, i) => `<li>${icon(HOW[i][0])}<div><b>${HOW[i][1]}</b>${esc(t)}</div></li>`).join('')}</ol>`;
+
 export class Hud {
   constructor(root) {
     this.root = root;
@@ -78,7 +82,7 @@ export class Hud {
       const f = p.fx, L = [];
       if (this.aid[i]) L.push(['fairy', this.aid[i] === 2 ? 'Hada madrina ×2' : 'Hada madrina']);
       if (f.shield) L.push(['good', 'Escudo']);
-      if (f.golden) L.push(['good', f.golden === 1 ? 'Gemas dobles: 1 casilla' : `Gemas dobles: ${f.golden} casillas`]);
+      if (f.golden) L.push(['good', f.golden === 1 ? 'Toque dorado: +3 gemas 1 vez' : `Toque dorado: +3 gemas ${f.golden} veces`]);
       if (f.magnet) L.push(['good', 'Imán: +1 por paso']);
       if (f.map) L.push(['good', 'Mapa: +5 al caer']);
       if (f.die) L.push(['good', `Dado ${f.die}`]);
@@ -160,8 +164,9 @@ export class Hud {
       p.hand.forEach((id, i) => {
         const b = el('card', cardHtml(id, false, p.id), 'button');
         b.style.setProperty('--f', FAMILIES[CARDS[id].family].color);
-        b.title = CARDS[id].text;
-        b.disabled = !playable;
+        const safe = !this.g.canCard(id);
+        b.title = safe ? 'Tu rival ya está a salvo en el castillo' : CARDS[id].text;
+        b.disabled = !playable || safe;
         b.onclick = () => this.on.card?.(i);
         h.append(b);
       });
@@ -317,7 +322,7 @@ export class Hud {
       chase: mobile ? ['Quien huye: joystick en su esquina de abajo', 'Quien lanza: toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
     }[rules.input];
     const role = rules.input === 'chase';
-    const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>
+    const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2>${howTo(rules.goal)}
       <div class="ctl"></div><div class="prize">${prize.map((t, i) => (typeof t === 'string' ? `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>` : `<span class="${t.cls}">${icon(t.icon)}${esc(t.text)}</span>`)).join('')}</div>
       <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
     const draw = () => {
@@ -376,7 +381,7 @@ export class Hud {
     this.helpOpen = true;
     const li = (i, c, t) => `<li><span style="color:${c}">${icon(i)}</span><span>${t}</span></li>`;
     const s = el('help', `<h2>Cómo se juega</h2>
-      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>6 gemas</b> y sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b></p>
+      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>10 gemas</b> y queda <b>a salvo</b>: nadie le puede quitar gemas. Sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b></p>
       <ul>
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
@@ -388,10 +393,11 @@ export class Hud {
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada.')}
       ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
-      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque de la Sombra (juegan juntos).')}
+      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque de la Sombra.')}
+      ${li('sun', '#d8981a', '<b>Juntos contra la Sombra.</b> En cada partida la Sombra ataca al menos una vez: juegan un minijuego en equipo y, si ganan, los dos ganan gemas.')}
       ${li('omen', '#3d2b5c', '<b>La Sombra</b> avanza desde la salida, cada vez más rápido (se ve en la barra de arriba). Si te alcanza, pierdes hasta 3 gemas y te escupe hacia adelante.')}
       ${li('tree', '#3f8f4f', '<b>Criaturas.</b> Basta pasar por su casilla: el conejo suma 2 a tu próxima tirada y el hada te da una carta; el lobo te quita 3 gemas y el troll te detiene y cobra 2.')}
-      ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo.')}
+      ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo, hasta que alguien llega al castillo.')}
       ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>

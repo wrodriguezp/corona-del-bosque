@@ -33,7 +33,7 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Todos se prueban con jugadores simulados: terminan, son repetibles y ninguno favorece a un lado.
 
 ### V3.1.1: final justo y se entiende sin leer (lista)
-- Quien llega primero al castillo sigue jugando: en cada turno del castillo tira el dado y elige guardarlo en su cofre (se abre al final) o hacer retroceder a su rival. Llegar da 6 gemas.
+- Quien llega primero al castillo sigue jugando: en cada turno del castillo tira el dado y elige guardarlo en su cofre (se abre al final) o hacer retroceder a su rival. Llegar da 6 gemas (10 desde la V3.5).
 - Quien no alcanza a llegar pierde 5 gemas. Las cartas que sobran valen 2 gemas cada una.
 - Se mide con `node tools/final.js`: quien llega primero gana el 60 % de las partidas (antes, el 50 %).
 - Cometa real roba hasta 5 gemas. Carta nueva: ¡Piensa rápido! (10 segundos; si no alcanza, el dado se tira solo).
@@ -66,6 +66,15 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Criaturas que aparecen en lo ya explorado y vagan por el tablero: conejo (+2 a la próxima tirada), hada (una carta), lobo (−3 gemas; de noche persigue) y troll (te detiene y cobra 2). Basta pasar por su casilla.
 - Cerca del castillo las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo.
 - Se conserva el equilibrio: 20 o más gemas de diferencia en el 14 % de las partidas simuladas.
+
+### V3.5: llegar primero vale la pena (lista)
+- Llegar primero da 10 gemas, y en el castillo se está a salvo: las travesuras ya no sirven contra quien llegó.
+- Los premios extra del último tramo se apagan cuando alguien llega, y el hada madrina deja de ayudar en los turnos finales.
+- El «Toque dorado» suma 3 gemas en vez de duplicar (con los extras de la noche y del último tramo llegaba a 14).
+- La Sombra ataca en todas las partidas: siempre hay al menos un minijuego en equipo.
+- Instrucciones de los minijuegos en tres pasos: así es, qué haces y cómo se gana.
+- Llegar primero gana el 71 % de las partidas simuladas (antes, el 62 %). Llegar primero yendo adelante y perder pasa en el 4 % (antes, el 10 %).
+- Pendiente: un modo totalmente cooperativo (V4).
 
 ### Después
 - Reliquias, misión secreta, poderes propios, más cartas (unas 40).

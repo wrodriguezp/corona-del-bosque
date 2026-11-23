@@ -4,7 +4,7 @@ import { DT, base, clamp, emit, finish } from './kit.js';
 export const PULL = { beats: 24, good: 0.17, perfect: 0.075, lead: 1.1, reach: 12 };
 export const tira = {
   name: 'Tira y afloja', icon: 'swap', input: 'button',
-  goal: 'Pulsa justo cuando el aro toque la estrella. Al ritmo: 1 punto. Perfecto: 2. Fuera de ritmo: pierdes 1. La cuerda va hacia quien lleva más puntos. Gana quien saque 12 de ventaja o vaya adelante al final.',
+  goal: ['Los dos tiran de una cuerda. Un aro de luz se cierra una y otra vez sobre una estrella, como un latido.', 'Pulsa tu botón justo cuando el aro toque la estrella, siguiendo el ritmo.', 'A tiempo: 1 punto. Perfecto: 2. Si pulsas cuando no toca, pierdes 1. La cuerda se va hacia quien lleva más puntos: gana quien saque 12 de ventaja, o quien vaya adelante al acabarse el tiempo.'],
   create(seed) {
     const s = { ...base(seed), beats: [], used: [-1, -1], pos: 0, next: 0 };
     let t = 1.6;
@@ -39,7 +39,7 @@ export const tira = {
 export const RUNES = { lens: [3, 4, 5, 6], show: 0.58 };
 export const runas = {
   name: 'Memoria de runas', icon: 'eye', input: 'dirs',
-  goal: 'Mira las runas que se encienden y repítelas en el mismo orden. Completarla: 1 punto. Ser quien la completa primero: 1 punto más. Si fallas, esperas a la siguiente. Son cuatro secuencias.',
+  goal: ['Hay cuatro runas en el suelo, una por dirección. Se encienden una tras otra formando una secuencia.', 'Mira bien el orden. Cuando terminen de encenderse, repítelo con tus flechas o teclas, en el mismo orden.', 'Repetirla bien: 1 punto, y 1 más si lo haces antes que tu rival. Si te equivocas, esperas a la siguiente. Son 4 secuencias, cada vez más largas.'],
   create(seed) {
     const s = { ...base(seed), round: 0 };
     runas.begin(s);
@@ -87,7 +87,7 @@ export const runas = {
 export const JUMP = { r: 2.7, time: 0.48, rest: 0.1, high: 1.4, clear: 0.5, lives: 3, top: 5, flip: 1.15 };
 export const salto = {
   name: 'Salta el rayo', icon: 'boot', input: 'button',
-  goal: 'El rayo gira a ras del suelo, cada vez más rápido, y a veces cambia de sentido. Salta cuando llegue a ti. Cada golpe quita una de tus 3 vidas. Gana quien conserve más.',
+  goal: ['Los dos están parados en un círculo. Un rayo da vueltas pegado al suelo, como una cuerda de saltar, cada vez más rápido.', 'Pulsa para saltar justo cuando el rayo llegue a tus pies. Ojo: a veces cambia de sentido.', 'Cada vez que te golpea pierdes una de tus 3 vidas. Gana quien termine con más vidas.'],
   create(seed) {
     const s = { ...base(seed), ang: 0, dir: 1, speed: 1.5, want: 1.5, pass: 0, flip: null, p: [0, 1].map(() => ({ air: 0, rest: 0, y: 0, hurt: 0 })) };
     s.score = [JUMP.lives, JUMP.lives];
@@ -137,7 +137,7 @@ export const steer = (p, pad, speed, grip) => {
 export const SUMO = { r: 4.2, min: 0.45, body: 0.55, speed: 5.2, grip: 0.045, hold: 3.5, shrink: 7 };
 export const choque = {
   name: 'Choque en el hielo', icon: 'snow', input: 'move2',
-  goal: 'Toma impulso y empuja a tu rival fuera del hielo, que se va encogiendo. Cuanto más rápido vayas, más fuerte el golpe. Gana quien llegue a dos rondas.',
+  goal: ['Los dos están en una pista de hielo redonda que se va achicando. Resbala mucho, como chocar autitos.', 'Toma vuelo y lánzate contra tu rival para empujarlo fuera de la pista. Mientras más rápido vas, más fuerte empujas.', 'Quien se cae del hielo pierde la ronda. Gana quien gane 2 rondas.'],
   create(seed) {
     const s = { ...base(seed), round: 1, idle: 0 };
     choque.begin(s);
@@ -192,7 +192,7 @@ export const choque = {
 export const EGG = { r: 4.4, body: 0.5, speed: 4.5, rush: 1.1, grip: 0.16, calm: 0.7 };
 export const huevo = {
   name: 'Huevo de dragón', icon: 'flame', input: 'move2',
-  goal: 'El huevo está por reventar y nadie sabe cuándo. Quien lo tiene corre un poco más: toca a tu rival para pasárselo. Quien lo tenga al reventar pierde la ronda. Gana quien llegue a dos.',
+  goal: ['Uno de los dos lleva un huevo de dragón que va a explotar en cualquier momento. Nadie sabe cuándo.', 'Si tienes el huevo, persigue a tu rival y tócalo para pasárselo. Si no lo tienes, huye. Quien lleva el huevo corre un poquito más rápido.', 'Quien tenga el huevo cuando explote pierde la ronda. Gana quien gane 2 rondas.'],
   create(seed) {
     const s = { ...base(seed), round: 1 };
     s.first = s.rng.int(0, 1);
@@ -237,7 +237,7 @@ export const huevo = {
 export const BUBBLE = { rounds: 3, rate: 0.21, wait: 3.5 };
 export const burbuja = {
   name: 'Burbuja valiente', icon: 'portal', input: 'hold',
-  goal: 'Mantén pulsado para inflar tu burbuja y suelta cuando quieras: cuanto más grande, más puntos. Si revienta, no ganas nada. Las dos revientan al mismo tamaño, que cambia cada ronda: fíjate cuánto tiembla. Son tres rondas.',
+  goal: ['Cada quien tiene una burbuja que crece mientras la inflas. Las dos revientan al mismo tamaño, pero no sabes cuál es.', 'Mantén pulsado para inflar y suelta para quedarte con lo que tengas. Cuando está por reventar, la burbuja tiembla.', 'Mientras más grande la sueltes, más puntos ganas. Si revienta, esa ronda no suma nada. Son 3 rondas, y en cada una revientan en un tamaño distinto.'],
   create(seed) {
     const s = { ...base(seed), round: 0 };
     burbuja.begin(s);
