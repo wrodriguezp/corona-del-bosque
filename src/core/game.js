@@ -1,7 +1,7 @@
 import { makeRng } from './rng.js';
 import { makeBoard, bfs, pathTo } from './board.js';
-import { CARDS, HAND_LIMIT, PRICES, offerCards } from './cards.js';
-import { ADVENTURES, byId } from './adventures.js';
+import { CARDS, COMMON, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
+import { ADVENTURES, byId, describe } from './adventures.js';
 
 // Reglas puras: sin gráficos. Toda jugada entra por apply(acción) y devuelve una
 // lista de eventos que la vista anima en orden. Con la misma semilla y las mismas
@@ -12,13 +12,18 @@ export const ARRIVE_SECOND = 4;
 export const FINAL_TURNS = 3;
 export const SIGHT = 3;
 export const TOURNEY_EVERY = 8; // turnos entre torneos: 4 por jugador
+// Hada madrina: acompaña a quien va atrás. nivel: [entra, sale] según su desventaja en gemas.
+export const FAIRY = { 1: [6, 3], 2: [13, 9] };
+export const FAIRY_FROM = 4; // turnos de gracia al comenzar
+export const DUEL_GEMS = 4;
+export const CAVE = [2, 3, 3, 4, 5, 6];
 export const MINIGAMES = ['duelo', 'lluvia', 'fuga'];
 
 const TRAPS = {
   pozo: { title: 'Pozo escondido', text: 'El suelo cede. Retrocedes 3 casillas.' },
-  zarzas: { title: 'Zarzas encantadas', text: 'Te enredas: tu próxima tirada vale la mitad.' },
-  duende: { title: 'Duende ladrón', text: 'Sale de un arbusto y te quita 4 gemas.' },
-  urraca: { title: 'Urraca real', text: 'Se lleva una de tus cartas. Si no tienes, 3 gemas.' },
+  zarzas: { title: 'Zarzas encantadas', text: 'Te enredas: tu próxima tirada valdrá la mitad.' },
+  duende: { title: 'Duende ladrón', text: 'Sale de un arbusto y te quita hasta 4 gemas.' },
+  urraca: { title: 'Urraca real', text: 'Se lleva una de tus cartas. Si no tienes cartas, se lleva hasta 3 gemas.' },
 };
 const CALM = [
   'El viento trae una canción antigua.',
@@ -51,6 +56,7 @@ export class Game {
     this.shop = null;
     this.cave = null;
     this.duel = null;
+    this.aid = [0, 0];
     this.usedAdventures = [];
     this.bag = [];
     this.finalTurns = null;
@@ -87,6 +93,10 @@ export class Game {
   }
 
   addGems(ev, p, n, why) {
+    // El hada reduce a la mitad lo que pierde quien va atrás.
+    const saved = n < -1 && this.aid[p.id] && ['lost', 'stolen', 'adventure'].includes(why) ? Math.floor(-n / 2) : 0;
+    if (saved && p.gems > -n - saved) ev.push({ t: 'fairy', kind: 'cuida', p: p.id, n: Math.min(saved, p.gems + n + saved) });
+    n += saved;
     const real = Math.max(-p.gems, n);
     p.gems += real;
     if (real) ev.push({ t: 'gems', p: p.id, n: real, why });
@@ -103,7 +113,7 @@ export class Game {
     ev.push({ t: 'star', p: p.id, n });
   }
 
-  msg(ev, kind, title, text, quick) { ev.push({ t: 'msg', kind, title, text, quick }); }
+  msg(ev, kind, title, text, quick, note) { ev.push({ t: 'msg', kind, title, text, quick, note }); }
 
   // Devuelve true si el escudo detuvo el golpe.
   shielded(ev, p, what) {
@@ -113,7 +123,7 @@ export class Game {
     return true;
   }
 
-  giveCard(ev, p, card = this.rng.pick(Object.keys(CARDS))) {
+  giveCard(ev, p, card = this.aid[p.id] && this.rng.chance(0.2 * this.aid[p.id]) ? comebackCard(this.rng) : this.rng.pick(COMMON)) {
     if (p.hand.length >= HAND_LIMIT) { this.addGems(ev, p, 3, 'full'); return; }
     p.hand.push(card);
     ev.push({ t: 'gain', p: p.id, card });
@@ -144,6 +154,34 @@ export class Game {
     for (const [t, d] of bfs(this.board, id).dist) if (d > 0 && d <= r && this.tile(t).content) this.reveal(ev, t);
   }
 
+  /* ---------- Hada madrina ---------- */
+  // Cuánto se queda atrás: gemas de diferencia, más un poco por la distancia.
+  behind(p) {
+    const r = this.players[1 - p.id];
+    const road = r.arrived || p.arrived ? 0 : Math.max(-4, Math.min(6, (this.tile(p.tile).dist - this.tile(r.tile).dist) * 0.4));
+    return r.gems - p.gems + road;
+  }
+
+  updateFairy(ev) {
+    if (this.turns < FAIRY_FROM) return;
+    for (const p of this.players) {
+      const was = this.aid[p.id], gap = this.behind(p);
+      let now = 0;
+      for (const k of [1, 2]) if (gap >= FAIRY[k][was >= k ? 1 : 0]) now = k;
+      if (p.arrived) now = 0;
+      if (now === was) continue;
+      this.aid[p.id] = now;
+      ev.push({ t: 'fairy', kind: now ? 'llega' : 'adios', p: p.id, level: now, was });
+    }
+  }
+
+  // Gemas que quita (o gana, en un torneo) cada quien si gana el minijuego.
+  duelPrize(id) { return DUEL_GEMS + 2 * this.aid[id]; }
+  duelTake(id) { const n = this.duelPrize(id); return n - (this.aid[1 - id] ? Math.floor(n / 2) : 0); }
+
+  // ¿Trae el hada una carta de remontada a esta oferta?
+  helps(p) { return this.aid[p.id] > 0 && this.rng.chance(this.aid[p.id] * 0.5); }
+
   /* ---------- Turnos ---------- */
   startTurn(extra = false) {
     const ev = [], p = this.player;
@@ -151,6 +189,7 @@ export class Game {
     this.bought = {};
     this.phase = 'ready';
     ev.push({ t: 'turn', p: p.id, extra, left: this.first != null ? this.finalTurns : null });
+    this.updateFairy(ev);
     if (!extra && this.first == null && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
       this.lastTourney = this.turns;
       this.startDuel(ev, 'torneo');
@@ -193,7 +232,7 @@ export class Game {
       this.addGems(ev, p, 3, 'full');
       return false;
     }
-    this.offer = { cards: offerCards(this.rng), why };
+    this.offer = { cards: offerCards(this.rng, this.helps(p)), why };
     this.phase = 'pick';
     ev.push({ t: 'offer', p: p.id, why });
     return true;
@@ -218,7 +257,7 @@ export class Game {
     this.cardPlayed = true;
     const ev = [{ t: 'card', p: p.id, card }];
     const hit = (fn) => {
-      if (r.arrived && !['robo', 'maleta', 'peaje'].includes(card)) { this.msg(ev, 'calm', 'Sin efecto', `${r.name} ya está a salvo en el castillo.`, true); return; }
+      if (r.arrived && !['robo', 'maleta', 'peaje', 'cometa'].includes(card)) { this.msg(ev, 'calm', 'Sin efecto', `${r.name} ya está a salvo en el castillo.`, true); return; }
       if (!this.shielded(ev, r, CARDS[card].name)) fn();
     };
     const curse = () => ev.push({ t: 'curse', p: r.id });
@@ -247,6 +286,12 @@ export class Game {
       case 'gusanito': hit(() => this.shove(ev, r, -3)); break;
       case 'cambiazo': hit(() => this.swap(ev, 8)); break;
       case 'reto': this.startDuel(ev, 'reto'); break;
+      case 'cometa': hit(() => this.rob(ev, p, r, Math.min(10, Math.floor(r.gems / 4)))); break;
+      case 'estela':
+        this.addGems(ev, p, 3, 'card');
+        this.shove(ev, p, Math.max(0, Math.min(8, this.tile(p.tile).dist - this.tile(r.tile).dist - 2)));
+        break;
+      case 'cuerno': this.addGems(ev, p, 6, 'card'); this.addStar(ev, p, 2); break;
     }
     ev.push({ t: 'hud' });
     return ev;
@@ -254,8 +299,9 @@ export class Game {
 
   swap(ev, max = 99) {
     const p = this.player, r = this.rival;
-    if (r.arrived || bfs(this.board, p.tile).dist.get(r.tile) > max || p.tile === r.tile) {
-      this.msg(ev, 'portal', 'Demasiado lejos', 'La magia no alcanza y se deshace en chispas.', true);
+    const same = p.tile === r.tile;
+    if (r.arrived || same || bfs(this.board, p.tile).dist.get(r.tile) > max) {
+      this.msg(ev, 'portal', same ? 'Sin efecto' : 'Demasiado lejos', same ? 'Ya están en la misma casilla.' : `${r.name} está fuera de alcance: la magia se deshace.`, true);
       return;
     }
     [p.tile, r.tile] = [r.tile, p.tile];
@@ -303,11 +349,18 @@ export class Game {
     } else {
       const n = 1 + (fx.double ? 1 : 0) + (fx.worst ? 1 : 0);
       dice = Array.from({ length: n }, () => this.rng.pick(faces));
+      // El hada voltea el dado de quien va atrás cuando sale muy bajo.
+      const low = dice.reduce((a, b) => a + b, 0) - (fx.worst ? Math.max(...dice) : 0) <= 2;
+      if (low && !fx.die && this.rng.chance(this.aid[p.id] * 0.5)) {
+        ev.push({ t: 'roll', p: p.id, dice, total: null, mods: [], kind: null, pre: true }, { t: 'fairy', kind: 'dado', p: p.id });
+        dice = dice.map(() => this.rng.int(3, 6));
+        mods.push('El hada volteó tu dado');
+      }
       const sum = dice.reduce((a, b) => a + b, 0);
       total = fx.worst ? sum - Math.max(...dice) : sum;
       if (fx.die) mods.push(`Dado ${fx.die}`);
       if (fx.double) mods.push('Doble dado');
-      if (fx.worst) mods.push('Nube gris: sin el mayor');
+      if (fx.worst) mods.push('Nube gris: cuenta el menor');
     }
     const natural = total, kind = fx.fixed ? null : fx.die;
     if (fx.plus) { total += fx.plus; mods.push(`Impulso +${fx.plus}`); }
@@ -318,11 +371,11 @@ export class Game {
     this.phase = 'move';
     ev.push({ t: 'roll', p: p.id, dice, total, mods, kind });
     if (natural === 1 && !again) {
-      this.msg(ev, 'star', 'Consuelo de las hadas', 'Sacaste 1: ganas una estrella extra.', true);
+      this.msg(ev, 'star', 'Consuelo de las hadas', 'Salió 1 en el dado: ganas una estrella extra.', true);
       this.addStar(ev, p);
     }
     if (total === 0) {
-      this.msg(ev, 'calm', '¡Cero!', 'El dado loco se queda dormido, y tú también. Ganas 3 gemas de consuelo.');
+      this.msg(ev, 'calm', '¡Cero!', 'Este turno no avanzas, pero ganas 3 gemas de consuelo.');
       this.addGems(ev, p, 3, 'card');
       return ev.concat(this.endTurn());
     }
@@ -368,7 +421,7 @@ export class Game {
       if (caught) {
         t.snare = null;
         ev.push({ t: 'trap', p: p.id, id: step, trap: 'red' });
-        this.msg(ev, 'trap', '¡Una trampa escondida!', `${r.name} la puso aquí: te detienes y te roba 4 gemas.`);
+        this.msg(ev, 'trap', '¡Una trampa escondida!', `${r.name} la puso aquí: te detienes aquí y te roba hasta 4 gemas.`);
         if (!this.shielded(ev, p, 'Trampa escondida')) {
           this.rob(ev, r, p, 4);
           return ev.concat(this.endTurn());
@@ -382,7 +435,7 @@ export class Game {
     if (id === this.board.castleId) return ev.concat(this.arrive());
     if (p.fx.map) { p.fx.map = false; this.msg(ev, 'gem', 'Mapa del tesoro', '¡Aquí era! Desentierras 5 gemas.', true); this.addGems(ev, p, 5, 'card'); }
     if (r.tile === id && !r.arrived && id !== this.board.startId) {
-      this.msg(ev, 'duel', '¡Encuentro!', `${p.name} alcanza a ${r.name}. ¡Se resuelve con un duelo!`);
+      this.msg(ev, 'duel', '¡Encuentro!', `${p.name} alcanza a ${r.name}. Se decide con un minijuego.`);
       this.startDuel(ev, 'encuentro');
       return ev;
     }
@@ -401,6 +454,7 @@ export class Game {
         let n = c.n;
         if (p.fx.golden) { n *= 2; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡Las gemas se duplican! Recoges ${n}.`, true); }
         clear();
+        if (this.aid[p.id]) { n += this.aid[p.id]; ev.push({ t: 'fairy', kind: 'regala', p: p.id, n: this.aid[p.id] }); }
         this.addGems(ev, p, n, 'tile');
         return false;
       }
@@ -420,8 +474,8 @@ export class Game {
       }
       case 'portal': case 'eagle': case 'worm': {
         const to = this.tile(c.to), fwd = to.dist < t.dist, n = Math.abs(to.dist - t.dist);
-        if (c.type === 'portal') this.msg(ev, 'portal', 'Portal errante', fwd ? 'Un remolino te lanza hacia adelante.' : 'Un remolino te arrastra hacia atrás.');
-        if (c.type === 'eagle') this.msg(ev, 'eagle', '¡El águila gigante!', `Te toma por los hombros y vuelas ${n} casillas.`);
+        if (c.type === 'portal') this.msg(ev, 'portal', 'Portal errante', fwd ? `Un remolino te lanza ${n} casillas adelante.` : `Un remolino te arrastra ${n} casillas atrás.`);
+        if (c.type === 'eagle') this.msg(ev, 'eagle', '¡El águila gigante!', `Te toma por los hombros y vuelas ${n} casillas adelante.`);
         if (c.type === 'worm') this.msg(ev, 'worm', '¡El gran gusano!', `Te traga y te escupe ${n} casillas atrás.`);
         if (c.type === 'worm' && this.shielded(ev, p, 'El gran gusano')) return false;
         p.tile = to.id;
@@ -432,7 +486,7 @@ export class Game {
         return false;
       }
       case 'shrine':
-        this.msg(ev, 'shrine', 'Santuario compartido', `${p.name} gana 3 gemas. ${r.name} también recibe una estrella.`);
+        this.msg(ev, 'shrine', 'Santuario compartido', r.arrived ? `${p.name} gana 3 gemas y una estrella.` : `${p.name} gana 3 gemas y una estrella. ${r.name} también gana una estrella.`);
         clear();
         this.addGems(ev, p, 3, 'tile');
         this.addStar(ev, p);
@@ -443,13 +497,13 @@ export class Game {
         return this.makeOffer(ev, 'chest');
       case 'duel':
         clear();
-        if (r.arrived) { this.msg(ev, 'gem', 'Arena vacía', 'No hay con quién pelear: te llevas el premio de 3 gemas.'); this.addGems(ev, p, 3, 'tile'); return false; }
-        this.msg(ev, 'duel', 'Arena antigua', 'Las piedras exigen un duelo. El ganador le quita 4 gemas al otro.');
+        if (r.arrived) { this.msg(ev, 'gem', 'Arena vacía', 'No hay con quién competir: ganas 3 gemas.'); this.addGems(ev, p, 3, 'tile'); return false; }
+        this.msg(ev, 'duel', 'Arena antigua', 'Las piedras exigen un minijuego: quien gane le quita gemas a quien pierda.');
         this.startDuel(ev, 'arena');
         return true;
       case 'adventure': return this.startAdventure(ev, t);
       case 'shop':
-        this.shop = { items: offerCards(this.rng).map((card, i) => ({ card, price: [3, 4, 4][i], sold: false })) };
+        this.shop = { items: offerCards(this.rng, this.helps(p)).map((card, i) => ({ card, price: [3, 4, 4][i], sold: false })) };
         this.phase = 'shop';
         ev.push({ t: 'shop' });
         return true;
@@ -500,7 +554,7 @@ export class Game {
       ev.push({ t: 'check', p: p.id, die, need: c.check, ok: good });
       out = good ? c.ok : c.fail;
     }
-    this.msg(ev, good === false ? 'trap' : a.icon, c.label, out.text);
+    this.msg(ev, good === false ? 'trap' : a.icon, c.label, out.text, false, describe(out.fx, this.rival.name));
     this.phase = 'resolving';
     for (const fx of out.fx) this.applyFx(ev, fx);
     if (this.phase === 'duel' || this.phase === 'pick') return ev;
@@ -560,18 +614,19 @@ export class Game {
       if (c.bag) this.addGems(ev, p, c.bag, 'cave');
       return ev.concat(this.endTurn());
     }
+    if (c.grabs >= CAVE.length) return [];
     const die = this.rng.int(1, 6), need = c.grabs + 1; // despierta si el dado no supera los intentos
     const ok = c.grabs === 0 || die > c.grabs;
-    if (c.grabs > 0) ev.push({ t: 'check', p: p.id, die, need, ok });
+    if (c.grabs > 0) ev.push({ t: 'check', p: p.id, die, need, ok, cave: true });
     c.grabs++;
     if (ok) {
-      const n = [2, 3, 3, 4, 5, 6][Math.min(5, c.grabs - 1)];
+      const n = CAVE[c.grabs - 1];
       c.bag += n;
       ev.push({ t: 'grab', p: p.id, n, bag: c.bag });
       return ev;
     }
     ev.push({ t: 'dragon', p: p.id, id: p.tile });
-    this.msg(ev, 'flame', '¡El dragón despertó!', `Sueltas ${c.bag} gemas y sales volando 2 casillas atrás.`);
+    this.msg(ev, 'flame', '¡El dragón despertó!', `Pierdes las ${c.bag} gemas de la bolsa y retrocedes 2 casillas.`);
     if (!this.shielded(ev, p, 'Fuego de dragón')) this.shove(ev, p, -2);
     return ev.concat(this.endTurn());
   }
@@ -594,13 +649,13 @@ export class Game {
       this.msg(ev, 'shrine', '¡Empate!', 'Los dos ganan 2 gemas por el espectáculo.', true);
       for (const p of this.players) this.addGems(ev, p, 2, 'duel');
     } else if (why === 'torneo') {
-      this.msg(ev, 'crown', `¡${win.name} gana el torneo!`, `Recibe 4 gemas y una carta. ${lose.name} gana una estrella.`);
-      this.addGems(ev, win, 4, 'duel');
+      this.msg(ev, 'crown', `¡${win.name} gana el torneo!`, `Gana ${this.duelPrize(w)} gemas y una carta al azar. ${lose.name} gana una estrella.`);
+      this.addGems(ev, win, this.duelPrize(w), 'duel');
       this.giveCard(ev, win);
       this.addStar(ev, lose);
     } else {
-      this.msg(ev, 'crown', `¡${win.name} gana el duelo!`, `Le quita hasta 4 gemas a ${lose.name}.`, true);
-      this.rob(ev, win, lose, 4);
+      this.msg(ev, 'crown', `¡${win.name} gana el minijuego!`, `Le quita hasta ${this.duelTake(w)} gemas a ${lose.name}.`, true);
+      this.rob(ev, win, lose, this.duelPrize(w));
       if (lose.gems === 0) this.addStar(ev, lose);
     }
     if (why === 'torneo') { this.phase = 'ready'; this.checkStars(ev); return ev; }
@@ -618,9 +673,9 @@ export class Game {
     this.addGems(ev, p, isFirst ? ARRIVE_FIRST : ARRIVE_SECOND, 'castle');
     if (isFirst) {
       this.first = p.id;
-      this.finalTurns = FINAL_TURNS;
       this.turn = this.rival.id;
-      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas. A ${this.player.name} le quedan ${FINAL_TURNS} turnos para juntar más.`);
+      this.finalTurns = FINAL_TURNS + (this.aid[this.turn] === 2 ? 1 : 0);
+      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas. A ${this.player.name} le quedan ${this.finalTurns} turnos. Gana quien termine con más gemas.`);
       return ev.concat(this.startTurn());
     }
     return ev.concat(this.finish());

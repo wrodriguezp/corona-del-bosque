@@ -4,45 +4,8 @@ import { makeBoard, bfs } from '../src/core/board.js';
 import { Game } from '../src/core/game.js';
 import { Session } from '../src/core/session.js';
 import { CARDS } from '../src/core/cards.js';
-import { ADVENTURES } from '../src/core/adventures.js';
-import { makeRng } from '../src/core/rng.js';
-
-// Jugador simulado. style: 'corre' va directo; 'explora' busca lugares especiales.
-function autoplay(seed, styles = ['mixto', 'mixto'], len = 28) {
-  const s = new Session({ seed, len });
-  const g = s.game, rng = makeRng(seed + 7), log = [];
-  const act = (a) => log.push(...s.dispatch(a));
-  let steps = 0, rolls = 0, swaps = 0, lead = -1;
-  act({ type: 'begin' });
-  while (g.phase !== 'over') {
-    assert.ok(steps++ < 3000, `la partida ${seed} no termina (fase ${g.phase})`);
-    const before = s.log.length, p = g.player;
-    for (const q of g.players) {
-      assert.ok(q.gems >= 0 && q.hand.length <= 4 && q.stars >= 0);
-      assert.equal(g.tile(q.tile).kind, 'path');
-    }
-    if (g.phase === 'pick') act({ type: 'pick', i: rng.int(0, 2) });
-    else if (g.phase === 'adventure') { let i; do i = rng.int(0, 2); while (!g.canChoose(i)); act({ type: 'choose', i }); }
-    else if (g.phase === 'shop') { const i = g.shop.items.findIndex((it) => !it.sold && it.price <= p.gems - 4 && p.hand.length < 4); act({ type: 'shop', i: i >= 0 && rng.chance(0.5) ? i : null }); }
-    else if (g.phase === 'cave') act({ type: 'cave', what: g.cave.grabs < 3 ? 'grab' : 'leave' });
-    else if (g.phase === 'duel') act({ type: 'duel', winner: rng.chance(0.1) ? -1 : rng.int(0, 1) });
-    else if (g.phase === 'ready') {
-      if (p.hand.length && !g.cardPlayed && !p.fx.locked && rng.chance(0.6)) act({ type: 'card', i: rng.int(0, p.hand.length - 1), value: rng.int(1, 6) });
-      else if (g.canBuy('sobre') && rng.chance(0.15)) act({ type: 'buy', what: 'sobre' });
-      else if (g.canBuy('trampa') && rng.chance(0.1)) act({ type: 'buy', what: 'trampa' });
-      else { act({ type: 'roll' }); rolls++; }
-    } else if (g.phase === 'move') {
-      if (g.canBuy('repetir') && g.total === 1 && rng.chance(0.2)) { act({ type: 'buy', what: 'repetir' }); continue; }
-      const st = styles[g.turn];
-      const score = (id) => { const t = g.tile(id); return -t.dist * (st === 'corre' ? 3 : 1.5) + (t.landmark && st !== 'corre' ? 7 : 0) + (g.rival.tile === id ? 2 : 0) + rng.next() * 2; };
-      act({ type: 'move', id: g.options().sort((a, b) => score(b) - score(a))[0] });
-    }
-    assert.ok(s.log.length > before, `acción rechazada en fase ${g.phase}`);
-    const d = g.players[0].gems - g.players[1].gems, l = d === 0 ? lead : +(d < 0);
-    if (l !== lead) { swaps++; lead = l; }
-  }
-  return { g, s, log, rolls, swaps };
-}
+import { ADVENTURES, describe } from '../src/core/adventures.js';
+import { autoplay } from '../tools/bot.js';
 
 test('todo tablero conecta salida y castillo, y los saltos apuntan bien', () => {
   for (let s = 1; s <= 300; s++) {
@@ -142,4 +105,40 @@ test('acciones fuera de fase no hacen nada', () => {
   g.apply({ type: 'roll' });
   assert.deepEqual(g.apply({ type: 'roll' }), []);
   assert.deepEqual(g.apply({ type: 'move', id: g.board.startId }), []);
+});
+
+test('el hada ayuda solo a quien va atrás y se despide al emparejar', () => {
+  const g = new Game({ seed: 5 });
+  g.apply({ type: 'begin' });
+  const [a, b] = g.players, ev = [];
+  g.turns = 10; a.gems = 5; b.gems = 25;
+  g.updateFairy(ev);
+  assert.deepEqual(g.aid, [2, 0]);
+  assert.equal(g.duelTake(0), 8);
+  assert.equal(g.duelTake(1), 2);
+  g.rob(ev, b, a, 4);
+  assert.deepEqual([a.gems, b.gems], [3, 27]);
+  a.gems = 26;
+  g.updateFairy(ev);
+  assert.deepEqual(g.aid, [0, 0]);
+  assert.equal(ev.at(-1).kind, 'adios');
+});
+
+test('toda consecuencia de aventura se explica con palabras', () => {
+  for (const a of ADVENTURES) for (const c of a.choices) for (const out of c.check ? [c.ok, c.fail] : [c]) {
+    const t = describe(out.fx, 'Mago');
+    assert.ok(t && !/undefined|NaN|null/.test(t), `${a.id}: ${t}`);
+  }
+});
+
+test('con hada hay menos palizas, pero quien es mejor sigue ganando más', () => {
+  const N = 400;
+  let big = 0, best = 0;
+  for (let s = 1; s <= N; s++) {
+    const { g } = autoplay(s + 9000, undefined, 28, 0.75);
+    big += Math.abs(g.players[0].gems - g.players[1].gems) >= 20;
+    best += g.winner === 0;
+  }
+  console.log({ paliza20: big / N, ganaElMejor: best / N });
+  assert.ok(big / N < 0.25 && best / N > 0.6);
 });

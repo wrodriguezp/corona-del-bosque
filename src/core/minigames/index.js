@@ -15,7 +15,7 @@ const finish = (s) => { s.done = true; s.winner = s.score[0] === s.score[1] ? -1
 /* ---------- Duelo de hechizos: reflejos, al mejor de tres ---------- */
 const duelo = {
   name: 'Duelo de hechizos', icon: 'bolt', input: 'button',
-  goal: 'Espera la estrella dorada y lanza tu hechizo antes que tu rival. Si te adelantas, pierdes la ronda. Gana quien llegue a dos.',
+  goal: 'Espera la estrella dorada y lanza tu hechizo antes que tu rival. Si te adelantas, la ronda es para tu rival. Gana quien llegue a dos rondas.',
   create(seed) {
     const s = { ...base(seed), phase: 'wait', round: 1, clock: 0, idle: 0 };
     duelo.arm(s);
@@ -63,7 +63,7 @@ const duelo = {
 export const RAIN = { w: 5, r: 0.5, time: 20, speed: 6.4 };
 const lluvia = {
   name: 'Lluvia de gemas', icon: 'gem', input: 'move',
-  goal: 'Atrapa las gemas que caen: normales valen 1 y las doradas 3. Las rocas te aturden y te quitan 1. ¡Puedes empujar!',
+  goal: 'Atrapa las gemas que caen: las normales valen 1 punto y las doradas 3. Las rocas te aturden y te quitan 1. Puedes empujar a tu rival.',
   create(seed) {
     return { ...base(seed), left: RAIN.time, p: [{ x: -2.5, v: 0, stun: 0 }, { x: 2.5, v: 0, stun: 0 }], drops: [], next: 0.3, id: 0 };
   },
@@ -110,7 +110,7 @@ const lluvia = {
 export const CHASE = { r: 4.6, time: 12, speed: 4.5, blast: 1.15, warn: 0.65, cool: 0.45 };
 const fuga = {
   name: 'Hechizos al fugitivo', icon: 'flame', input: 'chase',
-  goal: 'Quien huye recoge estrellas (+1) y esquiva. Quien lanza apunta sus hechizos: cada acierto quita 1. Luego cambian de papel. Gana quien junte más al huir.',
+  goal: 'Quien huye esquiva y recoge estrellas: +1 punto cada una. Quien lanza apunta hechizos: cada acierto le quita 1 punto a quien huye. Luego cambian de papel. Gana quien sume más puntos al huir.',
   create(seed) {
     const s = { ...base(seed), round: 1 };
     s.runner = s.rng.int(0, 1);

@@ -11,7 +11,7 @@ import { CARDS, FAMILIES } from './core/cards.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
-import { makeEagle, makeWorm } from './view/creatures.js';
+import { makeEagle, makeFairy, makeWorm } from './view/creatures.js';
 import { MiniView } from './view/minigames.js';
 import { DiceTable } from './view/dice.js';
 import { Hud } from './ui/hud.js';
@@ -27,11 +27,40 @@ let S, g, view, dice, heroes, rings, busy = true, mini = null;
 addEventListener('pointerdown', unlock);
 addEventListener('keydown', unlock);
 
+// El hada revolotea junto a quien va atrás; con más desventaja brilla más.
+const fairy = {
+  root: makeFairy(), p: -1, level: 0, at: new THREE.Vector3(), clock: 0,
+  put(p, level, now) {
+    if (this.p < 0) { stage.scene.add(this.root); this.at.copy(heroes[p].root.position).add(now ? new THREE.Vector3(0, 2, 0) : new THREE.Vector3(6, 7, -4)); }
+    this.p = p; this.level = level;
+  },
+  off() { this.p = -1; this.level = 0; stage.scene.remove(this.root); },
+  update(dt, t) {
+    if (this.p < 0) return;
+    this.root.visible = !mini && g.phase !== 'over' && heroes[this.p].root.visible;
+    const h = heroes[this.p].root.position, s = this.level === 2 ? 1 : 0.82;
+    // Al lado de fuera y un poco detrás, para no tapar caras.
+    const w = stage.cam.wYaw, out = (this.p ? 1 : -1) * (0.85 + Math.sin(t * 1.3) * 0.16), back = 0.35;
+    this.at.lerp(new THREE.Vector3(h.x + Math.cos(w) * out - Math.sin(w) * back, h.y + 1.5 + Math.sin(t * 2.3) * 0.16, h.z - Math.sin(w) * out - Math.cos(w) * back), 1 - Math.exp(-dt * 4));
+    this.root.position.copy(this.at);
+    this.root.scale.setScalar(s);
+    this.root.rotation.y = stage.cam.wYaw + Math.sin(t * 0.9) * 0.4;
+    this.root.userData.fly(t);
+    this.clock -= dt;
+    if (this.clock <= 0 && this.root.visible) {
+      this.clock = this.level === 2 ? 0.05 : 0.11;
+      stage.sparks.emit({ x: this.at.x + (Math.random() - 0.5) * 0.3, y: this.at.y + Math.random() * 0.3, z: this.at.z + (Math.random() - 0.5) * 0.3, vy: -0.35, color: ['#fff3a0', '#ffb3e0', '#b8f4ff'][Math.floor(Math.random() * 3)], size: 0.2, life: 1 });
+    }
+  },
+};
+stage.updaters.push((dt, t) => fairy.update(dt, t));
+
 const newSeed = () => Math.floor(Math.random() * 1e9);
 const baseYaw = () => (stage.portrait ? Math.PI / 2 * -1 : -0.16);
 
 function setup(opts, session = new Session(opts)) {
   view?.dispose(); dice?.dispose();
+  fairy.off();
   heroes?.forEach((h, i) => { stage.scene.remove(h.root, rings[i]); stage.updaters.splice(stage.updaters.indexOf(h.upd), 1); });
   S = session;
   g = S.game;
@@ -55,6 +84,8 @@ function setup(opts, session = new Session(opts)) {
   });
   arrange(true);
   heroes.forEach((h) => (h.turnTo = stage.cam.yaw));
+  fairy.seen = false;
+  g.aid.forEach((k, i) => { if (k) { fairy.seen = true; fairy.put(i, k, true); } });
 }
 
 // Si comparten casilla, se apartan un poco, uno junto al otro en pantalla.
@@ -92,6 +123,26 @@ const play = {
     await follow(e.p, { yaw: baseYaw() });
     await sleep(0.35);
   },
+  async fairy(e) {
+    const who = g.players[e.p].name;
+    if (e.kind === 'adios') { if (fairy.p === e.p) { sparkle(e.p, ['#fff3a0', '#ffb3e0'], 24); fairy.off(); } hud.aid[e.p] = 0; hud.refresh(); return; }
+    if (e.kind === 'llega') {
+      const first = !fairy.seen, more = e.level > e.was;
+      fairy.put(e.p, e.level);
+      hud.aid[e.p] = e.level; hud.refresh();
+      if (!more) return;
+      sfx('shield');
+      sparkle(e.p, ['#fff3a0', '#ffb3e0', '#b8f4ff'], 40);
+      if (first) { fairy.seen = true; follow(e.p, { dist: 8.5, pitch: 0.55 }); await sleep(1.1); await hud.message('fairy', '¡Llega el hada madrina!', `${who} va atrás: el hada le ayudará hasta que se empareje la partida.`, false, 'Puede mejorar tiradas bajas · Reduce a la mitad lo que le quiten · Trae mejores premios y cartas'); }
+      else hud.float(head(e.p), e.level === 2 ? '¡El hada se esmera!' : '¡Vuelve el hada!', 'star');
+      await sleep(0.5);
+      return;
+    }
+    sfx('star');
+    sparkle(e.p, ['#fff3a0', '#ffb3e0', '#b8f4ff'], 30);
+    hud.float(head(e.p), e.kind === 'dado' ? '¡El hada voltea el dado!' : e.kind === 'cuida' ? `El hada salva ${e.n} ${icon('gem')}` : `El hada suma ${e.n} ${icon('gem')}`, 'star');
+    await sleep(0.8);
+  },
   async star(e) {
     hud.star(e.p, e.n);
     if (e.p === acting) { const s = head(e.p); hud.float(s, `+${e.n} ${icon('star')}`, 'star'); sfx('star'); await sleep(0.3); }
@@ -123,7 +174,7 @@ const play = {
   async cave() { sfx('rumble'); follow(g.turn, { dist: 8, pitch: 0.6 }); await sleep(0.8); },
   async check(e) {
     await dice.roll(e.p, [e.die], () => sfx('die'));
-    hud.total(e.die, [`Necesitabas ${e.need} o más`, e.ok ? '¡Logrado!' : 'No alcanzó']);
+    hud.total(e.die, [`Se necesitaba ${e.need} o más`, e.cave ? (e.ok ? 'El dragón sigue dormido' : '¡El dragón despierta!') : e.ok ? '¡Logrado!' : 'No alcanzó']);
     sfx(e.ok ? 'gem' : 'lose');
     heroes[e.p].set(e.ok ? 'cheer' : 'sad', 1.2);
     await sleep(1.2);
@@ -264,6 +315,7 @@ const play = {
     hud.clearAct();
     heroes[e.p].set('throw', 0.8);
     await dice.roll(e.p, e.dice, () => { sfx('die'); stage.shake(0.06); }, e.kind || 'normal');
+    if (e.pre) { hud.total(e.dice.reduce((a, b) => a + b), []); await sleep(0.6); hud.total(null); return; }
     hud.refresh();
     hud.total(e.total, e.mods);
     sfx('gem');
@@ -298,7 +350,7 @@ const play = {
   async seen(e) { view.seen(e.ids); },
   async reveal(e) { sfx('flip'); const last = g.players.some((p) => p.tile === e.id); const p = view.reveal(e.id); if (last) await p; },
   async clear(e) { view.clear(e.id); },
-  async msg(e) { await hud.message(e.kind, e.title, e.text, e.quick); hud.refresh(); },
+  async msg(e) { await hud.message(e.kind, e.title, e.text, e.quick, e.note); hud.refresh(); },
   async trap(e) {
     sfx('trap');
     stage.shake(0.5);
@@ -385,7 +437,7 @@ async function prompt() {
 const WHY = { torneo: 'Torneo real', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
 async function minigame(d) {
   const names = g.players.map((p) => p.name), rules = GAMES[d.game];
-  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, d.why === 'torneo' ? 'Premio: 4 gemas y una carta' : 'El ganador quita hasta 4 gemas al otro');
+  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)));
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');
@@ -544,7 +596,7 @@ async function resume(session) {
 home();
 // Solo en desarrollo: permite adelantar el reloj en las pruebas.
 if (import.meta.env.DEV) window.__corona = {
-  stage, hud, choose, run, act, minigame,
+  fairy, stage, hud, choose, run, act, minigame,
   get g() { return g; }, get view() { return view; }, get heroes() { return heroes; }, get busy() { return busy; }, get mini() { return mini; }, get S() { return S; },
   async ff(seconds, until = () => false) {
     stage.manual = true; stage.noDraw = true;

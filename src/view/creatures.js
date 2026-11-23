@@ -206,3 +206,35 @@ export function bookMesh() {
   g.userData.spin = 1;
   return g;
 }
+
+/* ---------- Hada madrina: vestido de pétalos, moño, varita y cuatro alas ---------- */
+export function makeFairy() {
+  const g = new THREE.Group();
+  g.add(mesh([
+    paintBy(loft([{ y: -0.2, r: 0.21 }, { y: -0.1, r: 0.16 }, { y: 0.02, r: 0.09 }], 10), (v) => (v.y < -0.15 ? '#ff6fb5' : '#ff8fcb')),
+    ...[0, 1, 2, 3, 4, 5, 6].map((i) => paint(at(cone(0.1, 0.26, 4), { s: [1, 1, 0.3], r: [Math.PI - 0.62, 0, 0], p: [0, -0.2, 0.2] }).rotateY(i * 0.8976), i % 2 ? '#ffc0e4' : '#ffa3d6')),
+    ...[1, -1].map((q) => paint(tube([[q * 0.05, -0.16, 0], [q * 0.055, -0.36, -0.03], [q * 0.05, -0.47, 0.03]], [0.035, 0.03, 0.02], 5, 5), q > 0 ? '#ffd9bd' : '#f8cdaf')),
+    paint(at(loft([{ y: 0, r: 0.11 }, { y: 0.16, r: 0.075 }, { y: 0.2, r: 0.05 }], 8), {}), '#fff0a8'),
+    paint(at(ico(0.15, 1), { p: [0, 0.33, 0] }), '#ffd9bd'),
+    paint(at(ico(0.165, 1), { s: [1, 0.86, 0.95], p: [0, 0.385, -0.04] }), '#f2c14a'),
+    paint(at(ico(0.08, 1), { p: [0, 0.54, -0.03] }), '#f2c14a'),
+    ...[1, -1].map((s) => paint(tube([[s * 0.07, 0.15, 0], [s * 0.17, 0.1, 0.06], [s * (s > 0 ? 0.26 : 0.2), s > 0 ? 0.2 : 0.02, 0.1]], [0.035, 0.03, 0.025], 5, 5), '#ffd9bd')),
+    paint(tube([[0.26, 0.16, 0.1], [0.3, 0.42, 0.13]], [0.014, 0.012], 4, 4), '#8a5a34'),
+    ...[1, -1].map((s) => paint(at(ball(0.026, 7, 5), { p: [s * 0.058, 0.33, 0.135] }), '#3a1d4f')),
+    paint(at(ball(0.02, 6, 4), { s: [1.5, 0.6, 0.6], p: [0, 0.27, 0.14] }), '#d9467f'),
+  ]));
+  g.add(mesh([paint(at(star(0.1, 0.04), { p: [0.31, 0.47, 0.13] }), '#fff3a0')], matGlow));
+  const wm = new THREE.MeshBasicMaterial({ color: '#d8fbff', transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false });
+  const petal = (l, w) => { const s = new THREE.Shape(); s.moveTo(0, 0); s.quadraticCurveTo(l * 0.4, w, l, w * 0.5); s.quadraticCurveTo(l * 1.05, -w * 0.5, 0, 0); return new THREE.ShapeGeometry(s, 4); };
+  const wings = [1, -1].flatMap((s) => [[0.5, 0.26, 0.55], [0.34, 0.2, -0.45]].map(([l, w, r]) => {
+    const p = new THREE.Group(), m = new THREE.Mesh(petal(l, w), wm);
+    m.rotation.z = r;
+    p.position.set(s * 0.04, 0.14, -0.08);
+    p.scale.x = s;
+    p.add(m); g.add(p);
+    return { p, s };
+  }));
+  g.userData.fly = (t) => wings.forEach(({ p, s }, i) => { p.rotation.y = s * (0.25 + Math.sin(t * 26 + (i % 2)) * 0.5); });
+  g.userData.fly(0);
+  return g;
+}

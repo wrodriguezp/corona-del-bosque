@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
+import { CAVE } from '../core/game.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
 const el = (cls, html = '', tag = 'div') => {
@@ -9,7 +10,7 @@ const el = (cls, html = '', tag = 'div') => {
   return e;
 };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const KIND = { gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'] };
+const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'] };
 const AV = ['crown', 'hat'];
 const cardHtml = (id, big) => {
   const c = CARDS[id], f = FAMILIES[c.family];
@@ -31,6 +32,7 @@ export class Hud {
     this.g = g;
     this.shown = g.players.map((p) => p.gems);
     this.stars = g.players.map((p) => p.stars);
+    this.aid = [...g.aid];
     this.game.innerHTML = '';
     this.pl = g.players.map((p) => {
       const e = el(`pl p${p.id}`, `<div class="av">${icon(AV[p.id])}</div><div class="nm">${esc(p.name)}</div><div class="row"><span class="gm">${icon('gem')}<b></b></span><span class="st" title="Con 3 estrellas eliges una oportunidad"></span><span class="hn"></span></div><div class="fx"></div>`);
@@ -63,19 +65,20 @@ export class Hud {
       e.querySelector('.st').innerHTML = [0, 1, 2].map((k) => `<span class="${k < this.stars[i] ? 'f' : ''}">${icon('star')}</span>`).join('');
       e.querySelector('.hn').textContent = p.hand.length === 1 ? '1 carta' : `${p.hand.length} cartas`;
       const f = p.fx, L = [];
+      if (this.aid[i]) L.push(['fairy', this.aid[i] === 2 ? 'Hada madrina ×2' : 'Hada madrina']);
       if (f.shield) L.push(['good', 'Escudo']);
-      if (f.golden) L.push(['good', `Doble gema ×${f.golden}`]);
-      if (f.magnet) L.push(['good', 'Imán']);
-      if (f.map) L.push(['good', 'Mapa']);
+      if (f.golden) L.push(['good', f.golden === 1 ? 'Gemas dobles: 1 casilla' : `Gemas dobles: ${f.golden} casillas`]);
+      if (f.magnet) L.push(['good', 'Imán: +1 por paso']);
+      if (f.map) L.push(['good', 'Mapa: +5 al caer']);
       if (f.die) L.push(['good', `Dado ${f.die}`]);
-      if (f.locked) L.push(['bad', 'Candado']);
-      if (f.plus) L.push(['good', `+${f.plus}`]);
+      if (f.locked) L.push(['bad', 'Sin cartas ni compras']);
+      if (f.plus) L.push(['good', `Tirada: +${f.plus}`]);
       if (f.double) L.push(['good', 'Doble dado']);
       if (f.fixed) L.push(['good', `Saldrá ${f.fixed}`]);
       if (f.again) L.push(['good', 'Turno extra']);
-      if (f.worst) L.push(['bad', 'Mala suerte']);
-      if (f.minus) L.push(['bad', `−${f.minus} al dado`]);
-      if (f.half) L.push(['bad', 'Enredo: mitad']);
+      if (f.worst) L.push(['bad', 'Tirada: cuenta el menor']);
+      if (f.minus) L.push(['bad', `Tirada: −${f.minus}`]);
+      if (f.half) L.push(['bad', 'Tirada: la mitad']);
       e.querySelector('.fx').innerHTML = L.map(([c, t]) => `<span class="${c}">${t}</span>`).join('');
     });
   }
@@ -108,9 +111,9 @@ export class Hud {
     setTimeout(() => b.remove(), 1600);
   }
 
-  buyButton(what, ic, label, key) {
+  buyButton(what, ic, label, key, tip) {
     const b = el('buy', `${icon(ic)}<span>${label}</span><b>${PRICES[what]}${icon('gem')}</b>`, 'button');
-    b.title = `${label} (${key})`;
+    b.title = `${tip} (${key})`;
     b.disabled = !this.g.canBuy(what);
     b.onclick = () => this.on.buy?.(what);
     return b;
@@ -133,14 +136,14 @@ export class Hud {
     const row = el('row2');
     const r = el('roll', `${icon('dice')}Tirar el dado`, 'button');
     r.onclick = () => this.on.roll?.();
-    row.append(this.buyButton('sobre', 'bag', 'Sobre misterioso', 'B'), r, this.buyButton('trampa', 'trap', 'Trampa escondida', 'T'));
+    row.append(this.buyButton('sobre', 'bag', 'Sobre misterioso', 'B', 'Recibes una carta al azar'), r, this.buyButton('trampa', 'trap', 'Trampa escondida', 'T', 'Se esconde en el camino de tu rival: si la pisa, se detiene y le robas hasta 4 gemas'));
     this.act.append(row);
   }
 
   showMove(n, text) {
     this.showHint(text || `<b>${n}</b> ${n === 1 ? 'paso' : 'pasos'}: elige una casilla iluminada`);
     const row = el('row2');
-    row.append(this.buyButton('repetir', 'again', 'Repetir tirada', 'R'), this.buyButton('paso', 'boot', 'Un paso más', 'P'));
+    row.append(this.buyButton('repetir', 'again', 'Repetir tirada', 'R', 'Vuelves a tirar el dado y vale el nuevo número'), this.buyButton('paso', 'boot', 'Un paso más', 'P', 'Avanzas una casilla más en esta tirada'));
     this.act.append(row);
   }
 
@@ -162,16 +165,16 @@ export class Hud {
   }
 
   // Pergamino: se cierra solo, o antes con clic, toque o espacio.
-  message(kind, title, text, quick) {
+  message(kind, title, text, quick, note) {
     const [ic, color] = KIND[kind] || KIND.calm;
-    const s = el('scroll', `${icon(ic)}<h3>${esc(title)}</h3><p>${esc(text)}</p>`);
+    const s = el('scroll', `${icon(ic)}<h3>${esc(title)}</h3><p>${esc(text)}</p>${note ? `<b class="note">${esc(note)}</b>` : ''}`);
     s.style.setProperty('--k', color);
     this.game.append(s);
     return new Promise((res) => {
       const t0 = performance.now();
       const done = () => { clearTimeout(tm); removeEventListener('pointerdown', skip); this.skip = null; s.remove(); res(); };
       const skip = () => { if (performance.now() - t0 > 350) done(); };
-      const tm = setTimeout(done, this.fast ? 1 : quick ? 1500 : 1500 + text.length * 22);
+      const tm = setTimeout(done, this.fast ? 1 : quick ? 1500 : 1500 + (text.length + (note?.length || 0)) * 24);
       addEventListener('pointerdown', skip);
       this.skip = skip;
     });
@@ -212,9 +215,9 @@ export class Hud {
   }
 
   adventure(a, player, can) {
-    const s = el('tale', `<div class="orn">${icon(a.icon)}</div><h2>${esc(a.title)}</h2><p>${esc(a.text)}</p><div class="picks"></div><small>${esc(player.name)} decide · ${player.gems} ${icon('gem')}</small>`);
+    const s = el('tale', `<div class="orn">${icon(a.icon)}</div><h2>${esc(a.title)}</h2><p>${esc(a.text)}</p><div class="picks"></div><small>${esc(player.name)} decide · tiene ${player.gems} ${icon('gem')}${a.choices.some((c) => c.check) ? `<br>${icon('dice')} Se tira un dado: si sale ese número o más, se logra.` : ''}</small>`);
     a.choices.forEach((c, i) => {
-      const tags = [c.cost ? `<i class="cost">${c.cost}${icon('gem')}</i>` : '', c.check ? `<i class="die" title="Necesitas ${c.check} o más">${icon('dice')}${c.check}+</i>` : ''].join('');
+      const tags = [c.cost ? `<i class="cost">${c.cost}${icon('gem')}</i>` : '', c.check ? `<i class="die" title="Se logra si el dado saca ${c.check} o más">${icon('dice')}${c.check === 6 ? '6' : `${c.check} o más`}</i>` : ''].join('');
       const b = el('pick', `<b>${i + 1}</b><span>${esc(c.label)}</span>${tags}`, 'button');
       b.dataset.i = i;
       b.disabled = !can(i);
@@ -237,11 +240,11 @@ export class Hud {
   }
 
   cave(c, player) {
-    const next = [2, 3, 3, 4, 5, 6][Math.min(5, c.grabs)], risk = c.grabs;
+    const next = CAVE[Math.min(5, c.grabs)], risk = c.grabs, dice = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<i>${a + i}</i>`).join('');
     const s = el('tale', `<div class="orn">${icon('flame')}</div><h2>Cueva del dragón</h2>
-      <p>${c.grabs ? `Llevas <b>${c.bag} gemas</b> en la bolsa. El dragón se despierta si sacas <b>${risk === 1 ? '1' : `${risk} o menos`}</b>.` : `El dragón ronca sobre su tesoro. La primera vez es fácil; después, cada intento es más arriesgado.`}</p>
-      <div class="risk">${[1, 2, 3, 4, 5, 6].map((n) => `<i class="${n <= risk ? 'bad' : ''}">${n}</i>`).join('')}</div>
-      <div class="picks"><button class="pick" data-i="grab"><b>1</b><span>Tomar ${next} gemas</span></button><button class="pick" data-i="leave"><b>2</b><span>${c.bag ? `Salir con ${c.bag} gemas` : 'Irse sin hacer ruido'}</span></button></div>`);
+      <p>${c.grabs ? `Tu bolsa tiene <b>${c.bag} gemas</b>, pero solo son tuyas si sales. Para tomar más se tira un dado:` : `El dragón duerme sobre su tesoro. Esta primera vez no hay riesgo; después, un dado decide si despierta.`}</p>
+      ${c.grabs ? `<div class="risk"><div class="bad"><span>${dice(1, risk)}</span><p><b>Despierta:</b> pierdes la bolsa y retrocedes 2</p></div>${risk < 6 ? `<div class="ok"><span>${dice(risk + 1, 6)}</span><p><b>Sigue dormido:</b> +${next} gemas</p></div>` : ''}</div>` : ''}
+      <div class="picks"><button class="pick" data-i="grab" ${risk > 5 ? 'disabled' : ''}><b>1</b><span>${c.grabs ? `Arriesgarte por ${next} gemas más` : `Tomar ${next} gemas`}</span></button><button class="pick" data-i="leave"><b>2</b><span>${c.bag ? `Salir y quedarte con ${c.bag} gemas` : 'Irte sin tocar nada'}</span></button></div>`);
     return this.ask(s, 'low');
   }
 
@@ -253,7 +256,7 @@ export class Hud {
     }[rules.input];
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>
       <div class="ctl">${ctl.map((c, i) => `<div class="p${i}">${rules.input === 'chase' ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${c}</div>`).join('')}</div>
-      <p class="prize">${icon('crown')}${prize}</p><button class="cta" data-i="go" data-ok="1">¡Listos!</button>`);
+      <div class="prize">${prize.map((t, i) => `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>`).join('')}</div><button class="cta" data-i="go" data-ok="1">¡Listos!</button>`);
     return this.ask(s);
   }
 
@@ -296,16 +299,18 @@ export class Hud {
     this.helpOpen = true;
     const li = (i, c, t) => `<li><span style="color:${c}">${icon(i)}</span><span>${t}</span></li>`;
     const s = el('help', `<h2>Cómo se juega</h2>
-      <p>Tira el dado y elige a qué casilla iluminada ir. Llegar primero al castillo da <b>8 gemas</b>; después, tu rival tiene <b>3 turnos más</b>. <b>Gana quien tenga más gemas.</b></p>
+      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>8 gemas</b>; a la otra persona le quedan <b>3 turnos</b>. <b>Gana quien tenga más gemas.</b></p>
       <ul>
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
       ${li('coin', '#b5811a', '<b>Mercado.</b> Se ve desde lejos. Puedes detenerte al pasar.')}
-      ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas sin despertar al dragón.')}
+      ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas y sal antes de que el dragón despierte.')}
       ${li('eagle', '#2b7fd0', '<b>Águila</b> te lleva adelante; el <b>gusano</b>, atrás.')}
-      ${li('duel', '#d2452f', '<b>Minijuegos.</b> Torneo cada 8 turnos, arenas y al alcanzar a tu rival.')}
-      ${li('star', '#d8981a', '<b>3 estrellas</b> dan una carta. Ganas una por turno.')}
+      ${li('duel', '#d2452f', '<b>Minijuegos.</b> En el torneo, en las arenas y al caer donde está tu rival.')}
+      ${li('star', '#d8981a', '<b>3 estrellas</b> te dan una carta. Ganas una estrella por turno.')}
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
+      ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada.')}
+      ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano o dragón.')}
       </ul>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);

@@ -38,7 +38,7 @@ export const ADVENTURES = [
   ] },
   { id: 'hada', icon: 'star', title: 'Hada perdida', text: 'Un hada diminuta no encuentra su linterna.', choices: [
     { label: 'Ayudarla a buscar', ...o('Aparece en tu bolsillo. ¡Qué vergüenza!', ['star', 2]) },
-    { label: 'Vendértela como guía', cost: 2, ...o('Ilumina lo que viene.', ['reveal', 3], ['star', 1]) },
+    { label: 'Contratarla como guía', cost: 2, ...o('Ilumina lo que viene.', ['reveal', 3], ['star', 1]) },
   ] },
   { id: 'esfinge', icon: 'help', title: 'La esfinge', text: '«¿Qué sube la escalera sin pies y baja sin cabeza?»', choices: [
     { label: '¡El humo!', ...o('«Aburrido, pero aceptable».', ['gems', 2]) },
@@ -147,3 +147,33 @@ export const ADVENTURES = [
 ];
 
 export const byId = Object.fromEntries(ADVENTURES.map((a) => [a.id, a]));
+
+const many = (n, one, pl) => `${n} ${n === 1 ? one : pl}`;
+const gemas = (n) => many(n, 'gema', 'gemas'), casillas = (n) => many(n, 'casilla', 'casillas'), estrellas = (n) => many(n, 'estrella', 'estrellas');
+const FX = { half: 'vale la mitad', minus: 'vale 2 menos', plus: 'vale 2 más', double: 'usa dos dados', worst: 'cuenta solo el menor de dos dados' };
+
+// Resume en una línea el efecto real de un resultado: el texto divierte, esto aclara.
+export function describe(fx, rival) {
+  const line = ([k, v]) => {
+    switch (k) {
+      case 'gems': return v > 0 ? `Ganas ${gemas(v)}` : `Pierdes hasta ${gemas(-v)}`;
+      case 'rival': return v > 0 ? `${rival} gana ${gemas(v)}` : `${rival} pierde hasta ${gemas(-v)}`;
+      case 'steal': return `Le robas hasta ${gemas(v)} a ${rival}`;
+      case 'pay': return `Le pagas hasta ${gemas(v)} a ${rival}`;
+      case 'move': return v > 0 ? `Avanzas ${casillas(v)}` : `Retrocedes ${casillas(-v)}`;
+      case 'rivalMove': return `${rival} ${v > 0 ? 'avanza' : 'retrocede'} ${casillas(Math.abs(v))}`;
+      case 'star': return `Ganas ${estrellas(v)}`;
+      case 'rivalStar': return `${rival} gana ${estrellas(v)}`;
+      case 'card': return 'Recibes una carta al azar';
+      case 'offer': return 'Eliges una carta';
+      case 'fx': return v === 'shield' ? 'Tienes un escudo' : v === 'again' ? 'Juegas otro turno' : `Tu próxima tirada ${FX[v]}`;
+      case 'rivalFx': return `La próxima tirada de ${rival} ${FX[v]}`;
+      case 'reveal': return `Se revelan las casillas a ${v} pasos o menos`;
+      case 'flag': return 'Esto tendrá consecuencias más adelante';
+      case 'swap': return `Cambias de lugar con ${rival}`;
+      case 'duel': return `Minijuego contra ${rival}`;
+      default: return null;
+    }
+  };
+  return fx.map(line).filter(Boolean).join(' · ') || 'No pasa nada';
+}
