@@ -102,3 +102,22 @@ export class DiceTable {
     this.root.visible = false;
   }
 }
+
+// Moneda de la Apuesta del hada: corona en la cara, luna en la cruz (dibujadas en un lienzo).
+function face(draw, bg) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = bg; x.beginPath(); x.arc(64, 64, 64, 0, 7); x.fill();
+  x.strokeStyle = '#ffffff99'; x.lineWidth = 6; x.beginPath(); x.arc(64, 64, 54, 0, 7); x.stroke();
+  x.fillStyle = '#fff8e0'; draw(x);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.3, metalness: 0.4, emissive: '#ffffff', emissiveIntensity: 0.15, emissiveMap: t });
+}
+export function makeCoin() {
+  const crown = (x) => { x.beginPath(); [[30, 86], [26, 44], [46, 62], [64, 34], [82, 62], [102, 44], [98, 86]].forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b))); x.fill(); x.fillRect(30, 90, 68, 10); };
+  const moon = (x) => { x.beginPath(); x.arc(64, 64, 34, 0, 7); x.fill(); x.fillStyle = '#7a6fb8'; x.beginPath(); x.arc(78, 54, 30, 0, 7); x.fill(); };
+  const side = new THREE.MeshStandardMaterial({ color: '#d9a520', roughness: 0.3, metalness: 0.6 });
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.08, 40), [side, face(crown, '#e8b82a'), face(moon, '#7a6fb8')]);
+  g.add(m);
+  return g;
+}

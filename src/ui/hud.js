@@ -13,11 +13,13 @@ const el = (cls, html = '', tag = 'div') => {
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'] };
 const AV = ['crown', 'hat'];
-const cardHtml = (id, big) => {
+// Resumen dibujado de un efecto: «{rival} −3 {gem}» → avatar del rival, número grande e ícono.
+export const bigLine = (str, p) => str.replace(/\{(\w+)\}/g, (_, k) => (k === 'rival' ? `<span class="av p${1 - (p ?? 0)}">${icon(AV[1 - (p ?? 0)])}</span>` : icon(k)));
+const cardHtml = (id, big, p) => {
   const c = CARDS[id], f = FAMILIES[c.family];
   return big
-    ? `<span class="fam">${f.name}</span><span class="big">${icon(c.icon)}</span><span class="t">${c.name}</span><span class="d">${c.text}</span>`
-    : `<span class="t">${icon(c.icon)}${c.name}</span><span class="d">${c.text}</span>`;
+    ? `<span class="fam">${f.name}</span><span class="big">${icon(c.icon)}</span><span class="t">${c.name}</span><span class="efx">${bigLine(c.big, p)}</span><span class="d">${c.text}</span>`
+    : `<span class="t">${icon(c.icon)}${c.name}</span><span class="efx">${bigLine(c.big, p)}</span>`;
 };
 
 export class Hud {
@@ -107,6 +109,8 @@ export class Hud {
   setTurn(i, left) {
     this.pl.forEach((e, k) => e.classList.toggle('on', k === i));
     this.act.className = `act p${i}`;
+    // Todo el borde de la pantalla se tiñe del color de quien juega: se sabe sin leer.
+    this.root.dataset.turn = i;
     this.final.classList.toggle('hidden', left == null);
     if (left != null) this.final.textContent = left === 1 ? '¡Último turno!' : `Quedan ${left} turnos`;
   }
@@ -145,7 +149,7 @@ export class Hud {
     if (p.hand.length) {
       const h = el('hand');
       p.hand.forEach((id, i) => {
-        const b = el('card', cardHtml(id), 'button');
+        const b = el('card', cardHtml(id, false, p.id), 'button');
         b.style.setProperty('--f', FAMILIES[CARDS[id].family].color);
         b.title = CARDS[id].text;
         b.disabled = !playable;
@@ -186,9 +190,9 @@ export class Hud {
   }
 
   // Pergamino: se cierra solo, o antes con clic, toque o espacio.
-  message(kind, title, text, quick, note) {
+  message(kind, title, text, quick, note, big) {
     const [ic, color] = KIND[kind] || KIND.calm;
-    const s = el('scroll', `${icon(ic)}<h3>${esc(title)}</h3><p>${esc(text)}</p>${note ? `<b class="note">${esc(note)}</b>` : ''}`);
+    const s = el('scroll', `${icon(ic)}<h3>${esc(title)}</h3>${big ? `<div class="efx">${big}</div>` : ''}<p>${esc(text)}</p>${note ? `<b class="note">${esc(note)}</b>` : ''}`);
     s.style.setProperty('--k', color);
     this.game.append(s);
     return new Promise((res) => {
@@ -269,23 +273,62 @@ export class Hud {
     return this.ask(s, 'low');
   }
 
-  miniIntro(rules, why, names, mobile, prize) {
+  // Turno del castillo: el dado ya salió y se elige qué hacer con él, con dibujos grandes.
+  castle(p, die, rival) {
+    const s = el('tale castle', `<div class="orn">${icon('castle')}</div><h2>Turno del castillo</h2><p>${esc(p.name)}, salió un <b class="bigdie">${die}</b>. ¿Qué haces con él?</p>
+      <div class="picks two"><button class="pick big" data-i="cofre"><span class="pic">${icon('chest')}<b>+${die}${icon('gem')}</b></span><span>Guardar ${die} ${die === 1 ? "gema" : "gemas"} en tu cofre.<small>Se abre al final de la partida.</small></span></button>
+      <button class="pick big" data-i="torre"><span class="pic">${icon('bolt')}<b>${icon(AV[1 - p.id])}−${die}</b></span><span>${esc(rival.name)} retrocede ${die} ${die === 1 ? 'casilla' : 'casillas'}.<small>Se le hace más difícil llegar.</small></span></button></div>`);
+    return this.ask(s, 'low');
+  }
+
+  // Reloj de arena de la carta «¡Piensa rápido!». Devuelve una función para quitarlo.
+  rush(secs, done) {
+    const r = el('rush', `${icon('hourglass')}<b>${secs}</b><i></i>`);
+    this.game.append(r);
+    const t0 = performance.now();
+    let last = secs;
+    const tick = setInterval(() => {
+      const left = Math.max(0, secs - (performance.now() - t0) / 1000), n = Math.ceil(left);
+      r.querySelector('i').style.width = `${(left / secs) * 100}%`;
+      if (n !== last) { last = n; r.querySelector('b').textContent = n; if (n <= 3 && n > 0) sfx('tick'); r.classList.toggle('low', n <= 3); }
+      if (left <= 0) { stop(); done(); }
+    }, 100);
+    const stop = () => { clearInterval(tick); r.remove(); };
+    return stop;
+  }
+
+  // `opt.swap` intercambia qué lado de la pantalla (y del teclado) usa cada jugador.
+  miniIntro(rules, why, names, mobile, prize, opt) {
     const ctl = {
       button: mobile ? ['Toca la mitad izquierda', 'Toca la mitad derecha'] : ['Tecla A o espacio', 'Enter o clic del mouse'],
       move: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas A y D', 'Flechas ← y →'],
       hold: mobile ? ['Mantén el dedo en la mitad izquierda', 'Mantén el dedo en la mitad derecha'] : ['Mantén A o espacio', 'Mantén Enter o el clic del mouse'],
       dirs: mobile ? ['Los cuatro botones de la izquierda', 'Los cuatro botones de la derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
       move2: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
-      chase: mobile ? ['Quien huye desliza abajo', 'Quien lanza toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
+      chase: mobile ? ['Quien huye: joystick en su esquina de abajo', 'Quien lanza: toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
     }[rules.input];
+    const role = rules.input === 'chase';
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>
-      <div class="ctl">${ctl.map((c, i) => `<div class="p${i}">${rules.input === 'chase' ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${c}</div>`).join('')}</div>
-      <div class="prize">${prize.map((t, i) => `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>`).join('')}</div><button class="cta" data-i="go" data-ok="1">¡Listos!</button>`);
+      <div class="ctl"></div><div class="prize">${prize.map((t, i) => `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>`).join('')}</div>
+      <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
+    const draw = () => {
+      s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}</div>`; }).join('');
+    };
+    draw();
+    s.querySelector('.swap').onclick = () => { opt.swap = !opt.swap; sfx('flip'); draw(); const c = s.querySelector('.ctl'); c.classList.remove('flip'); void c.offsetWidth; c.classList.add('flip'); };
+    if (role) s.querySelector('.swap').hidden = !mobile;
     return this.ask(s);
   }
 
-  miniHud(names, title, left) {
-    const m = el('minihud', `<div class="sc p0">${icon('crown')}<span>${esc(names[0])}</span><b>0</b></div><div class="mid"><span>${title}</span>${left != null ? '<div class="time"><i></i></div>' : ''}</div><div class="sc p1"><b>0</b><span>${esc(names[1])}</span>${icon('hat')}</div><div class="say"></div>`);
+  // Letrero grande de victoria con la pantalla teñida del color de quien ganó.
+  winner(name, i) {
+    const e = el(`win ${i < 0 ? 'tie' : `p${i}`}`, `<div><span>${i < 0 ? icon('star') : icon(AV[i])}</span><b>${i < 0 ? '¡Empate!' : `¡Gana ${esc(name)}!`}</b></div>`);
+    this.root.append(e);
+    return () => { e.classList.add('out'); setTimeout(() => e.remove(), 400); };
+  }
+
+  miniHud(names, title, left, swap) {
+    const m = el(`minihud${swap ? ' swap' : ''}`, `<div class="sc p0">${icon('crown')}<span>${esc(names[0])}</span><b>0</b></div><div class="mid"><span>${title}</span>${left != null ? '<div class="time"><i></i></div>' : ''}</div><div class="sc p1"><b>0</b><span>${esc(names[1])}</span>${icon('hat')}</div><div class="say"></div>`);
     this.root.append(m);
     return m;
   }
@@ -323,7 +366,7 @@ export class Hud {
     this.helpOpen = true;
     const li = (i, c, t) => `<li><span style="color:${c}">${icon(i)}</span><span>${t}</span></li>`;
     const s = el('help', `<h2>Cómo se juega</h2>
-      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>8 gemas</b>; a la otra persona le quedan <b>3 turnos</b>. <b>Gana quien tenga más gemas.</b></p>
+      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>6 gemas</b> y sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b></p>
       <ul>
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}

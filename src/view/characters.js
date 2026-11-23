@@ -413,6 +413,22 @@ export class Character {
     } else if (this.pose === 'throw') {
       const q = Math.min(1, this.poseT * 4);
       T.aR = [-2.2 + q * 1.5, 0, -0.3]; T.fR = -0.6 + q * 0.5; T.torso = [q * 0.2, -0.35 + q * 0.6, 0]; k = 16;
+    } else if (this.pose === 'dance') {
+      // Bailecito: cadera de lado a lado y brazos que se turnan arriba.
+      const q = this.poseT * 6.5, w = Math.sin(q), u = Math.max(0, Math.sin(q)), v = Math.max(0, -Math.sin(q));
+      T.aL = [-0.4 - u * 2.2, 0, 0.5]; T.aR = [-0.4 - v * 2.2, 0, -0.5]; T.fL = -0.8; T.fR = -0.8;
+      T.torso = [0, w * 0.25, w * 0.18]; T.head = [-0.1, -w * 0.2, -w * 0.15];
+      T.lL = Math.max(0, w) * 0.5; T.lR = Math.max(0, -w) * 0.5; T.sL = Math.max(0, w) * 0.7; T.sR = Math.max(0, -w) * 0.7;
+      T.y = Math.abs(Math.cos(q)) * 0.25; k = 16;
+    } else if (this.pose === 'clap') {
+      const c = Math.abs(Math.sin(this.poseT * 9));
+      T.aL = [-1.3, 0, -0.2 + c * 0.5]; T.aR = [-1.3, 0, 0.2 - c * 0.5]; T.fL = -0.9; T.fR = -0.9; T.head = [-0.15, 0, 0]; T.y = c * 0.05; k = 18;
+    } else if (this.pose === 'dizzy') {
+      const q = this.poseT * 5;
+      T.torso = [Math.sin(q) * 0.18, 0, Math.cos(q) * 0.18]; T.head = [Math.cos(q) * 0.3, 0, Math.sin(q) * 0.3];
+      T.aL = [0.1, 0, 0.6]; T.aR = [0.1, 0, -0.6]; T.fL = -0.2; T.fR = -0.2; k = 8;
+    } else if (this.pose === 'bow') {
+      T.torso = [0.7, 0, 0]; T.head = [0.3, 0, 0]; T.aL = [0.3, 0, 0.2]; T.aR = [-0.6, 0, -0.4]; T.fR = -1.4; k = 7;
     } else if (this.pose === 'fly') {
       T.aL = [-0.4, 0, 1.4]; T.aR = [-0.4, 0, -1.4]; T.lL = 0.3; T.lR = -0.3; T.sL = 0.6; T.sR = 0.7; T.head = [-0.3, 0, 0]; k = 14;
     }

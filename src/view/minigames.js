@@ -150,7 +150,7 @@ const VIEWS = {
       const st = v.stage;
       if (e.t === 'round') {
         const r = v.names[e.runner], c = v.names[1 - e.runner];
-        v.say(`Huye ${r}, lanza ${c}`, st.mobile ? `${r}: desliza abajo · ${c}: toca la arena` : `${r} toma el teclado · ${c} toma el mouse`, 3.2);
+        v.say(`Huye ${r}, lanza ${c}`, st.mobile ? `${r}: joystick en la zona de abajo · ${c}: toca la arena` : `${r} toma el teclado · ${c} toma el mouse`, 3.2);
         for (const [, m] of v.items) v.group.remove(m);
         v.items.clear();
       }
@@ -170,8 +170,64 @@ const VIEWS = {
   ...NEW_VIEWS,
 };
 
+const place = (h, p) => h.root.position.copy(p);
+const face = (h, from, to) => (h.turnTo = Math.atan2(to.x - from.x, to.z - from.z));
+const arc = (a, b, k, hgt) => new THREE.Vector3().lerpVectors(a, b, k).setY(C.y + Math.sin(Math.PI * k) * hgt);
+const SCENES = [
+  // Empujón: el ganador llega corriendo y saca volando al otro, que queda mareado.
+  async (v, W, L, s) => {
+    const pl = V(-s * 0.4, 0, 0.6), pw = V(-s * 0.4 + s * 3.4, 0, 0.6), hit = V(-s * 0.4 + s * 0.75, 0, 0.6), out = V(-s * 3.6, 0, 1.4);
+    place(L, pl); place(W, pw); L.set('idle'); W.set('walk'); face(W, pw, pl);
+    v.look(pl, 5.5, 0.3);
+    await v.run(0.7, (k) => { place(L, pl); place(W, pw); L.turnTo = Math.sin(k * 9) * 0.9; });
+    sfx('whoosh');
+    await v.run(0.45, (k) => { place(L, pl); place(W, new THREE.Vector3().lerpVectors(pw, hit, k * k)); });
+    sfx('boing'); W.set('throw'); L.set('fly'); v.stage.shake(0.3);
+    v.stage.sparks.burst(pl.x, pl.y + 1, pl.z, 30, { color: ['#ffffff', '#ffd84a'], speed: 3.5, life: 0.5, size: 0.3 });
+    await v.run(0.75, (k) => { place(W, hit); place(L, arc(pl, out, k, 2.4)); L.root.rotation.y += 0.5; });
+    L.set('dizzy'); L.turnTo = 0; v.dizzy(L); W.set('dance'); W.turnTo = 0;
+    v.look(hit.clone().lerp(out, 0.35), 6.5, 0.6);
+    await Promise.all([v.rain(W), v.run(1.9, () => { place(W, hit); place(L, out); })]);
+  },
+  // Lluvia de gemas: el ganador baila bajo las gemas y al otro le llueve encima su nubecita.
+  async (v, W, L, s) => {
+    const pw = V(s * 0.9, 0, 0.9), pl = V(-s * 1.6, 0, -0.4);
+    place(W, pw); place(L, pl); W.set('cheer'); L.set('sad'); W.turnTo = 0; L.turnTo = s * 0.6;
+    v.look(pw, 5.2, 0.3);
+    let rain = 0;
+    const cloud = () => { const p = L.root.position; v.stage.smoke.burst(p.x, p.y + 2.5, p.z, 3, { color: '#8a87a8', speed: 0.2, life: 0.6, size: 0.6, alpha: 0.7 }); v.stage.sparks.emit?.({ x: p.x + (Math.random() - 0.5) * 0.6, y: p.y + 2.3, z: p.z + (Math.random() - 0.5) * 0.6, vy: -4, life: 0.45, size: 0.1, color: '#7fd6ff' }); };
+    await v.run(0.8, (k, dt) => { place(W, pw); place(L, pl); if ((rain += dt) > 0.08) { rain = 0; cloud(); } });
+    W.set('dance');
+    await Promise.all([v.rain(W, 18, 2), v.run(2.2, (k, dt) => { place(W, pw); place(L, pl); if ((rain += dt) > 0.08) { rain = 0; cloud(); } })]);
+  },
+  // Reverencia: el ganador gira como bailarín y hace una reverencia; el otro aplaude.
+  async (v, W, L, s) => {
+    const pw = V(s * 0.8, 0, 0.7), pl = V(-s * 1.4, 0, 0.3);
+    place(W, pw); place(L, pl); W.set('cheer'); L.set('clap'); face(L, pl, pw);
+    v.look(pw.clone().lerp(pl, 0.3), 6, 0.3);
+    sfx('star');
+    await v.run(1.1, (k) => { place(W, pw); place(L, pl); W.turnTo = k * Math.PI * 4; W.root.rotation.y = W.turnTo; if (Math.random() < 0.3) v.stage.sparks.burst(pw.x, pw.y + 1.5, pw.z, 2, { color: ['#ffd84a', COLORS[s < 0 ? 0 : 1]], speed: 2, life: 0.6, size: 0.25 }); });
+    W.turnTo = 0; W.set('bow');
+    await Promise.all([v.rain(W, 12, 1.5), v.run(1.8, () => { place(W, pw); place(L, pl); })]);
+  },
+  // Pisotón: el ganador salta muy alto, cae junto al otro y lo hace rebotar.
+  async (v, W, L, s) => {
+    const pw = V(s * 2.6, 0, 0.5), pl = V(-s * 0.6, 0, 0.6), land = V(s * 0.4, 0, 0.6), bump = V(-s * 1.6, 0, 1.1);
+    place(W, pw); place(L, pl); W.set('cheer'); L.set('idle'); face(W, pw, pl); L.turnTo = 0;
+    v.look(pl.clone().lerp(pw, 0.4), 7, 0.3);
+    await v.run(0.4, () => { place(W, pw); place(L, pl); });
+    sfx('whoosh'); W.set('fly');
+    await v.run(0.8, (k) => { place(L, pl); place(W, arc(pw, land, k, 3.4)); });
+    sfx('boing'); v.stage.shake(0.45); L.set('fly'); W.set('cheer');
+    v.stage.sparks.burst(land.x, land.y + 0.1, land.z, 40, { color: ['#ffffff', COLORS[s < 0 ? 0 : 1]], speed: 4, flat: 0.1, life: 0.5, size: 0.3 });
+    await v.run(0.6, (k) => { place(W, land); place(L, arc(pl, bump, k, 1.5)); });
+    L.set('dizzy'); v.dizzy(L); W.set('dance'); W.turnTo = 0;
+    await Promise.all([v.rain(W), v.run(1.9, () => { place(W, land); place(L, bump); })]);
+  },
+];
+
 export class MiniView {
-  constructor(stage, hud, heroes, names, duel) {
+  constructor(stage, hud, heroes, names, duel, swap) {
     Object.assign(this, { stage, hud, heroes, names, id: duel.game, rules: GAMES[duel.game], view: VIEWS[duel.game] });
     this.s = this.rules.create(duel.seed);
     this.group = new THREE.Group();
@@ -182,8 +238,8 @@ export class MiniView {
       ray.setFromCamera(stage.ndc(e), stage.camera);
       if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -C.y), p)) return null;
       return { x: p.x - C.x, y: p.z - C.z };
-    }, this.rules.input, stage.mobile);
-    this.hudEl = hud.miniHud(names, this.rules.name, this.s.left);
+    }, this.rules.input, stage.mobile, swap);
+    this.hudEl = hud.miniHud(names, this.rules.name, this.s.left, swap);
     this.hudEl.classList.toggle('low', !!this.view.low);
     this.view.init(this);
     heroes.forEach((h) => { h.set('idle'); h.root.scale.setScalar(1.04); });
@@ -221,7 +277,7 @@ export class MiniView {
       this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
       if (this.s.done) { this.running = false; this.res(this.s.winner); }
     }
-    this.view.update(this, dt, time);
+    if (!this.show) this.view.update(this, dt, time);
     this.heroes.forEach((h) => (h.ground = this.view.floor ? C.y : h.root.position.y));
     if (this.stage.w !== this.lw || this.stage.h !== this.lh) { this.lw = this.stage.w; this.lh = this.stage.h; this.camera(true); }
   }
@@ -233,12 +289,75 @@ export class MiniView {
     if (!this.view.quiet) this.say('¡Ya!', '', 0.6);
   }
 
+  // Cuadro que corre dentro del bucle del escenario; tocar o pulsar una tecla lo adelanta.
+  run(dur, fn) {
+    return new Promise((res) => {
+      let t = 0;
+      const u = (dt) => {
+        t = this.skip ? dur : t + dt;
+        fn(Math.min(1, t / dur), dt);
+        if (t >= dur) { this.stage.updaters.splice(this.stage.updaters.indexOf(u), 1); res(); }
+      };
+      this.stage.updaters.push(u);
+    });
+  }
+
+  look(p, dist = 6, dur = 0.5) { this.stage.focus(p.clone().setY(C.y + 0.9), { dist, yaw: 0, pitch: 0.32, dur: this.skip ? 0.01 : dur }); }
+
+  // Gemas que caen del cielo sobre quien ganó, cada una con su tintineo.
+  rain(h, n = 14, dur = 1.6) {
+    const geo = new THREE.OctahedronGeometry(0.17), list = [], cols = ['#2fe08a', '#ffd84a', '#ff7ac0', '#7fd6ff'];
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: cols[i % 4], emissive: cols[i % 4], emissiveIntensity: 0.5, roughness: 0.3 }));
+      m.d = (i / n) * dur * 0.8; m.o = new THREE.Vector3((Math.random() - 0.5) * 1.4, 0, (Math.random() - 0.5) * 1.4); m.visible = false;
+      this.group.add(m); list.push(m);
+    }
+    return this.run(dur + 0.3, (k) => {
+      const t = k * (dur + 0.3), p = h.root.position;
+      for (const m of list) {
+        const q = (t - m.d) / 0.45;
+        if (q < 0 || m.done) continue;
+        m.visible = true;
+        const f = Math.min(1, q);
+        m.position.set(p.x + m.o.x * (1 - f), C.y + 1.4 + (1 - f * f) * 4.5, p.z + m.o.z * (1 - f));
+        m.rotation.y += 0.2;
+        if (f >= 1) { m.done = true; m.visible = false; sfx('coin'); this.stage.sparks.burst(m.position.x, m.position.y, m.position.z, 6, { color: ['#ffd84a', '#ffffff'], speed: 1.6, life: 0.4, size: 0.2 }); }
+      }
+    }).then(() => list.forEach((m) => { this.group.remove(m); m.material.dispose(); }));
+  }
+
+  // Estrellitas que giran sobre la cabeza de quien quedó mareado.
+  dizzy(h) {
+    const p = h.root.position;
+    this.stage.sparks.burst(p.x, p.y + 1.9, p.z, 10, { color: ['#ffd84a', '#ffffff'], speed: 0.4, life: 1.6, size: 0.24, swirl: 5, drag: 0.2 });
+  }
+
+  // Cada victoria se celebra con una escena distinta (sin repetir la anterior), de unos 3 segundos.
   async celebrate(w) {
-    this.heroes.forEach((h, i) => { h.root.visible = true; h.turnTo = 0; h.set(w < 0 ? 'cheer' : i === w ? 'cheer' : 'sad'); });
-    this.say(w < 0 ? '¡Empate!' : `¡Gana ${this.names[w]}!`, '', 2);
+    const { stage, heroes, names } = this;
+    this.skip = false;
+    this.show = true;
+    const skip = () => (this.skip = true);
+    window.addEventListener('pointerdown', skip); window.addEventListener('keydown', skip);
+    // Con un puf de humo la arena se cambia por una isla de fiesta, igual para todos los juegos.
+    this.group.children.forEach((c) => (c.visible = false));
+    this.group.add(island({ r: 5.6, k: 0.62, top: ['#ffd27a', '#ffc45c'], plaza: true }));
+    heroes.forEach((h) => { h.root.visible = true; h.root.scale.setScalar(1.04); h.root.rotation.x = h.root.rotation.z = 0; const p = h.root.position; stage.smoke.burst(p.x, p.y + 0.6, p.z, 14, { color: '#ffffff', speed: 1.6, life: 0.6, size: 0.5, alpha: 0.8 }); });
+    const end = this.hud.winner(w < 0 ? null : names[w], w);
     sfx(w < 0 ? 'star' : 'fanfare');
-    if (w >= 0) { const p = this.heroes[w].root.position; for (let k = 0; k < 3; k++) { this.stage.sparks.burst(p.x, p.y + 1.6, p.z, 50, { color: ['#ffd84a', COLORS[w], '#ffffff'], speed: 4, g: 3, life: 1.2, size: 0.3 }); await this.stage.wait(0.5); } }
-    else await this.stage.wait(1.4);
+    if (w < 0) {
+      heroes.forEach((h, i) => { h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6)); h.turnTo = 0; h.set('cheer'); });
+      this.look(V(0, 0, 0.6), 7);
+      await this.run(1.8, () => heroes.forEach((h, i) => h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6))));
+    } else {
+      const W = heroes[w], L = heroes[1 - w], s = w === 0 ? -1 : 1;
+      let n;
+      do n = Math.floor(Math.random() * SCENES.length); while (n === MiniView.last && SCENES.length > 1);
+      MiniView.last = n;
+      await SCENES[n](this, W, L, s);
+    }
+    end();
+    window.removeEventListener('pointerdown', skip); window.removeEventListener('keydown', skip);
   }
 
   dispose() {

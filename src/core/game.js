@@ -8,9 +8,12 @@ import { ADVENTURES, byId, describe } from './adventures.js';
 // lista de eventos que la vista anima en orden. Con la misma semilla y las mismas
 // acciones se obtiene siempre la misma partida (guardado, repetición, en línea).
 
-export const ARRIVE_FIRST = 8;
+export const ARRIVE_FIRST = 6;
 export const ARRIVE_SECOND = 4;
 export const FINAL_TURNS = 3;
+export const CARD_GEMS = 2; // cada carta que sobra al final vale 2 gemas
+export const LATE = 5; // gemas que pierde quien no alcanza a llegar al castillo
+export const RUSH = 10; // segundos de la carta «¡Piensa rápido!»
 export const SIGHT = 3;
 export const TOURNEY_EVERY = 8; // turnos entre torneos: 4 por jugador
 // Hada madrina: acompaña a quien va atrás. nivel: [entra, sale] según su desventaja en gemas.
@@ -34,7 +37,7 @@ const CALM = [
   'Un búho te guiña un ojo.',
 ];
 
-const newFx = () => ({ shield: false, golden: 0, magnet: false, map: false, plus: 0, double: false, fixed: 0, die: null, again: false, worst: false, minus: 0, half: false, locked: false });
+const newFx = () => ({ shield: false, golden: 0, magnet: false, map: false, plus: 0, double: false, fixed: 0, die: null, again: false, worst: false, minus: 0, half: false, locked: false, rush: false });
 
 export class Game {
   constructor({ seed = Date.now(), len = 28, names = ['Princesa', 'Mago'] } = {}) {
@@ -42,7 +45,7 @@ export class Game {
     this.board = makeBoard(seed, len);
     this.rng = makeRng(seed ^ 0x9e3779b9);
     this.players = names.map((name, id) => ({
-      id, name, tile: this.board.startId, gems: 5, stars: 0, hand: [], arrived: false, flags: {}, fx: newFx(),
+      id, name, tile: this.board.startId, gems: 5, stars: 0, hand: [], arrived: false, chest: 0, flags: {}, fx: newFx(),
     }));
     this.turn = this.rng.int(0, 1);
     this.players[1 - this.turn].stars = 1; // compensa empezar segundo
@@ -87,6 +90,7 @@ export class Game {
       case 'shop': return this.shopBuy(a.i);
       case 'cave': return this.caveAct(a.what);
       case 'duel': return this.duelResult(a.winner);
+      case 'castle': return this.castleAct(a.what);
       default: return [];
     }
   }
@@ -217,6 +221,7 @@ export class Game {
   endTurn() {
     const p = this.player, ev = [];
     p.fx.locked = false;
+    p.fx.rush = false;
     this.adventure = this.shop = this.cave = null;
     if (p.fx.again) {
       p.fx.again = false;
@@ -226,7 +231,8 @@ export class Game {
     this.turns++;
     if (this.first != null) {
       this.finalTurns--;
-      return ev.concat(this.finalTurns <= 0 ? this.finish() : this.startTurn());
+      if (this.finalTurns <= 0) return ev.concat(this.finish());
+      return ev.concat(p.arrived ? (this.turn = 1 - this.turn, this.startTurn()) : this.castleTurn());
     }
     this.turn = 1 - this.turn;
     return ev.concat(this.startTurn());
@@ -274,7 +280,7 @@ export class Game {
       case 'dorado': p.fx.golden += 2; break;
       case 'iman': p.fx.magnet = true; break;
       case 'mapa': p.fx.map = true; break;
-      case 'apuesta': this.addGems(ev, p, this.rng.chance(0.5) ? 8 : -3, 'card'); break;
+      case 'apuesta': { const heads = this.rng.chance(0.5); ev.push({ t: 'coin', p: p.id, heads }); this.addGems(ev, p, heads ? 8 : -3, heads ? 'card' : 'bet'); break; }
       case 'trueque': this.addGems(ev, p, Math.min(6, Math.floor(r.gems / 3)), 'card'); break;
       case 'botas': p.fx.plus += 3; break;
       case 'doble': p.fx.double = true; break;
@@ -291,10 +297,11 @@ export class Game {
       case 'nube': hit(() => { r.fx.worst = true; curse(); }); break;
       case 'raices': hit(() => { r.fx.minus += 2; curse(); }); break;
       case 'candado': hit(() => { r.fx.locked = true; curse(); }); break;
+      case 'reloj': hit(() => { r.fx.rush = true; curse(); }); break;
       case 'gusanito': hit(() => this.shove(ev, r, -3)); break;
       case 'cambiazo': hit(() => this.swap(ev, 8)); break;
       case 'reto': this.startDuel(ev, 'reto'); break;
-      case 'cometa': hit(() => this.rob(ev, p, r, Math.min(10, Math.floor(r.gems / 4)))); break;
+      case 'cometa': hit(() => this.rob(ev, p, r, 5)); break;
       case 'estela':
         this.addGems(ev, p, 3, 'card');
         this.shove(ev, p, Math.max(0, Math.min(8, this.tile(p.tile).dist - this.tile(r.tile).dist - 2)));
@@ -686,20 +693,58 @@ export class Game {
     const isFirst = this.first == null;
     ev.push({ t: 'arrive', p: p.id, first: isFirst });
     this.addGems(ev, p, isFirst ? ARRIVE_FIRST : ARRIVE_SECOND, 'castle');
+    this.cashCards(ev, p);
     if (isFirst) {
       this.first = p.id;
       this.turn = this.rival.id;
       this.finalTurns = FINAL_TURNS + (this.aid[this.turn] === 2 ? 1 : 0);
-      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas. A ${this.player.name} le quedan ${this.finalTurns} turnos. Gana quien termine con más gemas.`);
+      this.msg(ev, 'castle', '¡Ya llegó al castillo!', `${p.name} gana ${ARRIVE_FIRST} gemas y juega desde el castillo. A ${this.player.name} le quedan ${this.finalTurns} turnos: si no llega, pierde ${LATE} gemas.`);
       return ev.concat(this.startTurn());
     }
     return ev.concat(this.finish());
   }
 
+  // Quien ya llegó sigue jugando desde el castillo: tira el dado y elige
+  // guardarlo en su cofre (se abre al final) o lanzar una travesura desde la torre.
+  castleTurn() {
+    this.turn = this.first;
+    this.cardPlayed = false;
+    this.bought = {};
+    this.phase = 'castle';
+    this.castle = { die: this.rng.int(1, 6) };
+    return [{ t: 'turn', p: this.turn, castle: true, left: this.finalTurns }, { t: 'castleTurn', p: this.turn, die: this.castle.die }];
+  }
+
+  castleAct(what) {
+    if (this.phase !== 'castle' || !['cofre', 'torre'].includes(what)) return [];
+    const p = this.player, r = this.rival, n = this.castle.die, ev = [{ t: 'castleAct', p: p.id, what, n }];
+    this.castle = null;
+    if (what === 'cofre') p.chest += n;
+    else if (!this.shielded(ev, r, 'Torre del castillo')) this.shove(ev, r, -n);
+    this.turn = r.id;
+    this.phase = 'resolving';
+    return ev.concat(this.startTurn());
+  }
+
+  // Las cartas que sobran se vuelven gemas.
+  cashCards(ev, p) {
+    const n = p.hand.length;
+    if (!n) return;
+    p.hand = [];
+    ev.push({ t: 'cash', p: p.id, n });
+    this.addGems(ev, p, n * CARD_GEMS, 'cash');
+  }
+
   finish() {
+    const ev = [];
+    for (const p of this.players) {
+      if (p.chest) { ev.push({ t: 'chest', p: p.id, n: p.chest }); this.addGems(ev, p, p.chest, 'chest'); p.chest = 0; }
+      this.cashCards(ev, p);
+      if (!p.arrived) { this.msg(ev, 'castle', 'No llegó al castillo', `${p.name} se quedó en el camino y pierde ${LATE} gemas.`, true); this.addGems(ev, p, -LATE, 'late'); }
+    }
     this.phase = 'over';
     const [a, b] = this.players;
     this.winner = a.gems === b.gems ? this.first : a.gems > b.gems ? 0 : 1;
-    return [{ t: 'over', winner: this.winner, tie: a.gems === b.gems }];
+    return ev.concat([{ t: 'over', winner: this.winner, tie: a.gems === b.gems }]);
   }
 }

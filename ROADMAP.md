@@ -32,13 +32,29 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Controles nuevos en PC y celular: mantener pulsado, cuatro direcciones (con botones en pantalla en el celular) y movimiento libre para cada quien.
 - Todos se prueban con jugadores simulados: terminan, son repetibles y ninguno favorece a un lado.
 
-### V3.2 (sigue)
-- Reliquias que cambian tus reglas toda la partida.
-- Maldiciones con duración limitada, que se quitan en un altar (no se contagian).
-- Misión secreta por jugador.
-- Poderes propios de cada personaje.
-- Premios finales sorpresa antes de coronar (más duelos, más caídas, más caminata).
-- Llegar a unas 30 cartas.
+### V3.1.1: final justo y se entiende sin leer (lista)
+- Quien llega primero al castillo sigue jugando: en cada turno del castillo tira el dado y elige guardarlo en su cofre (se abre al final) o hacer retroceder a su rival. Llegar da 6 gemas.
+- Quien no alcanza a llegar pierde 5 gemas. Las cartas que sobran valen 2 gemas cada una.
+- Se mide con `node tools/final.js`: quien llega primero gana el 60 % de las partidas (antes, el 50 %).
+- Cometa real roba hasta 5 gemas. Carta nueva: ¡Piensa rápido! (10 segundos; si no alcanza, el dado se tira solo).
+- Se ve de quién es el turno (borde rosa o azul), cada carta muestra su efecto dibujado, la apuesta lanza una moneda de verdad y pagar ya no parece perder.
+- Volver atrás se marca con flechas chicas y grises.
+- Minijuegos: botón para cambiar de lado, joystick dibujado en pantalla y celebración de victoria con cuatro escenas distintas.
+
+### V3.2: más minijuegos (sigue)
+- El dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, defiende tu nido, topos del jardín, la torre de piedras.
+- En equipo: contra la Sombra y el puente.
+- Variantes de los que ya existen (hielo, noche, señales falsas…).
+
+### V3.3: la Sombra y las criaturas
+- Una sombra que avanza desde la salida y se acelera; si te alcanza pierdes gemas y te escupe hacia adelante.
+- Criaturas malas (troll del puente, lobos) y buenas (conejos, hadas) que aparecen al explorar.
+- Premios que crecen cerca del castillo, medidos con el simulador.
+
+### Después
+- Reliquias, misión secreta, poderes propios, más cartas (unas 40).
+- Modo con reloj opcional.
+- Adivinar la tirada del rival, para cuando cada quien juegue en su celular.
 
 ## V4: modo cooperativo
 La sombra devora el tablero, tres runas por reunir y minijuegos en equipo.

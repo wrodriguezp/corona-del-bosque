@@ -73,7 +73,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 
 /* Pergamino de aventura */
 .scroll { position: absolute; left: 50%; top: 20%; width: min(440px, 88vw); transform: translateX(-50%); background: var(--paper); border-radius: 10px; padding: 16px 22px 18px 78px; border: 3px solid var(--k); box-shadow: 0 16px 40px #20103a77; animation: drop .4s cubic-bezier(.2,1.5,.4,1); }
-.scroll .ic { position: absolute; left: 20px; top: 18px; width: 42px; height: 42px; color: var(--k); }
+.scroll > .ic { position: absolute; left: 20px; top: 18px; width: 42px; height: 42px; color: var(--k); }
 .scroll h3 { margin: 0 0 2px; font: 400 27px/1 var(--disp); }
 .scroll p { margin: 0; font-size: 18px; } .scroll .note { display: block; margin-top: 8px; padding-top: 7px; border-top: 1px dashed #d8c193; font-size: 17px; color: var(--k); }
 @keyframes drop { from { opacity: 0; transform: translate(-50%, -26px) scale(.9); } }
@@ -167,7 +167,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 
 /* Minijuegos */
 .pad { position: absolute; inset: 0; pointer-events: auto; touch-action: none; cursor: crosshair; }
-.dpad { position: absolute; bottom: 5%; width: min(46vw, 46vh, 250px); height: min(46vw, 46vh, 250px); } .dpad.p0 { left: 2vw; --c: var(--p0); } .dpad.p1 { right: 2vw; --c: var(--p1); }
+.dpad { position: absolute; bottom: 5%; width: min(46vw, 46vh, 250px); height: min(46vw, 46vh, 250px); } .dpad.s0 { left: 2vw; } .dpad.s1 { right: 2vw; } .dpad.p0, .stick.p0, .zone.p0 { --c: var(--p0); } .dpad.p1, .stick.p1, .zone.p1 { --c: var(--p1); }
+.stick { position: absolute; left: 0; top: 0; pointer-events: none; } .stick::before, .stick i { content: ''; position: absolute; border-radius: 50%; }
+.stick::before { width: 108px; height: 108px; left: -54px; top: -54px; border: 3px solid var(--c); background: #2a184555; }
+.stick i { width: 52px; height: 52px; left: -26px; top: -26px; background: var(--c); box-shadow: 0 2px 10px #0007; border: 3px solid #fff; transition: transform .03s; }
+.zone { position: absolute; bottom: 0; width: 50%; height: 45%; border-top: 3px dashed var(--c); background: linear-gradient(transparent, #2a184540); pointer-events: none; }
+.zone.s0 { left: 0; border-right: 3px dashed var(--c); border-top-right-radius: 26px; } .zone.s1 { right: 0; border-left: 3px dashed var(--c); border-top-left-radius: 26px; }
 .dpad i { position: absolute; width: 36%; height: 36%; border-radius: 20px; background: #2a1845d9; border: 3px solid var(--c); display: grid; place-items: center; }
 .dpad i::after { content: ''; border: 13px solid transparent; border-bottom: 20px solid #fff; border-top: 0; } .dpad .d0 { top: 0; left: 32%; } .dpad .d1 { top: 32%; right: 0; } .dpad .d2 { bottom: 0; left: 32%; } .dpad .d3 { top: 32%; left: 0; }
 .dpad .d1::after { transform: rotate(90deg); } .dpad .d2::after { transform: rotate(180deg); } .dpad .d3::after { transform: rotate(-90deg); } .dpad i.on { animation: press .25s; } @keyframes press { from { background: var(--c); transform: scale(.88); } }
@@ -180,6 +185,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .sc { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 14px; background: var(--ink); border: 3px solid var(--c); font: 400 24px/1 var(--disp); max-width: 34vw; }
 .sc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sc .ic { color: var(--c); } .sc b { font-size: 42px; font-weight: 400; min-width: 28px; text-align: center; }
 .sc.p0 { left: var(--pad); --c: var(--p0); } .sc.p1 { right: var(--pad); --c: var(--p1); }
+.minihud.swap .sc.p0 { left: auto; right: var(--pad); flex-direction: row-reverse; } .minihud.swap .sc.p1 { right: auto; left: var(--pad); flex-direction: row-reverse; }
+.go2 { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; } .go2 .swap { display: inline-flex; gap: 6px; align-items: center; } .ctl.flip { animation: press .3s; }
 .minihud > .mid { left: 50%; transform: translateX(-50%); text-align: center; font: 400 26px/1 var(--disp); text-shadow: 0 2px 0 var(--ink), 0 0 12px var(--ink); padding-top: 8px; white-space: nowrap; }
 .time { width: min(300px, 30vw); height: 12px; margin: 9px auto 0; border-radius: 9px; background: var(--ink); border: 2px solid #fff; overflow: hidden; } .time i { display: block; height: 100%; background: var(--gold); } .time i.low { background: #ff5d6c; }
 .say { position: absolute; left: 0; right: 0; top: 24%; text-align: center; }
@@ -202,7 +209,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
   .hand { gap: 6px; } .hand .card { width: 23vw; max-width: 120px; min-height: 66px; padding: 5px 6px; } .hand .card .d { display: none; } .hand .card .t { font-size: 15px; flex-direction: column; align-items: flex-start; gap: 2px; }
   .offer { gap: 10px; } .offer .card { width: 100%; max-width: 360px; min-height: 0; display: grid; grid-template-columns: 50px 1fr; text-align: left; gap: 2px 12px; padding: 10px 14px; justify-items: start; }
   .offer .card .fam { grid-column: 2; font-size: 13px; } .offer .card .big { grid-row: 1 / 4; grid-column: 1; font-size: 44px; align-self: center; } .offer .card .t { grid-column: 2; font-size: 22px; } .offer .card .d { grid-column: 2; font-size: 15px; }
-  .help ul { grid-template-columns: 1fr; } .names { flex-direction: column; } .scroll { top: 25%; padding: 12px 14px 14px 60px; } .scroll .ic { left: 13px; width: 34px; height: 34px; }
+  .help ul { grid-template-columns: 1fr; } .names { flex-direction: column; } .scroll { top: 25%; padding: 12px 14px 14px 60px; } .scroll > .ic { left: 13px; width: 34px; height: 34px; }
   .score div { padding: 10px 16px; min-width: 120px; font-size: 21px; }
   .buy { flex-direction: column; gap: 1px; font-size: 13px; max-width: 23vw; padding: 7px 8px; text-align: center; } .row2 { gap: 8px; }
   .risk > div { grid-template-columns: 1fr; gap: 3px; } .risk span { justify-content: center; } .risk p { text-align: center; font-size: 16px; } .tale .risk p { margin: 0; } .prize { font-size: 15px; }
@@ -217,3 +224,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
   .sheet > p { margin-bottom: 8px; } .names { flex-direction: row; } .title h1 { font-size: 46px; } .scroll { top: 14%; } .help ul { grid-template-columns: 1fr 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .banner, .float, .offer .card, .scroll { animation-duration: 1.2s; animation-timing-function: linear; } .hand .card:hover, .offer .card:hover { transform: none !important; } }
+
+/* Victoria en minijuegos */
+.win { position: absolute; inset: 0; pointer-events: none; display: grid; place-items: start center; padding-top: 16vh; z-index: 30; animation: winIn .35s ease-out; background: radial-gradient(ellipse at center, transparent 45%, color-mix(in srgb, var(--c) 55%, transparent)); }
+.win.p0 { --c: var(--p0); --cd: var(--p0d); } .win.p1 { --c: var(--p1); --cd: var(--p1d); } .win.tie { --c: #f3c14b; --cd: #b5811a; }
+.win div { display: flex; align-items: center; gap: 12px; padding: 12px 26px 16px; border-radius: 22px; background: var(--cd); border: 4px solid #fff; color: #fff; font: 400 clamp(30px, 8vw, 54px)/1 var(--disp); box-shadow: 0 8px 0 #0004, 0 0 40px var(--c); animation: winPop .6s cubic-bezier(.3, 1.6, .5, 1); }
+.win span .ic, .win span svg { width: 1.1em; height: 1.1em; }
+.win.out { animation: winOut .4s forwards; }
+@keyframes winIn { from { opacity: 0; } } @keyframes winOut { to { opacity: 0; } }
+@keyframes winPop { from { transform: scale(.2) rotate(-12deg); } 60% { transform: scale(1.12) rotate(3deg); } }
+/* Color del turno: borde suave rosa o azul en toda la pantalla */
+#ui[data-turn]::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; transition: box-shadow .6s; }
+#ui[data-turn="0"]::before { box-shadow: inset 0 0 0 4px var(--p0), inset 0 0 70px 6px color-mix(in srgb, var(--p0) 55%, transparent); }
+#ui[data-turn="1"]::before { box-shadow: inset 0 0 0 4px var(--p1), inset 0 0 70px 6px color-mix(in srgb, var(--p1) 55%, transparent); }
+
+/* Turno del castillo */
+.picks.two { grid-template-columns: 1fr 1fr; } .pick.big { flex-direction: column; text-align: center; gap: 6px; } .pick.big small { display: block; font-size: 14px; opacity: .7; font-weight: 400; }
+.pick .pic { display: flex; align-items: center; justify-content: center; gap: 6px; font: 400 30px/1 var(--disp); color: var(--ink); } .pick .pic > svg, .pick .pic > .ic { width: 48px; height: 48px; color: #c98a12; }
+.pick .pic b { display: inline-flex; align-items: center; gap: 2px; } .pick .pic b svg { width: 26px; height: 26px; }
+.bigdie { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 10px; background: var(--ink); color: #fff; font: 400 24px/1 var(--disp); vertical-align: middle; }
+/* Reloj de «¡Piensa rápido!» */
+.rush { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 99px; background: var(--ink); color: #fff; border: 3px solid var(--gold2); font: 400 30px/1 var(--disp); overflow: hidden; z-index: 5; }
+.rush svg { width: 28px; height: 28px; color: var(--gold2); } .rush i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--gold2); transition: width .1s linear; }
+.rush.low { border-color: #ff6f8f; animation: press .5s infinite; } .rush.low i { background: #ff6f8f; }
+.float.pay { color: var(--gold2); }
+@media (max-width: 560px) { .picks.two { grid-template-columns: 1fr; } }
+
+/* Efectos dibujados: números grandes con íconos */
+.efx { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; font: 400 22px/1.1 var(--disp); color: var(--ink); }
+.efx svg { width: 1.05em; height: 1.05em; flex: none; } .efx .av { display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; border-radius: 50%; color: #fff; }
+.efx .av.p0 { background: var(--p0); } .efx .av.p1 { background: var(--p1); } .efx .av svg { width: .9em; height: .9em; }
+.scroll .efx { font-size: 34px; margin: 2px 0 6px; } .hand .card .efx { font-size: 17px; justify-content: flex-start; color: inherit; }
+.offer .card .efx { font-size: 24px; margin: 2px 0 4px; }
+@media (max-width: 860px), (max-height: 520px) { .offer .card .efx { grid-column: 2; justify-content: flex-start; font-size: 20px; } .hand .card .efx { font-size: 15px; } .scroll .efx { font-size: 28px; } }
+.efx .ic { color: inherit; } .efx .av .ic { color: #fff; } .efx > .ic { color: #1f9d63; }

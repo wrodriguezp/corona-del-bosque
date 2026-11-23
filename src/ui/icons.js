@@ -1,5 +1,6 @@
 // Iconos dibujados en SVG, sin imágenes externas.
 const P = {
+  hourglass: '<path d="M5 2h14v2h-1.500c0 4-3 5.500-4 8 1 2.500 4 4 4 8H19v2H5v-2h1.500c0-4 3-5.500 4-8-1-2.500-4-4-4-8H5zm3.500 2c0 3 3.500 4.500 3.500 7 0-2.500 3.500-4 3.500-7zM9 20h6c0-2-2-3-3-5-1 2-3 3-3 5z"/>',
   crown: '<path d="M3 18 2 7l5 4 5-7 5 7 5-4-1 11zM3 20h18v2H3z"/>',
   hat: '<path d="M13 2c2 1 4 1 6 3-3 0-4 1-4 2l3 10c2 .3 4 1 4 2 0 1.600-4 3-10 3S2 20.600 2 19c0-1 2-1.700 4-2z"/>',
   gem: '<path d="M6 3h12l4 6-10 13L2 9zM2 9h20M9 9l3 12 3-12-3-6z" fill-opacity=".9" stroke="rgba(255,255,255,.55)" stroke-width="1.200"/>',

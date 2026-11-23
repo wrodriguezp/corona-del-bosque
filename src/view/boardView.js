@@ -468,7 +468,12 @@ export class BoardView {
     this.group.remove(m);
   }
 
-  showOptions(ids, color) {
+  // `back`: casillas que quedan más lejos del castillo; se marcan más chicas y apagadas.
+  showOptions(ids, color, back = []) {
+    this.back = new Set(back);
+    const white = new THREE.Color('#ffffff'), dim = new THREE.Color('#7d7790');
+    ids.forEach((id, i) => { const c = this.back.has(id) ? dim : white; this.fill.setColorAt(i, c); this.arrow.setColorAt(i, c); this.hi.setColorAt(i, c); });
+    for (const o of [this.fill, this.arrow, this.hi]) if (o.instanceColor) o.instanceColor.needsUpdate = true;
     for (const id of this.optIds) { const d = this.mistData.get(id); if (d && d.goal) d.goal = 1; }
     for (const id of ids) { const d = this.mistData.get(id); if (d && d.goal) d.goal = 0.22; }
     this.optIds = ids;
@@ -558,10 +563,10 @@ export class BoardView {
     for (const [, s] of this.stars) { s.userData.star.rotation.y = time * 2; s.position.y = s.userData.y + Math.sin(time * 2.4 + s.position.x) * 0.07; }
     const pulse = 1 + Math.sin(time * 5) * 0.04;
     this.optIds.forEach((id, i) => {
-      const h = id === this.hover, s = h ? 1.1 : pulse;
+      const h = id === this.hover, b = this.back?.has(id), s = h ? 1.1 : b ? 0.78 : pulse;
       this.hi.setMatrixAt(i, m.compose(this.pos(id, h ? 0.16 : 0.05), q.identity(), new THREE.Vector3(s, h ? 2.4 : 1, s)));
-      const a = h ? 1.45 : 1;
-      this.arrow.setMatrixAt(i, m.compose(this.pos(id, 0.62 + Math.abs(Math.sin(time * 3 + i * 0.5)) * 0.22), q.setFromAxisAngle(up, time * 1.5), new THREE.Vector3(a, a, a)));
+      const a = h ? 1.45 : b ? 0.6 : 1;
+      this.arrow.setMatrixAt(i, m.compose(this.pos(id, 0.62 + (b ? 0 : Math.abs(Math.sin(time * 3 + i * 0.5)) * 0.22)), q.setFromAxisAngle(up, time * 1.5), new THREE.Vector3(a, a, a)));
       this.fill.setMatrixAt(i, m.compose(this.pos(id, 0.03), q.identity(), new THREE.Vector3(s, 1, s)));
     });
     this.hi.instanceMatrix.needsUpdate = this.arrow.instanceMatrix.needsUpdate = this.fill.instanceMatrix.needsUpdate = true;

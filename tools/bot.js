@@ -22,6 +22,7 @@ export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.
     else if (g.phase === 'adventure') { let i; do i = rng.int(0, 2); while (!g.canChoose(i)); act({ type: 'choose', i }); }
     else if (g.phase === 'shop') { const i = g.shop.items.findIndex((it) => !it.sold && it.price <= p.gems - 4 && p.hand.length < 4); act({ type: 'shop', i: i >= 0 && rng.chance(0.5) ? i : null }); }
     else if (g.phase === 'cave') act({ type: 'cave', what: g.cave.grabs < 3 ? 'grab' : 'leave' });
+    else if (g.phase === 'castle') act({ type: 'castle', what: rng.chance(0.5) ? 'cofre' : 'torre' });
     else if (g.phase === 'duel') act({ type: 'duel', winner: rng.chance(0.1) ? -1 : rng.chance(skill) ? 0 : 1 });
     else if (g.phase === 'ready') {
       if (p.hand.length && !g.cardPlayed && !p.fx.locked && rng.chance(0.6)) act({ type: 'card', i: rng.int(0, p.hand.length - 1), value: rng.int(1, 6) });

@@ -142,3 +142,21 @@ test('con hada hay menos palizas, pero quien es mejor sigue ganando más', () =>
   console.log({ paliza20: big / N, ganaElMejor: best / N });
   assert.ok(big / N < 0.25 && best / N > 0.6);
 });
+
+test('quien llega primero juega desde el castillo y las cartas sobrantes se vuelven gemas', () => {
+  let seen = 0;
+  for (let s = 1; s <= 60; s++) {
+    const { g, log } = autoplay(s);
+    const arrive = log.findIndex((e) => e.t === 'arrive' && e.first);
+    if (arrive < 0) continue;
+    const after = log.slice(arrive);
+    const castle = after.filter((e) => e.t === 'castleTurn');
+    assert.ok(castle.every((e) => e.p === g.first && e.die >= 1 && e.die <= 6));
+    seen += castle.length;
+    for (const e of log.filter((x) => x.t === 'cash')) assert.ok(e.n >= 1 && e.n <= 4);
+    assert.ok(g.players.every((p) => p.hand.length === 0 && p.chest === 0));
+    // Quien no llegó pierde algo al final.
+    for (const p of g.players) if (!p.arrived) assert.ok(log.some((e) => e.t === 'gems' && e.why === 'late' && e.p === p.id) || p.gems === 0);
+  }
+  assert.ok(seen > 20);
+});
