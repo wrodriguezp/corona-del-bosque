@@ -1,6 +1,7 @@
 import { DT, base, clamp, emit, finish, noPad } from './kit.js';
 import { tira, runas, salto, choque, huevo, burbuja } from './nuevos.js';
 import { dragon, conejos, pesca, hongos, pinta, topos, torre } from './bosque.js';
+import { faroles, remar, escudo } from './equipo.js';
 
 export { DT, noPad };
 
@@ -169,4 +170,5 @@ const fuga = {
   },
 };
 
-export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja, dragon, conejos, pesca, hongos, pinta, topos, torre };
+export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja, dragon, conejos, pesca, hongos, pinta, topos, torre, faroles, remar, escudo };
+export const TEAM = Object.keys(GAMES).filter((id) => GAMES[id].team);

@@ -8,7 +8,7 @@ import { Session, localStore } from './core/session.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
-import { RUSH } from './core/game.js';
+import { RUSH, TEAM_WIN, TEAM_LOSE } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
@@ -406,7 +406,7 @@ const play = {
     heroes.forEach((h) => h.set('idle'));
     arrange(false);
   },
-  async duel(e) { hud.clearAct(); sfx('fanfare'); hud.banner(e.by, e.why === 'torneo' ? '¡Torneo real!' : '¡Duelo!', GAMES[e.game].name); await sleep(1.3); },
+  async duel(e) { hud.clearAct(); sfx('fanfare'); hud.banner(e.by, e.team ? '¡La Sombra ataca!' : e.why === 'torneo' ? '¡Torneo real!' : '¡Duelo!', e.team ? `En equipo: ${GAMES[e.game].name}` : GAMES[e.game].name); await sleep(1.3); },
   async card(e) {
     const c = CARDS[e.card], col = FAMILIES[c.family].color;
     hud.clearAct();
@@ -638,10 +638,10 @@ function auto() {
   if (g.phase === 'ready') act({ type: 'roll' });
   else if (g.phase === 'move') { const ids = g.options(); if (ids.length) choose(ids[Math.floor(Math.random() * ids.length)]); }
 }
-const WHY = { torneo: 'Torneo real', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
+const WHY = { sombra: '¡Juntos contra la Sombra!', torneo: 'Torneo real', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
 async function minigame(d) {
   const names = g.players.map((p) => p.name), rules = GAMES[d.game];
-  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
+  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');

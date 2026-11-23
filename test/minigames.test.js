@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAMES, CHASE, noPad, DT } from '../src/core/minigames/index.js';
+import { GAMES, CHASE, TEAM, noPad, DT } from '../src/core/minigames/index.js';
 import { makeRng } from '../src/core/rng.js';
 
 const bots = {
@@ -28,6 +28,11 @@ const bots = {
   pinta: () => [0, 1].map((i) => { let goal = null; return (s, rng) => { const p = noPad(), me = s.p[i]; if (s.flower && rng.chance(0.5)) goal = s.flower; if (!goal || Math.hypot(goal.x - me.x, goal.y - me.y) < 0.4 || rng.chance(0.01)) goal = { x: (rng.next() * 2 - 1) * 4.4, y: (rng.next() * 2 - 1) * 2.8 }; p.x = goal.x - me.x; p.y = goal.y - me.y; return p; }; }),
   topos: () => [0, 1].map((i) => { const plan = new Map(); return (s, rng) => { const p = noPad(); for (const q of s.pops) { if (q.hit[i] || s.t < q.t || s.t > q.t + q.dur) continue; if (!plan.has(q)) plan.set(q, q.kind === 'hedgehog' ? (rng.chance(0.15) ? q.t + 0.3 : 99) : q.t + 0.25 + rng.next() * 0.5); if (s.t >= plan.get(q)) { p.d = q.hole; plan.set(q, 99); break; } } return p; }; }),
   torre: () => [0, 1].map((i) => { let aim = null; return (s, rng) => { const p = noPad(), me = s.p[i]; if (me.wait > 0) { aim = null; return p; } aim ??= (rng.next() - 0.5) * 0.7; const x = s.dir * Math.sin(me.ph) * 1.5; p.a = Math.abs(x - aim) < 0.08 && rng.chance(0.5); return p; }; }),
+  // En equipo: jugadores decentes, con reacción humana.
+  // Cada quien cuida su mitad; ve tarde (reacción) y apunta con error.
+  faroles: () => { const skill = 0.75; return [0, 1].map((i) => { let t = null, wait = 0, err = [0, 0]; return (s, rng) => { const p = noPad(), me = s.p[i]; wait -= DT; if (wait <= 0) { wait = 0.25 + (1 - skill) * 0.5 * rng.next(); const list = s.blobs.slice().sort((a, b) => Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y)); const mine = list.filter((b) => (i ? b.x >= -0.3 : b.x <= 0.3)); t = mine[0] || (rng.chance(skill) ? list[0] : null); err = [(rng.next() - 0.5) * (1 - skill) * 3, (rng.next() - 0.5) * (1 - skill) * 3]; } if (t && s.blobs.includes(t)) { p.x = t.x - me.x + err[0]; p.y = t.y - me.y + err[1]; } else { p.x = (i ? 1.2 : -1.2) - me.x; p.y = -me.y; } return p; }; }); },
+  remar: () => { const skill = 0.75; return [0, 1].map((i) => { let at = null; return (s, rng) => { const p = noPad(); if (s.last === i && !rng.chance((1 - skill) * 0.01)) { at = null; return p; } if (s.rest[i] > 0) return p; at ??= s.t + 0.15 + rng.next() * 0.3 * (1.6 - skill); if (s.t >= at) { p.a = true; at = null; } return p; }; }); },
+  escudo: () => { const skill = 0.75; return [0, 1].map((i) => { let h = false, wait = 0; return (s, rng) => { const p = noPad(), o = 1 - i; wait -= DT; if (wait <= 0) { wait = 0.2 + (1 - skill) * 0.6 * rng.next(); const need = s.mode === 'surge' || (s.mode === 'warn' && rng.chance(skill)); const mine = i === 0 ? s.en[0] >= s.en[1] : s.en[1] > s.en[0]; h = need || (mine && s.b > 0.05) || (s.tired[o] && s.b > 0.02); if (rng.chance((1 - skill) * 0.3)) h = !h; } p.h = h; return p; }; }); },
 };
 
 function play(id, seed, make = bots[id]) {
@@ -37,7 +42,19 @@ function play(id, seed, make = bots[id]) {
   return { s, secs: n * DT };
 }
 
-for (const id of Object.keys(GAMES)) {
+for (const id of TEAM) {
+  test(`${id}: en equipo se puede ganar y perder, y es repetible`, () => {
+    let won = 0, secs = 0; const N = 200;
+    for (let k = 1; k <= N; k++) { const r = play(id, k * 17); won += r.s.won ? 1 : 0; secs += r.secs; assert.ok([-1, -2].includes(r.s.winner)); }
+    console.log(id, { ganan: won / N, segundos: secs / N });
+    assert.ok(won / N > 0.3 && won / N < 0.97);
+    assert.ok(secs / N < 45);
+    assert.equal(play(id, 5, () => [noPad, noPad]).s.won, false);
+    assert.deepEqual(play(id, 99).s.score, play(id, 99).s.score);
+  });
+}
+
+for (const id of Object.keys(GAMES).filter((id) => !GAMES[id].team)) {
   test(`${id}: termina, es justo y repetible`, () => {
     const w = [0, 0, 0]; let secs = 0; const N = 300; const sc = [0, 0];
     for (let k = 1; k <= N; k++) { const r = play(id, k * 17); w[r.s.winner < 0 ? 2 : r.s.winner]++; secs += r.secs; sc[0] += r.s.score[0]; sc[1] += r.s.score[1]; }

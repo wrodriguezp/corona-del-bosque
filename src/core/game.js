@@ -22,6 +22,9 @@ export const FAIRY_FROM = 4; // turnos de gracia al comenzar
 export const DUEL_GEMS = 4;
 export const CAVE = [2, 3, 3, 4, 5, 6];
 export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', 'choque', 'huevo', 'burbuja', 'dragon', 'conejos', 'pesca', 'hongos', 'pinta', 'topos', 'torre'];
+export const TEAM_GAMES = ['faroles', 'remar', 'escudo'];
+export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
+export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
 
 const TRAPS = {
   pozo: { title: 'Pozo escondido', text: 'El suelo cede. Retrocedes 3 casillas.' },
@@ -202,6 +205,11 @@ export class Game {
     ev.push({ t: 'turn', p: p.id, extra, left: this.first != null ? this.finalTurns : null });
     this.updateFairy(ev);
     if (!extra) worldTick(this, ev);
+    if (this.shadowAttack) {
+      this.shadowAttack = false;
+      this.startDuel(ev, 'sombra');
+      return ev;
+    }
     if (!extra && this.first == null && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
       this.lastTourney = this.turns;
       this.startDuel(ev, 'torneo');
@@ -655,17 +663,31 @@ export class Game {
 
   /* ---------- Minijuegos ---------- */
   startDuel(ev, why) {
-    if (!this.bag.length) this.bag = this.rng.shuffle(MINIGAMES);
-    this.duel = { why, game: this.bag.pop(), seed: this.rng.int(1, 1e9), by: this.turn };
+    const team = why === 'sombra', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
+    if (!this[key]?.length) this[key] = this.rng.shuffle(list);
+    this.duel = { why, game: this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
     this.phase = 'duel';
     ev.push({ t: 'duel', ...this.duel });
   }
 
   duelResult(w) {
-    if (this.phase !== 'duel' || ![0, 1, -1].includes(w)) return [];
-    const { why } = this.duel, ev = [];
+    if (this.phase !== 'duel' || ![0, 1, -1, -2].includes(w)) return [];
+    const { why, team } = this.duel, ev = [];
+    if (team ? w > -1 : w === -2) return [];
     this.duel = null;
     this.phase = 'resolving';
+    if (team) {
+      if (w === -1) {
+        this.msg(ev, 'sun', '¡Vencieron a la Sombra!', `Juntos la hicieron retroceder. Cada quien gana ${TEAM_WIN} gemas.`, true);
+        for (const p of this.players) this.addGems(ev, p, TEAM_WIN, 'team');
+      } else {
+        this.msg(ev, 'omen', 'La Sombra ganó esta vez', `Se lleva hasta ${TEAM_LOSE} gemas de cada quien. El escudo de luz protege.`, true);
+        for (const p of this.players) if (!this.shielded(ev, p, 'La Sombra')) this.addGems(ev, p, -TEAM_LOSE, 'lost');
+      }
+      this.phase = 'ready';
+      this.checkStars(ev);
+      return ev;
+    }
     const win = this.players[w], lose = this.players[1 - w];
     if (w < 0) {
       this.msg(ev, 'shrine', '¡Empate!', 'Los dos ganan 2 gemas por el espectáculo.', true);

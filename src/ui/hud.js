@@ -310,7 +310,7 @@ export class Hud {
     }[rules.input];
     const role = rules.input === 'chase';
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2><p>${rules.goal}</p>
-      <div class="ctl"></div><div class="prize">${prize.map((t, i) => `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>`).join('')}</div>
+      <div class="ctl"></div><div class="prize">${prize.map((t, i) => (typeof t === 'string' ? `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>` : `<span class="${t.cls}">${icon(t.icon)}${esc(t.text)}</span>`)).join('')}</div>
       <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
     const draw = () => {
       s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}</div>`; }).join('');
@@ -322,8 +322,9 @@ export class Hud {
   }
 
   // Letrero grande de victoria con la pantalla teñida del color de quien ganó.
-  winner(name, i) {
-    const e = el(`win ${i < 0 ? 'tie' : `p${i}`}`, `<div><span>${i < 0 ? icon('star') : icon(AV[i])}</span><b>${i < 0 ? '¡Empate!' : `¡Gana ${esc(name)}!`}</b></div>`);
+  winner(name, i, team = false) {
+    const text = team ? (i === -1 ? '¡Ganaron juntos!' : '¡Ganó la Sombra!') : i < 0 ? '¡Empate!' : `¡Gana ${esc(name)}!`;
+    const e = el(`win ${team ? (i === -1 ? 'team' : 'shadow') : i < 0 ? 'tie' : `p${i}`}`, `<div><span>${team ? icon(i === -1 ? 'sun' : 'omen') : i < 0 ? icon('star') : icon(AV[i])}</span><b>${text}</b></div>`);
     this.root.append(e);
     return () => { e.classList.add('out'); setTimeout(() => e.remove(), 400); };
   }

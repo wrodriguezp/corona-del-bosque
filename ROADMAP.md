@@ -49,9 +49,17 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Botón para salir al menú en plena partida: queda guardada y se puede continuar, empezar otra o cambiar los nombres.
 - Cada versión publicada lleva una huella de su código: si el juego se actualiza, la partida guardada con la versión anterior se borra sola.
 
-### V3.3: juntos contra la Sombra (sigue)
-- Minijuegos en equipo: ganan o pierden los dos juntos contra la Sombra.
-- Más adelante: defiende tu nido, variantes de los que ya existen (hielo, noche, señales falsas…), catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+### V3.3: juntos contra la Sombra ✓
+- Evento «Ataque de la Sombra»: el presagio lo anuncia y al turno siguiente juegan en equipo.
+- Tres minijuegos en equipo: faroles contra la Sombra, remar juntos y el escudo de luz.
+- Si ganan, 4 gemas para cada quien; si gana la Sombra, hasta 3 menos (el escudo protege).
+
+### Más minijuegos en equipo (ideas)
+- El puente: uno sostiene el puente mientras el otro cruza, y luego al revés.
+- Pasar la llama: llevar una antorcha entre los dos sin que se apague.
+- Runas en equipo: cada quien ve la mitad de la secuencia.
+- Defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+- Variantes de los que ya existen (hielo, noche, señales falsas…).
 
 ### V3.4: la Sombra y las criaturas
 - Una sombra que avanza desde la salida y se acelera; si te alcanza pierdes gemas y te escupe hacia adelante.

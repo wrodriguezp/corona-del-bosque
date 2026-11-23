@@ -4,6 +4,7 @@ import { GAMES, CHASE, DT } from '../core/minigames/index.js';
 import { C, V, COLORS, island } from './arena.js';
 import { NEW_VIEWS } from './minigames2.js';
 import { FOREST_VIEWS } from './minigames3.js';
+import { TEAM_VIEWS } from './minigames4.js';
 import { Pads } from './pads.js';
 import { sfx } from '../audio.js';
 
@@ -170,6 +171,7 @@ const VIEWS = {
   },
   ...NEW_VIEWS,
   ...FOREST_VIEWS,
+  ...TEAM_VIEWS,
 };
 
 const place = (h, p) => h.root.position.copy(p);
@@ -345,12 +347,20 @@ export class MiniView {
     this.group.children.forEach((c) => (c.visible = false));
     this.group.add(island({ r: 5.6, k: 0.62, top: ['#ffd27a', '#ffc45c'], plaza: true }));
     heroes.forEach((h) => { h.root.visible = true; h.root.scale.setScalar(1.04); h.root.rotation.x = h.root.rotation.z = 0; const p = h.root.position; stage.smoke.burst(p.x, p.y + 0.6, p.z, 14, { color: '#ffffff', speed: 1.6, life: 0.6, size: 0.5, alpha: 0.8 }); });
-    const end = this.hud.winner(w < 0 ? null : names[w], w);
-    sfx(w < 0 ? 'star' : 'fanfare');
-    if (w < 0) {
-      heroes.forEach((h, i) => { h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6)); h.turnTo = 0; h.set('cheer'); });
+    const team = !!this.rules.team;
+    const end = this.hud.winner(w < 0 ? null : names[w], w, team);
+    sfx(w === -2 ? 'lose' : w < 0 ? 'star' : 'fanfare');
+    if (w === -2) {
+      // Ganó la Sombra: los dos quedan tristes bajo una nube oscura.
+      heroes.forEach((h, i) => { h.root.position.copy(V(i ? 0.9 : -0.9, 0, 0.6)); h.turnTo = 0; h.set('sad'); });
+      this.look(V(0, 0, 0.6), 6.5);
+      let t = 0;
+      await this.run(2.2, (k, dt) => { heroes.forEach((h, i) => h.root.position.copy(V(i ? 0.9 : -0.9, 0, 0.6))); if ((t += dt) > 0.07) { t = 0; const p = V((Math.random() - 0.5) * 3, 2.6, 0.6); stage.smoke.burst(p.x, p.y, p.z, 2, { color: '#3b2f52', speed: 0.3, life: 0.8, size: 0.7, alpha: 0.75 }); } });
+    } else if (w < 0) {
+      heroes.forEach((h, i) => { h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6)); h.turnTo = 0; h.set(team ? 'dance' : 'cheer'); });
       this.look(V(0, 0, 0.6), 7);
-      await this.run(1.8, () => heroes.forEach((h, i) => h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6))));
+      if (team) await Promise.all([this.rain(heroes[0], 10, 2), this.rain(heroes[1], 10, 2)]);
+      else await this.run(1.8, () => heroes.forEach((h, i) => h.root.position.copy(V(i ? 1.1 : -1.1, 0, 0.6))));
     } else {
       const W = heroes[w], L = heroes[1 - w], s = w === 0 ? -1 : 1;
       let n;

@@ -171,3 +171,18 @@ test('una partida guardada con otra versión del juego se borra al abrir', () =>
   assert.equal(Session.load(mem('v2')), null);
   assert.equal(saved, null);
 });
+
+test('la Sombra ataca: juegan juntos y ganan o pierden los dos', () => {
+  for (const [w, delta] of [[-1, 4], [-2, -3]]) {
+    const g = new Game({ names: ['A', 'B'], len: 20, seed: 8 });
+    g.apply({ type: 'begin' });
+    g.players.forEach((p) => (p.gems = 10));
+    g.shadowAttack = true;
+    const ev = g.startTurn();
+    assert.ok(ev.some((e) => e.t === 'duel' && e.team));
+    assert.equal(g.apply({ type: 'duel', winner: 0 }).length, 0);
+    g.apply({ type: 'duel', winner: w });
+    assert.deepEqual(g.players.map((p) => p.gems), [10 + delta, 10 + delta]);
+    assert.equal(g.phase, 'ready');
+  }
+});

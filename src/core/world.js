@@ -46,6 +46,17 @@ function starSpots(g) {
 }
 
 export const EVENTS = {
+  sombra: {
+    chip: 'Ataque de la Sombra', icon: 'omen',
+    title: 'La Sombra ataca', omen: 'Una niebla oscura se acerca',
+    warn: `${SOON} la Sombra atacará: jugarán juntos un minijuego. Si ganan, cada quien gana gemas; si pierden, la Sombra les quita gemas a los dos.`,
+    can: (g) => g.first == null,
+    prepare: () => ({}),
+    run(g, ev) {
+      ev.push({ t: 'shadow' });
+      g.shadowAttack = true;
+    },
+  },
   dragon: {
     chip: 'Vuela el dragón', icon: 'flame',
     title: 'El dragón sale a volar', omen: 'Una sombra enorme',
