@@ -41,10 +41,14 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Volver atrás se marca con flechas chicas y grises.
 - Minijuegos: botón para cambiar de lado, joystick dibujado en pantalla y celebración de victoria con cuatro escenas distintas.
 
-### V3.2: más minijuegos (sigue)
-- El dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, defiende tu nido, topos del jardín, la torre de piedras.
-- En equipo: contra la Sombra y el puente.
+### V3.2: más minijuegos (lista)
+- Siete minijuegos nuevos, dieciséis en total: el dragón dormido (avanzar solo mientras duerme), cuenta conejos (contar los blancos), la pesca (paciencia), ritmo de hongos (tres carriles al compás), pinta el claro (territorio), topos del jardín (reflejos) y la torre de piedras (precisión).
+- Todos se miden con jugadores simulados: duran entre 15 y 31 segundos y ninguno favorece a un lado.
+
+### V3.2.1: más minijuegos (sigue)
+- Defiende tu nido, y en equipo: contra la Sombra y el puente.
 - Variantes de los que ya existen (hielo, noche, señales falsas…).
+- Ideas por probar: catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
 
 ### V3.3: la Sombra y las criaturas
 - Una sombra que avanza desde la salida y se acelera; si te alcanza pierdes gemas y te escupe hacia adelante.

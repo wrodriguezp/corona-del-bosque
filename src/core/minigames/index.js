@@ -1,5 +1,6 @@
 import { DT, base, clamp, emit, finish, noPad } from './kit.js';
 import { tira, runas, salto, choque, huevo, burbuja } from './nuevos.js';
+import { dragon, conejos, pesca, hongos, pinta, topos, torre } from './bosque.js';
 
 export { DT, noPad };
 
@@ -168,4 +169,4 @@ const fuga = {
   },
 };
 
-export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja };
+export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja, dragon, conejos, pesca, hongos, pinta, topos, torre };

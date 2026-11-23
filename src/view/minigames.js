@@ -3,6 +3,7 @@ import { matGlow, paint, paintBy, loft, ico, star, mesh } from './geo.js';
 import { GAMES, CHASE, DT } from '../core/minigames/index.js';
 import { C, V, COLORS, island } from './arena.js';
 import { NEW_VIEWS } from './minigames2.js';
+import { FOREST_VIEWS } from './minigames3.js';
 import { Pads } from './pads.js';
 import { sfx } from '../audio.js';
 
@@ -168,6 +169,7 @@ const VIEWS = {
     },
   },
   ...NEW_VIEWS,
+  ...FOREST_VIEWS,
 };
 
 const place = (h, p) => h.root.position.copy(p);

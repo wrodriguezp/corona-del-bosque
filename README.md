@@ -6,7 +6,7 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 
 - Aventuras con decisiones, algunas con consecuencias turnos después.
 - Mercado, cueva del dragón, un águila que te lleva y un gusano que te traga.
-- Nueve minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón y burbuja valiente.
+- Dieciséis minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón, burbuja valiente, el dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, topos del jardín y la torre de piedras.
 - 28 cartas y gemas para gastar en pleno turno.
 - Un final justo: quien llega primero sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.

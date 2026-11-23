@@ -125,7 +125,7 @@ export const salto = {
 };
 
 /* ---------- Cosas en común de las arenas con movimiento libre ---------- */
-const steer = (p, pad, speed, grip) => {
+export const steer = (p, pad, speed, grip) => {
   let { x, y } = pad;
   const m = Math.hypot(x, y);
   if (m > 1) { x /= m; y /= m; }

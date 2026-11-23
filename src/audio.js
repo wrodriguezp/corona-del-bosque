@@ -82,6 +82,8 @@ const FX = {
   fire: (t) => { noise(t, 1.3, 700, 0.9, 0.5); noise(t + 0.2, 1, 1800, 0.35, 0.6); },
   boing: (t) => { note(160, t, 0.35, { type: 'sine', vol: 0.22, to: 620 }); noise(t, 0.12, 900, 0.5); },
   whoosh: (t) => noise(t, 0.45, 1400, 0.3, 0.9),
+  note: (t, n = 0) => { note(hz(72 + n), t, 0.32, { vol: 0.13 }); note(hz(84 + n), t, 0.18, { vol: 0.05, type: 'sine' }); },
+  splash: (t) => { noise(t, 0.35, 900, 0.5, 0.7); noise(t + 0.05, 0.2, 2600, 0.2); },
   pay: (t) => [84, 88, 91].forEach((n, i) => note(hz(n), t + i * 0.07, 0.25, { vol: 0.09, type: 'triangle' })),
   win: (t) => [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((n, i) => { note(hz(n), t + i * 0.13, 0.7, { vol: 0.15 }); note(hz(n - 12), t + i * 0.13, 0.5, { vol: 0.09, type: 'sine' }); }),
 };
