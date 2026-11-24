@@ -27,6 +27,13 @@ export const TEAM_GAMES = ['faroles', 'remar', 'escudo'];
 export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
 export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
 export const NEAR = [0.5, 0.72];
+// Guardianes del Rey Sombrío: cierran el paso entre zonas. Quien llega primero a uno
+// se detiene y los dos juegan juntos un minijuego en equipo contra él.
+export const GUARDS = [
+  { at: 0.28, kind: 'conejo', name: 'el Conejo Gigante', title: '¡El Conejo Gigante cierra el paso!', text: 'Un conejo enorme, hipnotizado por el Rey Sombrío, no deja pasar a nadie. ¡A vencerlo juntos!' },
+  { at: 0.53, kind: 'troll', name: 'el Troll Hipnotizado', title: '¡Un troll hipnotizado!', text: 'El Rey Sombrío puso a su troll más grande a cuidar el camino. ¡A vencerlo juntos!' },
+  { at: 0.78, kind: 'rey', name: 'el Rey Sombrío', title: '¡El Rey Sombrío en persona!', text: 'El dueño de la Sombra les cierra el paso al castillo. ¡A vencerlo juntos!' },
+];
 export const GOLDEN = 3; // gemas extra del «Toque dorado» en cada casilla de gemas // tramos del camino donde los premios crecen
 
 const TRAPS = {
@@ -80,6 +87,13 @@ export class Game {
     this.critters = [];
     this.critterId = 0;
     this.look(this.board.startId);
+    // Cada guardián se para en el camino más corto, donde empieza su zona.
+    const { parent } = bfs(this.board, this.board.startId), main = pathTo(parent, this.board.startId, this.board.castleId);
+    this.guards = GUARDS.map((q, i) => {
+      const p = Math.round(q.at * this.board.length);
+      const tile = main.find((id) => progress(this, this.tile(id)) >= p) ?? main.at(-2);
+      return { i, kind: q.kind, p, tile, done: false };
+    });
   }
 
   get player() { return this.players[this.turn]; }
@@ -451,10 +465,16 @@ export class Game {
     if (this.phase !== 'move' || !this.options().includes(id)) return [];
     const p = this.player, r = this.rival, ev = [];
     const path = this.pathFor(id);
-    let walked = 0;
+    let walked = 0, before = progress(this, this.tile(p.tile));
     for (const step of path) {
       p.tile = step;
       walked++;
+      const now = progress(this, this.tile(step)), guard = this.guards.find((q) => !q.done && before < q.p && now >= q.p);
+      before = now;
+      if (guard && step !== this.board.castleId) {
+        ev.push({ t: 'step', p: p.id, id: step, last: true });
+        return ev.concat(this.meetGuard(guard));
+      }
       const t = this.tile(step), caught = t.snare != null && t.snare !== p.id;
       ev.push({ t: 'step', p: p.id, id: step, last: step === id || caught });
       const ids = this.look(step);
@@ -683,9 +703,20 @@ export class Game {
     return ev.concat(this.endTurn());
   }
 
+  // Un guardián cierra el paso: el turno se detiene y juegan juntos contra él.
+  meetGuard(q) {
+    const ev = [], G = GUARDS[q.i];
+    q.done = true;
+    ev.push({ t: 'guard', i: q.i, kind: q.kind, p: this.turn, id: this.player.tile });
+    this.msg(ev, 'omen', G.title, G.text, false, `Si ganan: ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: hasta −${TEAM_LOSE} a cada quien`);
+    this.startDuel(ev, 'guardia');
+    this.duel.guard = q.i;
+    return ev;
+  }
+
   /* ---------- Minijuegos ---------- */
   startDuel(ev, why) {
-    const team = why === 'sombra', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
+    const team = why === 'sombra' || why === 'guardia', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
     if (!this[key]?.length) this[key] = this.rng.shuffle(list);
     this.duel = { why, game: this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
     this.phase = 'duel';
@@ -694,18 +725,21 @@ export class Game {
 
   duelResult(w) {
     if (this.phase !== 'duel' || ![0, 1, -1, -2].includes(w)) return [];
-    const { why, team } = this.duel, ev = [];
+    const { why, team, guard } = this.duel, ev = [];
     if (team ? w > -1 : w === -2) return [];
     this.duel = null;
     this.phase = 'resolving';
     if (team) {
+      const foe = why === 'guardia' ? GUARDS[guard].name : 'la Sombra del Rey';
       if (w === -1) {
-        this.msg(ev, 'sun', '¡Vencieron a la Sombra!', `Juntos la hicieron retroceder. Cada quien gana ${TEAM_WIN} gemas.`, true);
+        this.msg(ev, 'sun', `¡Vencieron a ${foe}!`, `Juntos le ganaron. Cada quien gana ${TEAM_WIN} gemas.`, true);
         for (const p of this.players) this.addGems(ev, p, TEAM_WIN, 'team');
       } else {
-        this.msg(ev, 'omen', 'La Sombra ganó esta vez', `Se lleva hasta ${TEAM_LOSE} gemas de cada quien. El escudo de luz protege.`, true);
-        for (const p of this.players) if (!this.shielded(ev, p, 'La Sombra')) this.addGems(ev, p, -TEAM_LOSE, 'lost');
+        this.msg(ev, 'omen', `Ganó ${foe} esta vez`, `Se lleva hasta ${TEAM_LOSE} gemas de cada quien. El escudo protege.`, true);
+        for (const p of this.players) if (!this.shielded(ev, p, 'La Sombra del Rey')) this.addGems(ev, p, -TEAM_LOSE, 'lost');
       }
+      ev.push({ t: 'teamEnd', won: w === -1, guard });
+      if (why === 'guardia') return ev.concat(this.endTurn());
       this.phase = 'ready';
       this.checkStars(ev);
       return ev;

@@ -3,6 +3,7 @@ import { steer } from './nuevos.js';
 
 // Minijuegos en equipo: los dos ganan o pierden juntos contra la Sombra.
 // winner = -1 si ganan los dos, -2 si gana la Sombra. score lleva lo que aportó cada quien.
+// Todos van de fácil a difícil: al principio hay margen para aprender los controles.
 const end = (s, won) => { s.done = true; s.won = won; s.winner = won ? -1 : -2; emit(s, won ? 'saved' : 'lost'); };
 
 /* ---------- Faroles contra la Sombra: defender la llama ---------- */
@@ -32,7 +33,7 @@ export const faroles = {
       const a0 = s.rng.next() * Math.PI * 2, n = k > 0.35 && s.rng.chance(0.55) ? 2 : 1;
       for (let j = 0; j < n; j++) {
         const a = a0 + j * (Math.PI * 0.8 + s.rng.next() * 0.4);
-        s.blobs.push({ id: s.id++, x: Math.cos(a) * (LAMP.r + 0.3), y: Math.sin(a) * (LAMP.r + 0.3), v: 1.7 + 1.5 * k + s.rng.next() * 0.3 });
+        s.blobs.push({ id: s.id++, x: Math.cos(a) * (LAMP.r + 0.3), y: Math.sin(a) * (LAMP.r + 0.3), v: 1.2 + 2.1 * k + s.rng.next() * 0.3 });
         emit(s, 'spawn', { a });
       }
     }
@@ -52,7 +53,7 @@ export const faroles = {
 /* ---------- Remar juntos: huir por el río ---------- */
 // La barca solo avanza si reman por turnos: una vez cada quien. Si alguien rema dos
 // veces seguidas, la barca da un bandazo y frena. La Sombra viene detrás, cada vez más rápido.
-export const ROW = { goal: 60, stroke: 1.05, drag: 0.75, rest: 0.22, shadow: -7, chase: 3.8, faster: 0.12, time: 30 };
+export const ROW = { goal: 60, stroke: 1.05, drag: 0.75, rest: 0.22, shadow: -7, chase: 3.8, faster: 0.21, time: 30 };
 export const remar = {
   name: 'Remar juntos', icon: 'again', input: 'button', time: ROW.time, team: true,
   goal: ['Juegan en equipo. Van los dos en una barca y la Sombra los persigue por detrás.', 'Remen por turnos: primero uno, después el otro, y así. Si la misma persona rema dos veces seguidas, la barca se tambalea y frena.', 'Ganan los dos si llegan a la orilla antes de que la Sombra los alcance.'],
@@ -66,13 +67,15 @@ export const remar = {
       s.rest[i] = Math.max(0, s.rest[i] - DT);
       if (!pads[i].a || s.rest[i] > 0) continue;
       s.rest[i] = ROW.rest;
-      if (s.last === i) { s.v *= 0.45; s.wob = 0.6; emit(s, 'wobble', { p: i }); continue; }
-      s.last = i; s.v += ROW.stroke * (s.wob > 0 ? 0.4 : 1); s.score[i]++;
+      // Al comienzo cada remada empuja más y equivocarse frena menos; cerca de la orilla, al revés.
+      const k = Math.min(1, s.x / ROW.goal);
+      if (s.last === i) { s.v *= 0.72 - 0.34 * k; s.wob = 0.6; emit(s, 'wobble', { p: i }); continue; }
+      s.last = i; s.v += ROW.stroke * (1.35 - 0.62 * k) * (s.wob > 0 ? 0.4 : 1); s.score[i]++;
       emit(s, 'stroke', { p: i });
     }
     s.v -= s.v * ROW.drag * DT;
     s.x += s.v * DT;
-    s.shade += (ROW.chase + ROW.faster * s.t) * DT * (s.t > 1.5 ? 1 : 0);
+    s.shade += (ROW.chase + ROW.faster * s.t) * DT * (s.t > 2.5 ? 1 : 0);
     if (s.x >= ROW.goal) return end(s, true);
     if (s.shade >= s.x - 0.5 || s.left <= 0) end(s, false);
   },
@@ -87,7 +90,7 @@ export const escudo = {
   goal: ['Juegan en equipo. Entre los dos sostienen un escudo de luz, y la Sombra empuja del otro lado.', 'Mantén pulsado para empujar, pero quien empuja se cansa: túrnense para descansar. Cuando el cielo se pone rojo, la Sombra empuja más fuerte: ahí empujen los dos a la vez.', 'Si aguantan hasta el final, ganan los dos. Si la Sombra rompe el escudo, gana ella.'],
   create(seed) {
     const s = { ...base(seed), left: SHIELD.time, b: 0.25, en: [1, 1], tired: [false, false], push: [false, false], held: [0, 0], mode: 'calm', clock: 0 };
-    s.next = 3 + s.rng.next() * 2;
+    s.next = 4.5 + s.rng.next() * 1.5;
     return s;
   },
   step(s, pads) {
@@ -105,7 +108,8 @@ export const escudo = {
       } else s.en[i] = Math.min(1, s.en[i] + SHIELD.regain * DT);
     }
     s.score = s.held.map(Math.floor);
-    s.b = clamp(s.b + ((s.mode === 'surge' ? SHIELD.surge : SHIELD.base) - force) * DT, 0, 1);
+    const q = s.t / SHIELD.time; // la Sombra empuja suave al principio y fuerte al final
+    s.b = clamp(s.b + ((s.mode === 'surge' ? SHIELD.surge * (0.7 + 0.52 * q) : SHIELD.base * (0.55 + 0.82 * q)) - force) * DT, 0, 1);
     if (s.b >= 1) return end(s, false);
     if (s.left <= 0) end(s, true);
   },

@@ -4,6 +4,7 @@ import { caveMesh, shopMesh, nestMesh, holeMesh, arenaMesh, fireMesh, bookMesh, 
 import { ease } from './stage.js';
 import { makeRng } from '../core/rng.js';
 import { makeCritter } from './critters.js';
+import { makeFoe } from './foes.js';
 
 const SHADE_COL = new THREE.Color('#2e2342');
 
@@ -180,6 +181,7 @@ export class BoardView {
     stage.scene.add(this.group);
     this.contents = new Map();
     this.critters = new Map();
+    this.guards = new Map();
     this.shade = 0;
     this.rng = makeRng(board.seed + 99);
     this.buildTiles();
@@ -398,6 +400,44 @@ export class BoardView {
       this.gloomGoal[t.id] = 1;
       this.stage.smoke.burst(t.x, t.h + 0.2, t.z, 3, { color: ['#2e2342', '#4b3a66'], speed: 0.5, up: 0.9, life: 1.4, size: 0.6, grow: 0.5, alpha: 0.75 });
     })));
+  }
+
+  /* ---------- Guardianes del Rey ---------- */
+  // Esperan en el camino, mirando hacia la salida, con un aura morada.
+  addGuard(q) {
+    const f = makeFoe(q.kind), p = this.pos(q.tile), s = this.board.tiles[this.board.startId];
+    f.root.position.copy(p);
+    f.root.rotation.y = Math.atan2(s.x - p.x, s.z - p.z);
+    if (q.kind === 'rey') f.root.scale.setScalar(1.1);
+    f.aura = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.62, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#b14bff', transparent: true, opacity: 0.7, depthWrite: false }));
+    f.aura.position.copy(p).setY(p.y + 0.04);
+    this.group.add(f.root, f.aura);
+    this.guards.set(q.i, f);
+  }
+
+  // El guardián salta hasta donde se detuvo quien llegó (si tomó otro camino).
+  async guardTo(i, id, by) {
+    const f = this.guards.get(i);
+    if (!f) return;
+    const a = f.root.position.clone(), b = this.pos(id).add(new THREE.Vector3(0.55, 0, 0.35));
+    f.root.rotation.y = Math.atan2(by.x - b.x, by.z - b.z);
+    f.set('cheer', 1.4);
+    if (a.distanceTo(b) > 0.05) await this.stage.tween(0.55, (k) => { f.root.position.lerpVectors(a, b, k); f.root.position.y += Math.sin(k * Math.PI) * 1.2; }, ease.lin);
+    f.aura.position.copy(b).setY(b.y + 0.04);
+  }
+
+  // Al terminar el minijuego el guardián se va: derrotado entre chispas, o riéndose entre humo.
+  async removeGuard(i, won) {
+    const f = this.guards.get(i);
+    if (!f) return;
+    this.guards.delete(i);
+    const p = f.root.position.clone(), s0 = f.root.scale.x;
+    f.set(won ? 'hurt' : 'cheer');
+    if (won) this.stage.sparks.burst(p.x, p.y + 0.8, p.z, 40, { color: ['#fff3a0', '#ffffff', '#b8f4ff'], speed: 2.4, up: 1.6, life: 0.9, size: 0.26 });
+    this.stage.smoke.burst(p.x, p.y + 0.5, p.z, 16, { color: ['#3b2f52', '#6a2fa0'], speed: 1.2, up: 1.2, life: 1, size: 0.5, grow: 0.4, alpha: 0.8 });
+    await this.stage.wait(0.6);
+    await this.stage.tween(0.5, (k) => { f.root.scale.setScalar(Math.max(0.01, s0 * (1 - k))); f.aura.material.opacity = 0.7 * (1 - k); }, ease.lin);
+    this.group.remove(f.root, f.aura);
   }
 
   /* ---------- Criaturas ---------- */
@@ -676,6 +716,7 @@ export class BoardView {
     }
     this.mystery.instanceMatrix.needsUpdate = true;
     for (const [, m] of this.critters) m.userData.idle(time + m.userData.phase);
+    for (const [, f] of this.guards) { f.update(dt, time); f.aura.material.opacity = 0.45 + Math.sin(time * 3) * 0.25; }
     const cr = this.castle.userData.crown;
     cr.rotation.y += dt * 0.9;
     cr.position.y = 2.4 + Math.sin(time * 1.6) * 0.1;

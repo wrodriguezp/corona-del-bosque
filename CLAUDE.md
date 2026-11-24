@@ -35,9 +35,10 @@ npm run build
 node tools/medir.js    # palizas, quién gana, eventos por partida
 node tools/final.js    # ¿conviene llegar primero?
 ```
-Referencias actuales (V3.6, 600 partidas simuladas):
-- Hay 20 o más gemas de diferencia en el ~17 % de las partidas.
-- Quien llega primero gana el ~71 %.
+Referencias actuales (V3.7, 600 partidas simuladas):
+- Hay 20 o más gemas de diferencia en el ~18 % de las partidas.
+- Quien llega primero gana el ~69 %.
+- Minijuegos en equipo (bots): faroles ~96 %, remar ~90 %, escudo ~73 %.
 - Princesa y Mago ganan ~50 % cada uno.
 
 ### En el navegador (`npm run dev`)
@@ -72,12 +73,12 @@ Referencias actuales (V3.6, 600 partidas simuladas):
   - Cuenta conejos se sentía raro: no se notaba si el toque contaba. El ritmo de hongos a veces no detectaba el toque.
   - Faltaba pantalla completa, y al cambiar de lados los personajes no se movían.
   - En el bote (remar juntos) les costó coordinarse: piden que los cooperativos vayan de fácil a difícil.
-  - Todo esto, salvo lo cooperativo, se corrigió en la V3.6.
+  - Todo esto, salvo lo cooperativo, se corrigió en la V3.6. Lo cooperativo (guardianes y coop de fácil a difícil), en la V3.7.
+- **Por confirmar después de la V3.7:** si el coop de fácil a difícil ya les deja coordinarse y si los tres guardianes por partida se sienten bien o son demasiados.
 - **Otros factores:** jugar bien los minijuegos pesa. Con un 75 % de minijuegos ganados se gana ~65 % de las partidas.
 
 ## Pendiente
 La lista completa está en ROADMAP. Orden acordado:
-- **V3.7 el Rey Sombrío:** villano con secuaces y casillas de guardián cooperativas; coop de fácil a difícil.
 - **V3.8 rondas de minijuegos** cada pocas vueltas, con cooperativos cada cierto número.
 - **V4 modo cooperativo** y menú de modos. Después: IA para jugar solo.
 

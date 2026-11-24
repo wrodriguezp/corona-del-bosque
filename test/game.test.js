@@ -172,6 +172,22 @@ test('una partida guardada con otra versión del juego se borra al abrir', () =>
   assert.equal(saved, null);
 });
 
+test('un guardián detiene a quien llega y juegan juntos contra él', () => {
+  for (const [w, delta] of [[-1, 4], [-2, -3]]) {
+    const g = new Game({ names: ['A', 'B'], len: 20, seed: 8 });
+    g.apply({ type: 'begin' });
+    g.players.forEach((p) => (p.gems = 10));
+    const q = g.guards[0];
+    assert.ok(q.p > 0 && q.p < g.board.length);
+    const ev = g.meetGuard(q);
+    assert.ok(q.done && ev.some((e) => e.t === 'guard') && g.duel.team && g.duel.why === 'guardia');
+    const turn = g.turn;
+    g.apply({ type: 'duel', winner: w });
+    assert.deepEqual(g.players.map((p) => p.gems), [10 + delta, 10 + delta]);
+    assert.notEqual(g.turn, turn); // el turno termina después del guardián
+  }
+});
+
 test('la Sombra ataca: juegan juntos y ganan o pierden los dos', () => {
   for (const [w, delta] of [[-1, 4], [-2, -3]]) {
     const g = new Game({ names: ['A', 'B'], len: 20, seed: 8 });

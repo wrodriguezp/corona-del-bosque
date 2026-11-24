@@ -23,7 +23,7 @@ export function shadeTick(g, ev) {
   const first = g.shade === 0;
   g.shade = front;
   ev.push({ t: 'shade', front });
-  if (first) g.msg(ev, 'omen', 'La Sombra despierta', 'Desde la salida avanza una sombra, cada vez más rápido. Si te alcanza, te quita gemas y te escupe hacia adelante.', false, `Si te alcanza: pierdes hasta ${SHADE.gems} gemas (el escudo protege) y sales ${SHADE.spit} casillas por delante de ella`);
+  if (first) g.msg(ev, 'omen', 'El Rey Sombrío suelta su Sombra', 'Desde la salida avanza la Sombra del Rey, cada vez más rápido. Si te alcanza, te quita gemas y te escupe hacia adelante. Por el camino, sus guardianes les cierran el paso.', false, `Si te alcanza: pierdes hasta ${SHADE.gems} gemas (el escudo protege) y sales ${SHADE.spit} casillas por delante de ella`);
   for (const c of [...g.critters]) if (shaded(g, g.tile(c.tile))) gone(g, ev, c);
   for (const p of g.players) {
     if (p.arrived || !shaded(g, g.tile(p.tile))) continue;
@@ -38,8 +38,8 @@ export function shadeTick(g, ev) {
 export const CRITTERS = {
   conejo: { good: true, icon: 'again', title: '¡Un conejo guía!', text: 'Te enseña un atajo: tu próxima tirada vale 2 más.' },
   hada: { good: true, icon: 'star', title: '¡Un hada del bosque!', text: 'Te regala una carta.' },
-  lobo: { good: false, icon: 'moon', title: '¡Un lobo!', text: 'Te muerde la bolsa: pierdes hasta 3 gemas.' },
-  troll: { good: false, icon: 'duel', title: '¡El troll te cierra el paso!', text: 'Te detienes aquí y le pagas 2 gemas de peaje.' },
+  lobo: { good: false, icon: 'moon', title: '¡Un lobo hipnotizado!', text: 'Es un secuaz del Rey Sombrío: te muerde la bolsa y pierdes hasta 3 gemas.' },
+  troll: { good: false, icon: 'duel', title: '¡Un troll hipnotizado!', text: 'Es un secuaz del Rey Sombrío: te detienes aquí y le pagas 2 gemas de peaje.' },
 };
 export const CRITTER = { max: 4, spawn: 0.4, from: 2, near: [3, 8], wolf: 3, toll: 2, rabbit: 2 };
 const WEIGHTS = { day: { conejo: 3, hada: 2, lobo: 1, troll: 2 }, night: { conejo: 1, hada: 2, lobo: 4, troll: 1 } };

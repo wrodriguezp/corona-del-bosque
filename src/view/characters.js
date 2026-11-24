@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mat, matSmooth, matMetal, matGlow, paint, paintBy, at, loft, tube, ball, octa, cone, ringGeo, cyl, star, mesh } from './geo.js';
+import { mat, matSmooth, matMetal, matGlow, paint, paintBy, at, loft, tube, ball, ico, octa, cone, ringGeo, cyl, star, mesh } from './geo.js';
 
 // Personajes articulados. Altura aproximada: 3 unidades (se escalan al colocarlos).
 const SKIN_P = '#ffd9c2', SKIN_M = '#f3c3a0', GOLD = '#ffc93c';
@@ -348,6 +348,122 @@ export function makeMage() {
   return finish(R, 0.5);
 }
 
+// El Rey Sombrío: grandote, panzón y feo, con bigote de villano, corona de picos y
+// un cetro con un orbe de sombra. Diseño propio del juego.
+export function makeKing() {
+  const R = rig();
+  const K = { robe: '#4b1f6e', deep: '#2b1040', dark: '#170a24', trim: '#b8902c', skin: '#a9b38c', skin2: '#8f9a74', hair: '#141018', orb: '#b14bff' };
+
+  // Piernas cortas y gruesas con botas de punta.
+  for (const L of [R.legL, R.legR]) {
+    L.up.add(mesh(paint(tube([[0, 0.05, 0], [0, -0.22, 0.01], [0, -0.46, 0]], [0.2, 0.18, 0.15], 8, 5), K.dark)));
+    L.shin.add(mesh(paint(tube([[0, 0.02, 0], [0, -0.2, -0.01], [0, -0.42, 0]], [0.15, 0.15, 0.12], 8, 5), '#2a2230')));
+    L.foot.add(mesh(paint(tube([[0, -0.06, -0.05], [0, -0.08, 0.14], [0, -0.02, 0.3], [0, 0.08, 0.36]], [0.12, 0.12, 0.07, 0.015], 7, 8), '#2a2230')));
+  }
+
+  // Túnica larga y panza enorme con cinturón de calaveritas (rombos) dorados.
+  const robe = group(R.hips, 0, 0.1, 0);
+  robe.add(mesh(paintBy(loft([
+    { y: -0.98, r: 0.62, wave: [9, 0.05] }, { y: -0.6, r: 0.58, wave: [9, 0.04] }, { y: -0.25, r: 0.56 }, { y: 0.08, rx: 0.5, rz: 0.46 },
+  ], 30), (v) => (v.y < -0.9 ? K.trim : new THREE.Color(K.deep).lerp(new THREE.Color(K.robe), (v.y + 1) / 1.1)))));
+  R.sway.push({ o: robe, k: 0.25 });
+  R.skirt = robe;
+  R.torso.add(mesh([
+    paintBy(loft([
+      { y: -0.05, rx: 0.5, rz: 0.46, z: 0.04 }, { y: 0.15, rx: 0.56, rz: 0.55, z: 0.1 }, { y: 0.35, rx: 0.54, rz: 0.5, z: 0.08 }, { y: 0.55, rx: 0.5, rz: 0.36 }, { y: 0.68, rx: 0.36, rz: 0.24 }, { y: 0.76, rx: 0.16, rz: 0.15 },
+    ], 22), (v) => (Math.abs(v.x) < 0.07 && v.z > 0.2 ? K.trim : K.robe)),
+    paint(at(ringGeo(0.48, 0.05, 24), { r: [Math.PI / 2, 0, 0], s: [1.12, 1.18, 1], p: [0, 0.02, 0.05] }), K.dark),
+    paint(loft([{ y: 0.7, rx: 0.15, rz: 0.14 }, { y: 0.94, rx: 0.15, rz: 0.15, z: 0.02 }], 10), K.skin),
+  ]));
+  R.torso.add(mesh([
+    paint(at(octa(0.09), { s: [1, 1.2, 0.5], p: [0, 0.02, 0.58] }), K.trim),
+    ...[-0.32, 0.32].map((x) => paint(at(octa(0.05), { s: [1, 1, 0.5], p: [x, 0.02, 0.5] }), K.trim)),
+  ], matMetal));
+  // Hombreras con picos.
+  R.torso.add(mesh([1, -1].flatMap((s) => [
+    paint(at(ball(0.2, 10, 7), { s: [1.1, 0.7, 1], p: [s * 0.46, 0.6, 0] }), K.dark),
+    ...[0, 1, 2].map((i) => paint(at(cone(0.05, 0.2, 5), { r: [0, 0, s * -0.7], p: [s * (0.5 + i * 0.04), 0.7, -0.1 + i * 0.1] }), K.trim)),
+  ])));
+
+  // Capa negra con forro morado y cuello alto de villano.
+  const cape = group(R.torso, 0, 0.62, -0.24);
+  cape.add(mesh(paintBy(loft([
+    { y: -1.45, rx: 0.78, rz: 0.3, wave: [12, 0.1], z: -0.25, arc: [1.5, 4.78] }, { y: -1.35, rx: 0.76, rz: 0.28, wave: [12, 0.1], z: -0.22, arc: [1.5, 4.78] }, { y: -0.6, rx: 0.6, rz: 0.16, wave: [12, 0.08], z: -0.08, arc: [1.5, 4.78] }, { y: 0.05, rx: 0.48, rz: 0.1, z: 0.02, arc: [1.5, 4.78] },
+  ], 30, { arc: [1.5, 4.78] }), (v) => (v.y < -1.35 ? K.trim : v.z > -0.02 ? '#6a2a9a' : K.dark))));
+  cape.add(mesh(paintBy(loft([
+    { y: 0.0, rx: 0.42, rz: 0.3, arc: [1.2, 5.08] }, { y: 0.25, rx: 0.48, rz: 0.38, wave: [5, 0.06], arc: [1.0, 5.28] }, { y: 0.4, rx: 0.54, rz: 0.44, wave: [5, 0.1], arc: [0.9, 5.38] },
+  ], 26, { arc: [1.1, 5.18] }), (v) => (v.y > 0.36 ? K.trim : '#6a2a9a'))));
+  R.sway.push({ o: cape, k: 0.8 });
+
+  // Brazos gruesos con guantes negros.
+  for (const [A, s] of [[R.armL, 1], [R.armR, -1]]) {
+    A.up.position.x = s * 0.5;
+    A.up.add(mesh(paint(tube([[0, 0.06, 0], [0, -0.15, 0], [0, -0.42, 0]], [0.15, 0.17, 0.14], 9, 5), K.robe)));
+    A.fore.add(mesh([
+      paint(tube([[0, 0.02, 0], [0, -0.16, 0], [0, -0.34, 0]], [0.14, 0.13, 0.11], 8, 4), K.robe),
+      paint(loft([{ y: -0.34, r: 0.16 }, { y: -0.24, r: 0.14 }], 10, { capTop: false, capBottom: false }), K.trim),
+    ]));
+    A.hand.add(mesh(paint(at(ball(0.12, 8, 6), { s: [1, 1.1, 0.9], p: [0, -0.06, 0] }), '#1d1622')));
+  }
+
+  // Cetro con orbe de sombra (el orbe brilla: es su poder).
+  const staff = group(R.armR.hand, 0, -0.1, 0.06);
+  staff.add(mesh([
+    paint(tube([[0, -0.55, 0], [0, 0, 0], [0, 0.7, 0]], [0.035, 0.04, 0.045], 7, 6), '#2a2230'),
+    paint(at(ringGeo(0.07, 0.025, 10), { r: [Math.PI / 2, 0, 0], p: [0, 0.7, 0] }), K.trim),
+    ...[0, 1, 2, 3].map((i) => { const a = (i / 4) * 6.283; return paint(tube([[0, 0.72, 0], [Math.sin(a) * 0.12, 0.82, Math.cos(a) * 0.12], [Math.sin(a) * 0.09, 0.98, Math.cos(a) * 0.09]], [0.025, 0.02, 0.006], 5, 6), K.trim); }),
+  ], matMetal));
+  const tip = group(staff, 0, 0.88, 0);
+  tip.add(mesh(paint(ico(0.12, 1), K.orb), matGlow));
+  R.tip = tip;
+  R.staff = staff;
+
+  // Cabeza ancha, papada, nariz ganchuda, ceño y bigote de villano.
+  const H = R.head;
+  H.add(mesh(headShape(K.skin, 1.25), matSmooth));
+  H.add(mesh(paint(at(ball(0.3, 12, 8), { s: [1.15, 0.55, 0.9], p: [0, 0.06, 0.08] }), K.skin2), matSmooth));
+  R.eyes = [1, -1].map((s) => makeEye(H, s, { iris: '#e0283c', lash: K.hair, scale: 0.72, y: 0.4 }));
+  R.eyes.forEach((e) => (e.rotation.z = e.position.x > 0 ? 0.35 : -0.35));
+  H.add(mesh([
+    // Nariz grande y ganchuda.
+    paint(tube([[0, 0.42, 0.4], [0, 0.34, 0.52], [0, 0.22, 0.54], [0, 0.17, 0.47]], [0.06, 0.09, 0.08, 0.04], 8, 8), '#97a27c'),
+    // Orejas puntiagudas.
+    ...[1, -1].map((s) => paint(at(cone(0.08, 0.26, 5), { s: [0.5, 1, 1], r: [0, 0, s * -1.1], p: [s * 0.5, 0.42, -0.02] }), K.skin2)),
+    // Verrugas.
+    paint(at(ball(0.03, 6, 4), { p: [0.26, 0.3, 0.33] }), '#7d8a62'),
+    paint(at(ball(0.02, 6, 4), { p: [0.06, 0.3, 0.52] }), '#7d8a62'),
+  ], matSmooth, false));
+  H.add(mesh([
+    // Cejas gruesas en V: siempre enojado.
+    ...[1, -1].map((s) => paint(tube([[s * 0.04, 0.5, 0.42], [s * 0.16, 0.56, 0.4], [s * 0.3, 0.62, 0.32]], [0.05, 0.06, 0.02], 6, 6), K.hair)),
+    // Bigote enorme que termina en rulos hacia arriba.
+    ...[1, -1].map((s) => paint(tube([
+      [s * 0.02, 0.17, 0.5], [s * 0.14, 0.14, 0.5], [s * 0.3, 0.13, 0.42], [s * 0.44, 0.2, 0.34], [s * 0.48, 0.32, 0.3], [s * 0.42, 0.37, 0.3], [s * 0.38, 0.31, 0.31],
+    ], [0.05, 0.07, 0.06, 0.045, 0.03, 0.02, 0.01], 7, 16), K.hair)),
+    // Barbita en punta.
+    paint(tube([[0, 0.02, 0.38], [0, -0.1, 0.4], [0, -0.24, 0.36]], [0.08, 0.05, 0.005], 6, 6), K.hair),
+    // Pelo grasoso atrás.
+    ...[-1, 0, 1].map((i) => paint(tube([[i * 0.2, 0.55, -0.3], [i * 0.24, 0.3, -0.4], [i * 0.22, 0.05, -0.36]], [0.09, 0.1, 0.01], 6, 6), K.hair)),
+  ]));
+  // Boca torcida con un colmillo.
+  H.add(mesh([
+    paint(at(ball(0.06, 8, 6), { s: [1.4, 0.4, 0.4], r: [0, 0, 0.15], p: [0, 0.06, 0.44] }), '#3a0f1e'),
+    paint(at(cone(0.02, 0.06, 4), { r: [Math.PI, 0, 0], p: [0.05, 0.06, 0.46] }), '#fff6dc'),
+  ], matSmooth, false));
+
+  // Corona de picos, torcida.
+  const crown = group(H, 0.02, 0.7, -0.03);
+  crown.rotation.z = -0.12;
+  crown.add(mesh([
+    paint(loft([{ y: 0, r: 0.34 }, { y: 0.14, r: 0.36 }], 20, { capTop: false, capBottom: false }), '#a07a1e'),
+    ...[0, 1, 2, 3, 4, 5, 6].map((i) => { const a = (i / 7) * 6.283; return paint(at(cone(0.07, 0.3, 4), { p: [Math.sin(a) * 0.33, 0.28, Math.cos(a) * 0.33] }), '#a07a1e'); }),
+  ], matMetal));
+  crown.add(mesh([0, 2, 5].map((i) => { const a = (i / 7) * 6.283; return paint(at(octa(0.05), { p: [Math.sin(a) * 0.37, 0.08, Math.cos(a) * 0.37] }), K.orb); }), matGlow));
+
+  R.kind = 'king';
+  return finish(R, 0.62);
+}
+
 function finish(R, scale) {
   R.body.scale.setScalar(scale);
   R.state = 'idle';
@@ -377,7 +493,7 @@ export class Character {
   set(pose, dur = Infinity) { this.pose = pose; this.poseT = 0; this.poseDur = dur; }
 
   update(dt) {
-    const R = this.R, J = this.J, mage = R.kind === 'mage';
+    const R = this.R, J = this.J, mage = R.kind === 'mage' || R.kind === 'king';
     R.time += dt;
     this.poseT += dt;
     if (this.poseT > this.poseDur) this.set('idle');
@@ -444,7 +560,7 @@ export class Character {
     R.body.position.y = J.y * 0.5;
     if (R.staff) R.staff.rotation.z = -J.aR[2];
     if (R.staff) R.staff.rotation.x = -(J.aR[0] + J.fR) * (this.pose === 'cast' || this.pose === 'cheer' ? 0.55 : 1) + 0.05;
-    R.body.scale.y = 0.5 * (1 + b * 0.006);
+    R.body.scale.y = R.body.scale.x * (1 + b * 0.006);
 
     // Movimiento secundario de pelo, capa y falda.
     R.sway.forEach((s, i) => {

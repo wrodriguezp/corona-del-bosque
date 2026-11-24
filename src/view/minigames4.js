@@ -24,6 +24,7 @@ export const TEAM_VIEWS = {
   faroles: {
     island: { r: 5.4, top: ['#4b4f7a', '#545985'], plaza: true },
     cam: { z: -0.4, zTall: 1.4, y: 0, w: 11.6, pitch: 0.9, h: 12.6 },
+    foe: { p: [0, 0, -5.2], s: 1.1 },
     init(v) {
       v.lamp = new THREE.Group();
       v.lamp.add(mesh([paint(at(cyl(0.5, 0.65, 0.35, 8), { p: [0, 0.17, 0] }), '#8c8399'), paint(at(cyl(0.38, 0.5, 0.12, 8), { p: [0, 0.4, 0] }), '#6d6295')]));
@@ -73,6 +74,7 @@ export const TEAM_VIEWS = {
 
   remar: {
     cam: { y: 0.4, w: 15, pitch: 0.42, h: 7.2 },
+    foe: { p: [-7, 0, -1.2], ry: Math.PI / 2, s: 0.9 },
     init(v) {
       v.water = mesh(paintBy(at(box(16, 0.2, 3.4), {}), (p) => (p.y > 0 ? '#3f8fd0' : '#2c6aa0')), undefined, false);
       v.water.position.copy(V(0, -0.15, 0));
@@ -108,6 +110,7 @@ export const TEAM_VIEWS = {
         v.oars[i].rotation.z = -0.4 + Math.sin(v.pull[i] * Math.PI) * 0.9;
       });
       v.wall.position.copy(V(Math.max(-8.5, view.bx(s.shade)) - 0.6, 0.3, 0));
+      if (v.foe) v.foe.root.position.copy(V(Math.max(-6.6, view.bx(s.shade) - 0.4), 0.1, -2.3)); // camina por la orilla de atrás, junto a su sombra
       v.wall.children.forEach((b, i) => { b.position.y = (i % 3) * 0.45 + Math.sin(time * 4 + i) * 0.12; });
       if (Math.random() < dt * 25) { const p = v.wall.position; v.stage.smoke.emit({ x: p.x + Math.random() * 0.6, y: p.y + Math.random() * 1.2, z: p.z + (Math.random() - 0.5) * 3, vx: 0.8, vy: 0.2, vz: 0, life: 0.8, size: 0.5, color: DARK }); }
     },
@@ -123,6 +126,7 @@ export const TEAM_VIEWS = {
   escudo: {
     island: { k: 0.55, top: ['#5d6a96', '#6774a2'] },
     cam: { y: 1.3, w: 9.4, pitch: 0.36, h: 6.6 },
+    foe: { p: [0, 0, -4.6], s: 1.8 },
     init(v) {
       v.heroes.forEach((h, i) => { h.root.position.copy(V(SIDE[i] * 1.1, 0, 1.3)); h.turnTo = Math.PI; });
       v.shield = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 2.6, 28, 1, true, -0.75, 1.5).rotateY(Math.PI), new THREE.MeshBasicMaterial({ color: '#ffe9a0', transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
@@ -139,6 +143,7 @@ export const TEAM_VIEWS = {
       v.shield.material.opacity = 0.18 + n * 0.2 + Math.sin(time * 20) * 0.03 * n;
       v.shield.material.color.set(n === 2 ? '#fff3c4' : n ? '#ffe9a0' : '#a99bd0');
       v.mass.position.copy(V(0, 0, z - 0.2));
+      if (v.foe) v.foe.root.position.copy(V(0, 0, z - 2.3));
       const want = s.mode === 'surge' ? 1 : s.mode === 'warn' ? 0.6 : 0;
       v.red += (want - v.red) * Math.min(1, dt * 6);
       v.mass.children.forEach((b, i) => { b.position.y = (i % 2) * 0.6 + 0.3 + Math.sin(time * (3 + v.red * 6) + i) * (0.08 + v.red * 0.1); b.body.material.emissive.set(v.red > 0.3 ? '#a3203a' : '#4a2f7a'); b.body.material.emissiveIntensity = 0.25 + v.red * 0.6; b.scale.setScalar(1 + v.red * 0.2); });

@@ -8,7 +8,7 @@ import { Session, localStore } from './core/session.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
-import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES } from './core/game.js';
+import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
@@ -98,6 +98,7 @@ function setup(opts, session = new Session(opts)) {
   view.setZone(g.omen?.data.zone);
   view.setShade(g.shade);
   g.critters.forEach((c) => view.addCritter(c));
+  g.guards.filter((q) => !q.done).forEach((q) => view.addGuard(q));
   skyNow(0);
   heroes.forEach((h) => (h.turnTo = stage.cam.yaw));
   fairy.seen = false;
@@ -280,6 +281,15 @@ const play = {
   },
   async critter(e) { if (g.tile(e.tile).seen) sfx('star'); view.addCritter(e, true); },
   async critterMove(e) { view.moveCritters(e.moves); },
+  async guard(e) {
+    sfx(e.kind === 'rey' ? 'curse' : 'roar'); stage.shake(0.3);
+    heroes[e.p].set('hurt', 1);
+    follow(e.p, { dist: 8, pitch: 0.5 });
+    await view.guardTo(e.i, e.id, heroes[e.p].root.position);
+    hud.banner(e.p, GUARDS[e.i].name.replace(/^el /, '¡El ') + '!', 'Cierra el paso');
+    await sleep(0.8);
+  },
+  async teamEnd(e) { if (e.guard != null) await view.removeGuard(e.guard, e.won); },
   async critterGone(e) { view.removeCritter(e.id, false); },
   async meet(e) {
     const h = heroes[e.p];
@@ -436,7 +446,7 @@ const play = {
     heroes.forEach((h) => h.set('idle'));
     arrange(false);
   },
-  async duel(e) { hud.clearAct(); sfx('fanfare'); hud.banner(e.by, e.team ? '¡La Sombra ataca!' : e.why === 'torneo' ? '¡Torneo real!' : '¡Duelo!', e.team ? `En equipo: ${GAMES[e.game].name}` : GAMES[e.game].name); await sleep(1.3); },
+  async duel(e) { hud.clearAct(); sfx('fanfare'); hud.banner(e.by, e.team ? (e.why === 'guardia' ? '¡A pelear juntos!' : '¡El Rey Sombrío ataca!') : e.why === 'torneo' ? '¡Torneo real!' : '¡Duelo!', e.team ? `En equipo: ${GAMES[e.game].name}` : GAMES[e.game].name); await sleep(1.3); },
   async card(e) {
     const c = CARDS[e.card], col = FAMILIES[c.family].color;
     hud.clearAct();
@@ -668,10 +678,10 @@ function auto() {
   if (g.phase === 'ready') act({ type: 'roll' });
   else if (g.phase === 'move') { const ids = g.options(); if (ids.length) choose(ids[Math.floor(Math.random() * ids.length)]); }
 }
-const WHY = { sombra: '¡Juntos contra la Sombra!', torneo: 'Torneo real', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
+const WHY = { sombra: '¡Juntos contra la Sombra del Rey!', guardia: '¡Juntos contra el guardián!', torneo: 'Torneo real', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
 async function minigame(d) {
   const names = g.players.map((p) => p.name), rules = GAMES[d.game];
-  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
+  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');
@@ -680,7 +690,7 @@ async function minigame(d) {
   stage.locked = true;
   stage.setMood('day', 0); // la arena siempre se juega con buena luz
   view.group.visible = false;
-  mini = new MiniView(stage, hud, heroes, names, d, sides.swap);
+  mini = new MiniView(stage, hud, heroes, names, d.guard != null ? { ...d, foe: GUARDS[d.guard].kind, foeName: GUARDS[d.guard].name } : d, sides.swap);
   await hud.fade(false);
   await mini.countdown();
   const w = await mini.play();
@@ -701,7 +711,7 @@ async function minigame(d) {
   return w;
 }
 
-/* ---------- Arcada: minijuegos sueltos, sin tablero ---------- */
+/* ---------- Arcade: minijuegos sueltos, sin tablero ---------- */
 async function arcade(names) {
   const score = [0, 0, 0], versus = MINIGAMES, team = TEAM_GAMES;
   hud.games = GAMES;
@@ -710,7 +720,7 @@ async function arcade(names) {
     if (!id) return location.reload();
     if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
     const isTeam = team.includes(id), rules = GAMES[id];
-    await hud.miniIntro(rules, isTeam ? 'Arcada · en equipo' : 'Arcada', names, stage.mobile, isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), sides);
+    await hud.miniIntro(rules, isTeam ? 'Arcade · en equipo' : 'Arcade', names, stage.mobile, isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), sides);
     await hud.fade(true);
     stage.locked = true;
     stage.setMood('day', 0);

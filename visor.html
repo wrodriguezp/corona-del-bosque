@@ -3,7 +3,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { makePrincess, makeMage } from './src/view/characters.js';
+import { makePrincess, makeMage, makeKing } from './src/view/characters.js';
 const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); document.body.append(r.domElement);
 r.setSize(innerWidth, innerHeight); r.setPixelRatio(devicePixelRatio); r.shadowMap.enabled = true; r.toneMapping = THREE.ACESFilmicToneMapping;
 const s = new THREE.Scene(); s.background = new THREE.Color('#a58ed8');
@@ -15,7 +15,7 @@ const f = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, .2, 40), new THREE.Mes
 const list = [];
 const q = new URLSearchParams(location.search);
 const yaws = [0.35, 2.6];
-[makePrincess, makeMage].forEach((mk, i) => yaws.forEach((y, j) => { const c = mk(); c.root.position.set((i * 2 + j - 1.5) * 1.15, 0, 0); c.turnTo = y; c.root.rotation.y = y; s.add(c.root); list.push(c); }));
+[makePrincess, makeMage, makeKing].forEach((mk, i) => yaws.forEach((y, j) => { const c = mk(); c.root.position.set((i * 2 + j - 2.5) * 1.15, 0, 0); c.turnTo = y; c.root.rotation.y = y; s.add(c.root); list.push(c); }));
 window.list = list; window.cam = cam;
 const z = +(q.get('z') || 7.5), h = +(q.get('h') || 1.0), x = +(q.get('x') || 0);
 cam.position.set(x, h + .35, z); cam.lookAt(x, h - .05, 0);

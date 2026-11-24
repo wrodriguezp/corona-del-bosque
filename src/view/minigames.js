@@ -5,6 +5,7 @@ import { C, V, COLORS, island } from './arena.js';
 import { NEW_VIEWS } from './minigames2.js';
 import { FOREST_VIEWS } from './minigames3.js';
 import { TEAM_VIEWS } from './minigames4.js';
+import { makeFoe } from './foes.js';
 import { Pads } from './pads.js';
 import { sfx } from '../audio.js';
 
@@ -247,6 +248,16 @@ export class MiniView {
     this.swap = swap;
     stage.mirror(swap);
     this.hudEl.classList.toggle('low', !!this.view.low);
+    // En equipo se ve contra quién juegan: el guardián de la casilla o el Rey Sombrío.
+    if (this.rules.team) {
+      const f = this.view.foe;
+      this.foe = makeFoe(duel.foe || 'rey');
+      this.foe.root.position.copy(V(...f.p));
+      this.foe.root.rotation.y = f.ry || 0;
+      this.foe.root.scale.setScalar(f.s || 1);
+      this.foeName = duel.foeName || 'el Rey Sombrío';
+      this.group.add(this.foe.root);
+    }
     this.view.init(this);
     heroes.forEach((h) => { h.set('idle'); h.root.scale.setScalar(1.04); });
     this.acc = 0;
@@ -279,11 +290,12 @@ export class MiniView {
         this.acc -= DT;
         this.rules.step(this.s, this.bot ? this.bot(this.s) : this.flip(this.pads.read(this.rules.input, this.s)));
       }
-      for (const e of this.s.events.splice(0)) this.view.on(this, e);
+      for (const e of this.s.events.splice(0)) { this.view.on(this, e); if (this.foe && (e.t === 'lost' || e.t === 'saved')) this.foe.set(e.t === 'lost' ? 'cheer' : 'hurt', 1.5); }
       this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
       if (this.s.done) { this.running = false; this.res(this.s.winner); }
     }
     if (!this.show) this.view.update(this, dt, time);
+    this.foe?.update(dt, time);
     this.heroes.forEach((h) => (h.ground = this.view.floor ? C.y : h.root.position.y));
     if (this.stage.w !== this.lw || this.stage.h !== this.lh) { this.lw = this.stage.w; this.lh = this.stage.h; this.camera(true); }
   }
@@ -360,8 +372,17 @@ export class MiniView {
     this.group.children.forEach((c) => (c.visible = false));
     this.group.add(island({ r: 5.6, k: 0.62, top: ['#ffd27a', '#ffc45c'], plaza: true }));
     heroes.forEach((h) => { h.root.visible = true; h.root.scale.setScalar(1.04); h.root.rotation.x = h.root.rotation.z = 0; const p = h.root.position; stage.smoke.burst(p.x, p.y + 0.6, p.z, 14, { color: '#ffffff', speed: 1.6, life: 0.6, size: 0.5, alpha: 0.8 }); });
-    const team = !!this.rules.team;
-    const end = this.hud.winner(w < 0 ? null : names[w], w, team);
+    const team = !!this.rules.team, foe = this.foe;
+    if (foe) {
+      // El rival mira la celebración desde atrás: se ríe si ganó y tiembla si perdió.
+      foe.root.visible = true;
+      foe.root.position.copy(V(0, 0, -2.2));
+      foe.root.rotation.set(0, 0, 0);
+      foe.root.scale.setScalar(this.view.foe.s || 1);
+      foe.set(w === -2 ? 'cheer' : 'hurt', 3);
+      stage.smoke.burst(foe.root.position.x, foe.root.position.y + 0.8, foe.root.position.z, 14, { color: '#6b4a9a', speed: 1.6, life: 0.6, size: 0.6, alpha: 0.8 });
+    }
+    const end = this.hud.winner(w < 0 ? null : names[w], w, team, this.foeName);
     sfx(w === -2 ? 'lose' : w < 0 ? 'star' : 'fanfare');
     if (w === -2) {
       // Ganó la Sombra: los dos quedan tristes bajo una nube oscura.

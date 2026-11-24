@@ -33,8 +33,9 @@ test('el tramo final no premia más cuando alguien ya llegó', () => {
   assert.equal(g.nearCastle(t), 0);
 });
 
-test('la Sombra ataca en casi todas las partidas', () => {
-  let n = 0;
-  for (let s = 1; s <= 40; s++) n += autoplay(s).log.some((e) => e.t === 'event' && e.id === 'sombra');
-  assert.ok(n >= 36, `solo en ${n} de 40`);
+test('en cada partida hay minijuegos en equipo contra los guardianes del Rey', () => {
+  let few = 0, total = 0;
+  for (let s = 1; s <= 40; s++) { const n = autoplay(s).log.filter((e) => e.t === 'guard').length; total += n; few += n < 2; }
+  assert.ok(few <= 4, `${few} de 40 partidas con menos de 2 guardianes`);
+  assert.ok(total / 40 >= 2.5, `promedio ${total / 40}`);
 });

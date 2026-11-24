@@ -4,7 +4,10 @@ import { makeFairy } from './creatures.js';
 
 // Criaturas que vagan por el tablero. Miran hacia +z y miden cerca de media casilla.
 
-function makeBunny() {
+// Ojos morados que brillan: la marca de quien está hipnotizado por el Rey Sombrío.
+const HYPNO = '#d36bff';
+
+function makeBunny(hypno = false) {
   const g = new THREE.Group(), b = new THREE.Group();
   b.add(mesh([
     paint(at(ico(0.2, 1), { s: [0.9, 0.85, 1.15], p: [0, 0.2, 0] }), '#f7f3ff'),
@@ -17,7 +20,7 @@ function makeBunny() {
     ]),
     paint(at(ball(0.025, 6, 4), { p: [0, 0.37, 0.3] }), '#ff8fb5'),
   ]));
-  b.add(mesh([1, -1].map((s) => paint(at(ball(0.026, 6, 4), { p: [s * 0.07, 0.42, 0.27] }), '#2b1b3a'))));
+  b.add(mesh([1, -1].map((s) => paint(at(ball(hypno ? 0.032 : 0.026, 6, 4), { p: [s * 0.07, 0.42, 0.27] }), hypno ? HYPNO : '#2b1b3a')), hypno ? matGlow : undefined));
   g.add(b);
   g.userData.body = b;
   g.userData.idle = (t) => { b.position.y = Math.max(0, Math.sin(t * 3.2)) * 0.08; b.rotation.y = Math.sin(t * 0.7) * 0.4; };
@@ -35,7 +38,7 @@ function makeWolf() {
     ...[[1, 0.18], [-1, 0.18], [1, -0.18], [-1, -0.18]].map(([s, z]) => paint(at(cyl(0.04, 0.035, 0.26, 5), { p: [s * 0.09, 0.13, z] }), '#5a5874')),
     paint(tube([[0, 0.36, -0.28], [0, 0.42, -0.42], [0, 0.36, -0.55]], [0.06, 0.07, 0.02], 5, 6), '#7c7a96'),
   ]));
-  b.add(mesh([1, -1].map((s) => paint(at(ball(0.025, 6, 4), { p: [s * 0.06, 0.52, 0.42] }), '#ffd84a')), matGlow));
+  b.add(mesh([1, -1].map((s) => paint(at(ball(0.028, 6, 4), { p: [s * 0.06, 0.52, 0.42] }), HYPNO)), matGlow));
   g.add(b);
   g.userData.body = b;
   g.userData.idle = (t) => { b.rotation.y = Math.sin(t * 0.9) * 0.35; b.position.y = Math.abs(Math.sin(t * 1.6)) * 0.015; };
@@ -56,7 +59,7 @@ function makeTroll() {
     paint(at(cyl(0.05, 0.1, 0.62, 6), { r: [0.25, 0, -0.35], p: [0.36, 0.62, 0.28] }), '#7b4a2d'),
     paint(at(box(0.08, 0.03, 0.06), { p: [0, 0.69, 0.19] }), '#f3ead2'),
   ]));
-  b.add(mesh([1, -1].map((s) => paint(at(ball(0.028, 6, 4), { p: [s * 0.07, 0.84, 0.17] }), '#2b1b10'))));
+  b.add(mesh([1, -1].map((s) => paint(at(ball(0.034, 6, 4), { p: [s * 0.07, 0.84, 0.17] }), HYPNO)), matGlow));
   g.add(b);
   g.userData.body = b;
   g.userData.idle = (t) => { b.rotation.z = Math.sin(t * 1.4) * 0.06; b.rotation.y = Math.sin(t * 0.5) * 0.3; };
@@ -73,5 +76,9 @@ function makeSprite() {
   return g;
 }
 
-export const MAKE = { conejo: makeBunny, lobo: makeWolf, troll: makeTroll, hada: makeSprite };
+export const MAKE = { conejo: () => makeBunny(false), lobo: makeWolf, troll: makeTroll, hada: makeSprite };
 export const makeCritter = (kind) => MAKE[kind]();
+
+// Guardianes del Rey: el conejo gigante y el troll, hipnotizados y grandes.
+export const makeGuardBunny = () => makeBunny(true);
+export const makeGuardTroll = makeTroll;

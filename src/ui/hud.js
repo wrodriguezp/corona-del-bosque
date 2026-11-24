@@ -1,6 +1,6 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
-import { CAVE } from '../core/game.js';
+import { CAVE, TEAM_WIN, TEAM_LOSE } from '../core/game.js';
 import { DAY, EVENTS, NIGHT } from '../core/world.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
@@ -350,8 +350,8 @@ export class Hud {
   }
 
   // Letrero grande de victoria con la pantalla teñida del color de quien ganó.
-  winner(name, i, team = false) {
-    const text = team ? (i === -1 ? '¡Ganaron juntos!' : '¡Ganó la Sombra!') : i < 0 ? '¡Empate!' : `¡Gana ${esc(name)}!`;
+  winner(name, i, team = false, foe = 'la Sombra') {
+    const text = team ? (i === -1 ? '¡Ganaron juntos!' : `¡Ganó ${esc(foe)}!`) : i < 0 ? '¡Empate!' : `¡Gana ${esc(name)}!`;
     const e = el(`win ${team ? (i === -1 ? 'team' : 'shadow') : i < 0 ? 'tie' : `p${i}`}`, `<div><span>${team ? icon(i === -1 ? 'sun' : 'omen') : i < 0 ? icon('star') : icon(AV[i])}</span><b>${text}</b></div>`);
     this.root.append(e);
     return () => { e.classList.add('out'); setTimeout(() => e.remove(), 400); };
@@ -408,8 +408,9 @@ export class Hud {
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada. Cuando alguien llega al castillo se despide, salvo que vayas 13 gemas o más atrás.')}
       ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
-      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque de la Sombra.')}
-      ${li('sun', '#d8981a', '<b>Juntos contra la Sombra.</b> En cada partida la Sombra ataca al menos una vez: juegan un minijuego en equipo y, si ganan, los dos ganan gemas.')}
+      ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque del Rey Sombrío (minijuego en equipo).')}
+      ${li('crown', '#4b1f6e', '<b>El Rey Sombrío.</b> La Sombra es su poder. Sus secuaces son conejos y trolls hipnotizados (ojos morados).')}
+      ${li('sun', '#d8981a', `<b>Guardianes.</b> En el camino hay tres: el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío. Al pasar por uno, quien llega se detiene y juegan un minijuego en equipo. Si ganan, ${TEAM_WIN} gemas para cada quien; si pierden, hasta −${TEAM_LOSE}. Los primeros segundos son más fáciles y se pone difícil al final.`)}
       ${li('omen', '#3d2b5c', '<b>La Sombra</b> avanza desde la salida, cada vez más rápido (se ve en la barra de arriba). Si te alcanza, pierdes hasta 3 gemas y te escupe hacia adelante.')}
       ${li('tree', '#3f8f4f', '<b>Criaturas.</b> Basta pasar por su casilla: el conejo suma 2 a tu próxima tirada y el hada te da una carta; el lobo te quita 3 gemas y el troll te detiene y cobra 2.')}
       ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo, hasta que alguien llega al castillo.')}
@@ -443,7 +444,7 @@ export class Hud {
         <div class="setup">
           <div class="names"><label>${icon('crown')}<input maxlength="12" aria-label="Nombre de la princesa" value="${esc(defaults.names[0])}"></label><label>${icon('hat')}<input maxlength="12" aria-label="Nombre del mago" value="${esc(defaults.names[1])}"></label></div>
           <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button>${fullBtn('link')}</div>
-          <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button><button class="cta alt" data-a="arcade">${icon('duel')}Arcada</button></div>
+          <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button><button class="cta alt" data-a="arcade">${icon('duel')}Arcade</button></div>
         </div>`);
       this.root.append(s);
       let len = defaults.len;
@@ -467,10 +468,10 @@ export class Hud {
     });
   }
 
-  // Arcada: elegir un minijuego suelto. Devuelve su id, 'random' o null para volver.
+  // Arcade: elegir un minijuego suelto. Devuelve su id, 'random' o null para volver.
   arcade(names, versus, team, score) {
     const GAMES = this.games, btn = (id) => `<button class="pick" data-i="${id}">${icon(GAMES[id].icon)}<span>${esc(GAMES[id].name)}</span></button>`;
-    const s = el('sheet arcade', `<h2>Arcada</h2>
+    const s = el('sheet arcade', `<h2>Arcade</h2>
       <div class="score"><div class="p0">${esc(names[0])}<b>${score[0]}</b></div><div class="team">Juntos<b>${score[2]}</b></div><div class="p1">${esc(names[1])}<b>${score[1]}</b></div></div>
       <h3>${icon('duel')}Uno contra otro</h3><div class="grid">${versus.map(btn).join('')}</div>
       <h3>${icon('sun')}Juntos contra la Sombra</h3><div class="grid">${team.map(btn).join('')}</div>

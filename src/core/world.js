@@ -48,9 +48,9 @@ function starSpots(g) {
 
 export const EVENTS = {
   sombra: {
-    chip: 'Ataque de la Sombra', icon: 'omen',
-    title: 'La Sombra ataca', omen: 'Una niebla oscura se acerca',
-    warn: `${SOON} la Sombra atacará: jugarán juntos un minijuego. Si ganan, cada quien gana gemas; si pierden, la Sombra les quita gemas a los dos.`,
+    chip: 'Ataque del Rey', icon: 'omen',
+    title: 'El Rey Sombrío ataca', omen: 'Una niebla oscura se acerca',
+    warn: `${SOON} el Rey Sombrío mandará su Sombra: jugarán juntos un minijuego. Si ganan, cada quien gana gemas; si pierden, la Sombra les quita gemas a los dos.`,
     can: (g) => g.first == null,
     prepare: () => ({}),
     run(g, ev) {
@@ -177,11 +177,8 @@ export function worldTick(g, ev) {
     EVENTS[id].run(g, ev, data);
     ev.push({ t: 'eventEnd' });
   } else if (!g.omen && g.turns >= g.nextEvent - WARNING) {
-    if (!g.deck.length) {
-      // La Sombra ataca siempre como segundo evento de cada vuelta: todas las partidas traen un minijuego en equipo.
-      g.deck = g.rng.shuffle(Object.keys(EVENTS).filter((id) => id !== 'sombra'));
-      g.deck.splice(1, 0, 'sombra');
-    }
+    // Los minijuegos en equipo ya están asegurados con los guardianes: la Sombra ataca cuando le toca.
+    if (!g.deck.length) g.deck = g.rng.shuffle(Object.keys(EVENTS));
     const i = g.deck.findIndex((id) => EVENTS[id].can(g));
     if (i < 0) { g.deck = []; return; }
     const [id] = g.deck.splice(i, 1);
