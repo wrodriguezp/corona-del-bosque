@@ -114,3 +114,148 @@ export const escudo = {
     if (s.left <= 0) end(s, true);
   },
 };
+
+/* ---------- El puente: uno sostiene, el otro cruza ---------- */
+// Un puente colgante sobre un barranco. Primero cruza uno mientras el otro sostiene las
+// cuerdas; después, al revés. Cuando sopla una ráfaga (avisa antes), quien sostiene debe
+// mantener pulsado; si no, el puente se mece y quien cruza resbala si sigue caminando.
+// Sostener cansa: hay que hacerlo solo durante las ráfagas.
+export const BRIDGE = { time: 29, walk: 0.11, drain: 0.42, regain: 0.32, wake: 0.35, warn: 1, gust: 1.3, slip: 0.3 };
+export const puente = {
+  name: 'El puente', icon: 'hand', input: 'hold', time: BRIDGE.time, team: true,
+  goal: ['Juegan en equipo. Hay que cruzar un puente colgante: primero cruza uno mientras el otro sostiene las cuerdas, y después al revés.', 'Quien cruza mantiene pulsado para caminar. Cuando el cielo avisa una ráfaga, quien sostiene mantiene pulsado para afirmar el puente (cansa: suelta cuando pase). Si el puente se mece, quien cruza debe soltar y esperar.', 'Si quien cruza camina con el puente meciéndose, resbala hacia atrás. Ganan los dos si ambos cruzan antes de que se acabe el tiempo.'],
+  create(seed) {
+    const s = { ...base(seed), left: BRIDGE.time, walker: 0, x: 0, sway: 0, en: [1, 1], tired: [false, false], steady: false, walking: false, mode: 'calm', clock: 0, crossed: 0, slips: 0 };
+    s.next = 3.2 + s.rng.next() * 1.2;
+    return s;
+  },
+  step(s, pads) {
+    s.t += DT; s.left = Math.max(0, BRIDGE.time - s.t); s.clock += DT;
+    const k = Math.min(1, s.t / (BRIDGE.time * 0.8)), w = s.walker, h = 1 - w;
+    if (s.mode === 'calm' && s.clock >= s.next) { s.mode = 'warn'; s.clock = 0; emit(s, 'warn'); }
+    else if (s.mode === 'warn' && s.clock >= BRIDGE.warn * (1.1 - 0.3 * k)) { s.mode = 'gust'; s.clock = 0; emit(s, 'gust'); }
+    else if (s.mode === 'gust' && s.clock >= BRIDGE.gust * (0.8 + 0.6 * k)) { s.mode = 'calm'; s.clock = 0; s.next = 2.8 - 1.2 * k + s.rng.next() * 1.4; emit(s, 'calm'); }
+    // Quien sostiene: afirma el puente mientras mantiene pulsado, y se cansa.
+    if (s.tired[h] && s.en[h] >= BRIDGE.wake) { s.tired[h] = false; emit(s, 'ready', { p: h }); }
+    s.steady = pads[h].h && !s.tired[h];
+    if (s.steady) {
+      s.en[h] -= BRIDGE.drain * DT;
+      if (s.en[h] <= 0) { s.en[h] = 0; s.tired[h] = true; s.steady = false; emit(s, 'tired', { p: h }); }
+    } else s.en[h] = Math.min(1, s.en[h] + BRIDGE.regain * DT);
+    s.en[w] = Math.min(1, s.en[w] + BRIDGE.regain * DT);
+    // Quien cruza: camina mientras mantiene pulsado. Al principio más rápido, al final más lento.
+    s.walking = pads[w].h;
+    let d = s.walking ? 0.12 : -0.55;
+    if (s.mode === 'gust') d += s.steady ? -0.25 : (1.05 + 0.75 * k) * (s.walking ? 1 : 0.6);
+    else if (s.steady) d -= 0.4;
+    s.sway = clamp(s.sway + d * DT, 0, 1);
+    if (s.walking) { s.x += BRIDGE.walk * (1.25 - 0.45 * k) * (1 - s.sway * 0.5) * DT; s.score[w] = Math.max(s.score[w], Math.floor(s.x * 10)); }
+    if (s.sway >= 1) { s.x = Math.max(0, s.x - BRIDGE.slip); s.sway = 0.45; s.slips++; emit(s, 'slip', { p: w }); }
+    if (s.x >= 1) {
+      s.crossed++; emit(s, 'cross', { p: w });
+      if (s.crossed >= 2) return end(s, true);
+      s.walker = h; s.x = 0; s.sway = 0;
+    }
+    if (s.left <= 0) end(s, false);
+  },
+};
+
+/* ---------- Pasar la llama: lanzar y atrapar la antorcha ---------- */
+// La antorcha vuela de uno a otro. Quien la recibe pulsa justo cuando le llega; quien la
+// tiene la lanza pulsando (si tarda mucho, se lanza sola). Cada vez vuela más rápido y el
+// margen se achica. Si se cae 3 veces, se apaga.
+export const FLAME = { goal: 12, lives: 3, time: 40, hold: 2, early: 0.5, flight: [1.3, 0.62], win: [0.26, 0.13], relight: 1.1 };
+export const llama = {
+  name: 'Pasar la llama', icon: 'flame', input: 'button', time: FLAME.time, team: true,
+  goal: ['Juegan en equipo. Tienen una antorcha y deben lanzársela de uno a otro, sin que se caiga, a través de una cueva oscura.', 'Quien tiene la antorcha pulsa para lanzarla. Quien la recibe pulsa justo cuando le llega a las manos: ni antes ni después. Cada pase es un poco más rápido.', `Con ${FLAME.goal} pases atrapados ganan los dos. Si la antorcha se cae 3 veces, se apaga y gana la Sombra.`],
+  create(seed) {
+    return { ...base(seed), left: FLAME.time, holder: 0, phase: 'hold', clock: 0, caught: 0, lives: FLAME.lives, flight: FLAME.flight[0], win: FLAME.win[0] };
+  },
+  step(s, pads) {
+    s.t += DT; s.left = Math.max(0, FLAME.time - s.t); s.clock += DT;
+    const r = 1 - s.holder;
+    if (s.phase === 'relight') { if (s.clock >= FLAME.relight) { s.phase = 'hold'; s.clock = 0; emit(s, 'lit', { p: s.holder }); } }
+    else if (s.phase === 'hold') {
+      if (pads[s.holder].a || s.clock >= FLAME.hold) {
+        const k = s.caught / FLAME.goal;
+        s.flight = FLAME.flight[0] + (FLAME.flight[1] - FLAME.flight[0]) * k;
+        s.win = FLAME.win[0] + (FLAME.win[1] - FLAME.win[0]) * k;
+        s.phase = 'fly'; s.clock = 0;
+        emit(s, 'throw', { p: s.holder, flight: s.flight });
+      }
+    } else if (s.phase === 'fly') {
+      const off = s.clock - s.flight;
+      let drop = off > s.win;
+      if (pads[r].a && off >= -FLAME.early) {
+        if (Math.abs(off) <= s.win) {
+          s.caught++; s.score[r]++; s.holder = r; s.phase = 'hold'; s.clock = 0;
+          emit(s, 'catch', { p: r, n: s.caught, good: Math.abs(off) < s.win * 0.45 });
+          if (s.caught >= FLAME.goal) return end(s, true);
+        } else drop = true;
+      }
+      if (drop) {
+        s.lives--; s.phase = 'relight'; s.clock = 0;
+        emit(s, 'drop', { p: r, lives: s.lives, early: off < 0 });
+        if (s.lives <= 0) return end(s, false);
+      }
+    }
+    if (s.left <= 0) end(s, false);
+  },
+};
+
+/* ---------- Runas en equipo: cada quien tiene su parte ---------- */
+// Las runas se encienden una tras otra, cada una del color de quien debe marcarla. Después
+// repiten la secuencia entre los dos, en orden: cada quien marca solo las de su color.
+export const TEAM_RUNES = { lens: [3, 4, 5, 6], show: [0.7, 0.5], lives: 3, gap: 1.1 };
+export const runeq = {
+  name: 'Runas en equipo', icon: 'eye', input: 'dirs', team: true,
+  goal: ['Juegan en equipo. Hay cuatro runas en el suelo, una por dirección. Se encienden una tras otra, cada una del color de uno de los dos.', 'Miren bien el orden y los colores. Después repítanlo entre los dos, en el mismo orden: cada quien marca con sus flechas solo las runas de su color, y espera su turno.', 'Son 4 secuencias, cada vez más largas. Si alguien se equivoca o se adelanta, pierden 1 de sus 3 vidas y la secuencia se repite. Ganan los dos si completan las 4.'],
+  create(seed) {
+    const s = { ...base(seed), round: 0, lives: TEAM_RUNES.lives };
+    runeq.deal(s);
+    return s;
+  },
+  deal(s) {
+    const n = TEAM_RUNES.lens[s.round];
+    s.seq = Array.from({ length: n }, () => ({ d: s.rng.int(0, 3), p: s.rng.int(0, 1) }));
+    if (s.seq.every((q) => q.p === s.seq[0].p)) s.seq[s.rng.int(0, n - 1)].p = 1 - s.seq[0].p; // siempre juegan los dos
+    runeq.show(s);
+  },
+  show(s) { s.phase = 'show'; s.clock = -0.6; s.at = -1; s.n = 0; emit(s, 'round', { n: s.round + 1, len: s.seq.length }); },
+  step(s, pads) {
+    s.t += DT; s.clock += DT;
+    if (s.phase === 'show') {
+      const speed = TEAM_RUNES.show[0] + (TEAM_RUNES.show[1] - TEAM_RUNES.show[0]) * (s.round / (TEAM_RUNES.lens.length - 1));
+      const k = Math.floor(s.clock / speed);
+      if (s.clock >= 0 && k !== s.at) {
+        s.at = k;
+        if (k < s.seq.length) emit(s, 'glow', s.seq[k]);
+        else { s.phase = 'play'; s.clock = 0; s.limit = 2.2 + s.seq.length * 0.9; emit(s, 'go'); }
+      }
+      return;
+    }
+    if (s.phase === 'end') {
+      if (s.clock < TEAM_RUNES.gap) return;
+      if (s.lives <= 0) return end(s, false);
+      if (s.redo) { s.redo = false; return runeq.show(s); }
+      if (++s.round >= TEAM_RUNES.lens.length) return end(s, true);
+      return runeq.deal(s);
+    }
+    const q = s.seq[s.n];
+    // Primero se mira a quien le toca: si los dos pulsan a la vez, cuenta su jugada.
+    for (const i of [q.p, 1 - q.p]) {
+      const d = pads[i].d;
+      if (d == null) continue;
+      if (i !== q.p || d !== q.d) return runeq.fail(s, i, d);
+      s.n++; s.score[i]++;
+      emit(s, 'hit', { p: i, d, n: s.n });
+      if (s.n >= s.seq.length) { s.phase = 'end'; s.clock = 0; emit(s, 'clear', { n: s.round + 1 }); }
+      return;
+    }
+    if (s.clock > s.limit) runeq.fail(s, q.p, null);
+  },
+  fail(s, p, d) {
+    s.lives--; s.redo = true; s.phase = 'end'; s.clock = 0;
+    emit(s, 'miss', { p, d, lives: s.lives, want: s.seq[s.n] });
+  },
+};

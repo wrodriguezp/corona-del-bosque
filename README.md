@@ -10,11 +10,12 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - El Rey Sombrío, un villano bruto y bigotudo, manda la Sombra: avanza desde la salida, cada vez más rápido, y si te alcanza pierdes gemas y te escupe hacia adelante. Sus secuaces son conejos y trolls hipnotizados.
 - Criaturas que vagan por el tablero: conejos y hadas que ayudan, lobos y trolls que estorban.
 - Cerca del castillo las gemas y las fogatas dan más, hasta que alguien llega.
-- Tres guardianes cierran el camino (el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío): quien llega se detiene y juegan juntos un minijuego en equipo (faroles, remar juntos o el escudo de luz). Ganan o pierden los dos, y cada minijuego empieza fácil y se pone difícil al final.
+- Tres guardianes cierran el camino (el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío): quien llega se detiene y juegan juntos un minijuego en equipo (faroles, remar juntos, el escudo de luz, el puente, pasar la llama o runas en equipo). Ganan o pierden los dos, y cada minijuego empieza fácil y se pone difícil al final.
 - 28 cartas y gemas para gastar en pleno turno.
 - Un final justo: quien llega primero gana 10 gemas, queda a salvo y sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
+- Cada 3 vueltas hay una ronda de minijuegos: un torneo y, cada tercera ronda, uno en equipo contra el Rey.
 - **Arcade:** desde el menú se puede jugar cualquier minijuego suelto, con marcador.
 - Pantalla completa, y en los minijuegos cada quien elige su lado: los personajes se cambian con los controles.
 - Partida guardada automáticamente.

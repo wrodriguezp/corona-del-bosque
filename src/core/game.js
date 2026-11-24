@@ -16,14 +16,15 @@ export const CARD_GEMS = 2; // cada carta que sobra al final vale 2 gemas
 export const LATE = 5; // gemas que pierde quien no alcanza a llegar al castillo
 export const RUSH = 10; // segundos de la carta «¡Piensa rápido!»
 export const SIGHT = 3;
-export const TOURNEY_EVERY = 8; // turnos entre torneos: 4 por jugador
+export const TOURNEY_EVERY = 6; // turnos entre rondas de minijuegos: 3 por jugador
+export const TEAM_ROUND = 3; // cada tantas rondas, una es en equipo
 // Hada madrina: acompaña a quien va atrás. nivel: [entra, sale] según su desventaja en gemas.
 export const FAIRY = { 1: [6, 3], 2: [13, 9] };
 export const FAIRY_FROM = 4; // turnos de gracia al comenzar
 export const DUEL_GEMS = 4;
 export const CAVE = [2, 3, 3, 4, 5, 6];
 export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', 'choque', 'huevo', 'burbuja', 'dragon', 'conejos', 'pesca', 'hongos', 'pinta', 'topos', 'torre'];
-export const TEAM_GAMES = ['faroles', 'remar', 'escudo'];
+export const TEAM_GAMES = ['faroles', 'remar', 'escudo', 'puente', 'llama', 'runeq'];
 export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
 export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
 export const NEAR = [0.5, 0.72];
@@ -241,7 +242,8 @@ export class Game {
     }
     if (!extra && this.first == null && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
       this.lastTourney = this.turns;
-      this.startDuel(ev, 'torneo');
+      this.rounds = (this.rounds || 0) + 1;
+      this.startDuel(ev, this.rounds % TEAM_ROUND === 0 ? 'ronda' : 'torneo');
       return ev;
     }
     this.checkStars(ev);
@@ -716,7 +718,7 @@ export class Game {
 
   /* ---------- Minijuegos ---------- */
   startDuel(ev, why) {
-    const team = why === 'sombra' || why === 'guardia', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
+    const team = why === 'sombra' || why === 'guardia' || why === 'ronda', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
     if (!this[key]?.length) this[key] = this.rng.shuffle(list);
     this.duel = { why, game: this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
     this.phase = 'duel';

@@ -1,6 +1,6 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
-import { CAVE, TEAM_WIN, TEAM_LOSE } from '../core/game.js';
+import { CAVE, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND } from '../core/game.js';
 import { DAY, EVENTS, NIGHT } from '../core/world.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
@@ -403,7 +403,7 @@ export class Hud {
       ${li('coin', '#b5811a', '<b>Mercado.</b> Se ve desde lejos. Puedes detenerte al pasar.')}
       ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas y sal antes de que el dragón despierte.')}
       ${li('eagle', '#2b7fd0', '<b>Águila</b> te lleva adelante; el <b>gusano</b>, atrás.')}
-      ${li('duel', '#d2452f', '<b>Minijuegos.</b> En el torneo, en las arenas y al caer donde está tu rival.')}
+      ${li('duel', '#d2452f', `<b>Minijuegos.</b> Cada ${TOURNEY_EVERY / 2} vueltas hay una ronda de minijuegos: un torneo (quien gana se lleva gemas y una carta) y, cada ${TEAM_ROUND} rondas, uno en equipo contra el Rey. También en las arenas y al caer donde está tu rival.`)}
       ${li('star', '#d8981a', '<b>3 estrellas</b> te dan una carta. Ganas una estrella por turno.')}
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada. Cuando alguien llega al castillo se despide, salvo que vayas 13 gemas o más atrás.')}

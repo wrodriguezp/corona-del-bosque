@@ -4,7 +4,7 @@ import { PULL, JUMP, SUMO } from '../core/minigames/nuevos.js';
 import { V, COLORS } from './arena.js';
 import { sfx } from '../audio.js';
 
-const RUNE = ['#ffc93c', '#3fa9ff', '#37d67a', '#ff5fa8'];
+export const RUNE = ['#ffc93c', '#3fa9ff', '#37d67a', '#ff5fa8'];
 const ROUND = (n) => `Ronda ${n}`;
 const flat = (geo, color, opacity = 1) => new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide }));
 const up = (p, y) => new THREE.Vector3(p.x, p.y + y, p.z);

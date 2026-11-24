@@ -54,13 +54,6 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Tres minijuegos en equipo: faroles contra la Sombra, remar juntos y el escudo de luz.
 - Si ganan, 4 gemas para cada quien; si gana la Sombra, hasta 3 menos (el escudo protege).
 
-### Más minijuegos en equipo (ideas)
-- El puente: uno sostiene el puente mientras el otro cruza, y luego al revés.
-- Pasar la llama: llevar una antorcha entre los dos sin que se apague.
-- Runas en equipo: cada quien ve la mitad de la secuencia.
-- Defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
-- Variantes de los que ya existen (hielo, noche, señales falsas…).
-
 ### V3.4: la Sombra y las criaturas (lista)
 - La Sombra avanza desde la salida desde el turno 6 y se acelera; se ve en el tablero y en la barra de recorrido. Si te alcanza pierdes hasta 3 gemas y sales 2 casillas por delante de ella. Alcanza a alguien en un tercio de las partidas.
 - Criaturas que aparecen en lo ya explorado y vagan por el tablero: conejo (+2 a la próxima tirada), hada (una carta), lobo (−3 gemas; de noche persigue) y troll (te detiene y cobra 2). Basta pasar por su casilla.
@@ -93,9 +86,18 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Los minijuegos en equipo van de fácil a difícil: al principio se avanza más, al final cuesta más. Con jugadores simulados se ganan faroles 96 %, remar 90 % y escudo 73 %.
 - Se conserva el equilibrio: 20 o más gemas de diferencia en el 18 % de las partidas; llegar primero gana el 69 %.
 
-### V3.8: rondas de minijuegos (siguiente)
-- Cada pocas vueltas, un minijuego para todos; cada cierto número de rondas, uno cooperativo.
-- Nuevos en equipo: el puente, pasar la llama, runas en equipo.
+### V3.8: rondas de minijuegos (lista)
+- Cada 3 vueltas (6 turnos) hay una ronda de minijuegos; antes el torneo era cada 4. Cada tercera ronda es en equipo contra el Rey Sombrío.
+- Tres minijuegos en equipo nuevos, seis en total (todos de fácil a difícil):
+  - **El puente:** uno cruza manteniendo pulsado y el otro sostiene las cuerdas cuando sopla una ráfaga; después cambian de papel.
+  - **Pasar la llama:** lanzarse la antorcha y atraparla justo cuando llega (un aro que se cierra marca el momento). 12 pases; 3 caídas y se apaga.
+  - **Runas en equipo:** cada runa se enciende del color de quien debe marcarla, y la repiten entre los dos en orden. 3 vidas.
+- Con jugadores simulados se ganan el puente 93 %, pasar la llama 77 % y runas en equipo 88 %.
+- Se conserva el equilibrio: 20 o más gemas de diferencia en el 17 % de las partidas; llegar primero gana el 70 %.
+
+### Más minijuegos en equipo (ideas que quedan)
+- Defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+- Variantes de los que ya existen (hielo, noche, señales falsas…).
 
 ### Después
 - Reliquias, misión secreta, poderes propios, más cartas (unas 40).
@@ -104,7 +106,7 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Modo con reloj.
 - Adivinar la tirada del rival (necesita multijugador en línea).
 
-## V4: modo cooperativo
+## V4: modo cooperativo (siguiente)
 Menú para elegir el modo. Ganan o pierden juntos contra el Rey Sombrío: la sombra devora el tablero, tres runas por reunir y minijuegos en equipo.
 
 ## Más adelante

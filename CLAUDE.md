@@ -35,10 +35,10 @@ npm run build
 node tools/medir.js    # palizas, quién gana, eventos por partida
 node tools/final.js    # ¿conviene llegar primero?
 ```
-Referencias actuales (V3.7, 600 partidas simuladas):
-- Hay 20 o más gemas de diferencia en el ~18 % de las partidas.
-- Quien llega primero gana el ~69 %.
-- Minijuegos en equipo (bots): faroles ~96 %, remar ~90 %, escudo ~73 %.
+Referencias actuales (V3.8, 600 partidas simuladas):
+- Hay 20 o más gemas de diferencia en el ~17 % de las partidas.
+- Quien llega primero gana el ~70 %.
+- Minijuegos en equipo (bots): faroles ~96 %, remar ~90 %, escudo ~73 %, puente ~93 %, llama ~77 %, runas en equipo ~88 %.
 - Princesa y Mago ganan ~50 % cada uno.
 
 ### En el navegador (`npm run dev`)
@@ -74,12 +74,12 @@ Referencias actuales (V3.7, 600 partidas simuladas):
   - Faltaba pantalla completa, y al cambiar de lados los personajes no se movían.
   - En el bote (remar juntos) les costó coordinarse: piden que los cooperativos vayan de fácil a difícil.
   - Todo esto, salvo lo cooperativo, se corrigió en la V3.6. Lo cooperativo (guardianes y coop de fácil a difícil), en la V3.7.
+- **Por confirmar después de la V3.8:** si las rondas cada 3 vueltas son muchas o pocas, y si los tres minijuegos en equipo nuevos se entienden.
 - **Por confirmar después de la V3.7:** si el coop de fácil a difícil ya les deja coordinarse y si los tres guardianes por partida se sienten bien o son demasiados.
 - **Otros factores:** jugar bien los minijuegos pesa. Con un 75 % de minijuegos ganados se gana ~65 % de las partidas.
 
 ## Pendiente
 La lista completa está en ROADMAP. Orden acordado:
-- **V3.8 rondas de minijuegos** cada pocas vueltas, con cooperativos cada cierto número.
 - **V4 modo cooperativo** y menú de modos. Después: IA para jugar solo.
 
 ## Servidor de vista previa (Claude Code)
