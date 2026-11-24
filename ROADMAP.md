@@ -95,8 +95,19 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Con jugadores simulados se ganan el puente 93 %, pasar la llama 77 % y runas en equipo 88 %.
 - Se conserva el equilibrio: 20 o más gemas de diferencia en el 17 % de las partidas; llegar primero gana el 70 %.
 
-### Más minijuegos en equipo (ideas que quedan)
-- Defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, piso que se cae.
+### V3.9: más minijuegos (lista)
+- Dos nuevos para dos, dieciocho en total:
+  - **Cruza el camino:** cruzar a saltitos un camino con carretas de calabaza y escobas voladoras, un prado y un arroyo con hojas flotantes. Gana quien cruce más veces.
+  - **La enredadera:** carrera de escalada a puro tino: pulsar cuando la manito pasa por la hoja. Las dos enredaderas tienen las mismas hojas.
+- Dos nuevos en equipo, ocho en total:
+  - **Cruzar juntos:** el mismo camino; entre los dos cruzan 5 veces con 7 vidas compartidas.
+  - **El piso que se cae:** juntar 12 estrellas sobre baldosas que tiemblan y caen; 4 vidas.
+- Con jugadores simulados: cruza el camino y la enredadera son parejos; cruzar juntos se gana el 71 % y el piso el 79 %.
+- Equilibrio: 20 o más gemas de diferencia en el ~19 % de las partidas (cambió el orden del azar); llegar primero gana el 69 %.
+
+### Más minijuegos (ideas que quedan)
+- En equipo: defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, escalar juntos atados con una cuerda, apagar incendios del bosque.
+- Para dos: carrera de escobas, pesca de estrellas en el cielo.
 - Variantes de los que ya existen (hielo, noche, señales falsas…).
 
 ### Después

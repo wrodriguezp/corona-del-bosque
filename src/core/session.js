@@ -3,7 +3,7 @@ import { Game } from './game.js';
 // Una partida en curso. Toda jugada pasa por dispatch(): se aplica, se guarda y se
 // avisa a quien escuche. Para jugar en línea bastará un transporte que envíe y reciba
 // estas mismas acciones ({ send, onReceive }) sin tocar las reglas.
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export class Session {
   constructor(opts, { log = [], store = null, transport = null } = {}) {

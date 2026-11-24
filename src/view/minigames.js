@@ -5,6 +5,7 @@ import { C, V, COLORS, island } from './arena.js';
 import { NEW_VIEWS } from './minigames2.js';
 import { FOREST_VIEWS } from './minigames3.js';
 import { TEAM_VIEWS } from './minigames4.js';
+import { ROAD_VIEWS } from './minigames5.js';
 import { makeFoe } from './foes.js';
 import { Pads } from './pads.js';
 import { sfx } from '../audio.js';
@@ -173,6 +174,7 @@ const VIEWS = {
   ...NEW_VIEWS,
   ...FOREST_VIEWS,
   ...TEAM_VIEWS,
+  ...ROAD_VIEWS,
 };
 
 const place = (h, p) => h.root.position.copy(p);

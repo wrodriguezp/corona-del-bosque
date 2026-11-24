@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GAMES, CHASE, TEAM, noPad, DT } from '../src/core/minigames/index.js';
 import { makeRng } from '../src/core/rng.js';
+import { safeAt, ROAD, enreda as VINE_GAME, VINE, piso as FLOOR_GAME } from '../src/core/minigames/caminos.js';
 
 const bots = {
   duelo: () => [0, 1].map((i) => { let at = 0; return (s, rng) => { const p = noPad(); if (s.phase === 'signal') { at ||= 0.2 + rng.next() * 0.25; p.a = s.clock >= at; } else { at = 0; p.a = s.phase === 'wait' && rng.chance(0.0006); } return p; }; }),
@@ -37,7 +38,54 @@ const bots = {
   puente: () => { const skill = 0.75; return [0, 1].map((i) => { let h = false, wait = 0; return (s, rng) => { const p = noPad(); wait -= DT; if (wait <= 0) { wait = 0.15 + (1 - skill) * 0.7 * rng.next(); if (s.walker === i) h = s.sway < 0.45 + (rng.next() - 0.5) * 0.4 && !(s.mode === 'gust' && !s.steady && rng.chance(skill)); else h = (s.mode === 'gust' || (s.mode === 'warn' && rng.chance(skill * 0.6))) && rng.chance(0.3 + skill * 0.6); } p.h = h; return p; }; }); },
   llama: () => { const skill = 0.75; return [0, 1].map((i) => { let at = null, was = ''; return (s, rng) => { const p = noPad(), key = s.phase + s.holder; if (key !== was) { was = key; at = null; } if (s.phase === 'hold' && s.holder === i) { at ??= s.t + 0.3 + rng.next() * 0.5; if (s.t >= at) { p.a = true; at = null; } } else if (s.phase === 'fly' && s.holder !== i) { at ??= s.t - s.clock + s.flight + (rng.next() + rng.next() - 1) * (1 - skill) * 1.1; if (s.t >= at) { p.a = true; at = Infinity; } } else at = null; return p; }; }); },
   runeq: () => { const skill = 0.75; return [0, 1].map((i) => { let wait = 0.4; return (s, rng) => { const p = noPad(); if (s.phase !== 'play') { wait = 0.35 + rng.next() * 0.3; return p; } const q = s.seq[s.n]; wait -= DT; if (wait < 0 && q.p === i) { wait = 0.3 + rng.next() * 0.35; p.d = rng.chance(0.9 + skill * 0.07) ? q.d : rng.int(0, 3); } else if (q.p !== i && rng.chance((1 - skill) * 0.004)) p.d = q.d; return p; }; }); },
+  // Mira si la casilla de enfrente estará libre al aterrizar; si su fila corre peligro, se hace a un lado o retrocede.
+  cruce: () => roadBot(0.8),
+  cruceq: () => roadBot(0.75),
+  enreda: () => [0, 1].map((i) => { let react = null; return (s, rng) => { const p = noPad(), me = s.p[i]; if (me.stun > 0 || me.h >= VINE.goal) return p; const off = Math.abs(VINE_GAME.hand(me) - s.grips[me.h]); if (off < VINE.zone * 0.9) { p.a = rng.chance(0.13); } else { p.a = rng.chance(0.0015); } return p; }; }),
+  piso: () => floorBot(0.75),
 };
+
+function roadBot(skill) {
+  return [0, 1].map((i) => { let wait = 0; return (s, rng) => {
+    const p = noPad(), me = s.p[i];
+    if (me.out > 0 || me.hop > 0) return p;
+    wait -= DT; if (wait > 0) return p;
+    wait = 0.12 + (1 - skill) * 0.5 * rng.next();
+    const x = Math.round(me.x), look = 0.5 + (1 - skill) * 0.8;
+    const ok = (row, xx) => { for (let t = 0.1; t <= look; t += 0.08) if (!safeAt(s, row, xx, s.t + t)) return false; return true; };
+    if (rng.chance((1 - skill) * 0.25)) { p.d = rng.int(0, 3); return p; } // un descuido
+    if (ok(me.row + 1, x)) p.d = 0;
+    else if (!ok(me.row, me.x)) p.d = [1, 3].find((d) => ok(me.row, x + (d === 1 ? 1 : -1))) ?? (me.row > 0 && ok(me.row - 1, x) ? 2 : null);
+    return p;
+  }; });
+}
+
+// Camina por baldosas firmes (busca el camino rodeando huecos) y sale de las que tiemblan.
+function floorBot(skill) {
+  const N = 5, path = (s, from, to) => {
+    const prev = new Map([[from, -1]]), q = [from];
+    while (q.length) { const c = q.shift(); if (c === to) break; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = (c % N) + dx, y = Math.floor(c / N) + dy, n = y * N + x; if (x < 0 || y < 0 || x >= N || y >= N || prev.has(n) || s.tiles[n].st !== 'ok') continue; prev.set(n, c); q.push(n); } }
+    if (!prev.has(to)) return null;
+    let c = to; while (prev.get(c) !== from && prev.get(c) !== -1) c = prev.get(c);
+    return c;
+  };
+  return [0, 1].map((i) => { let goal = null, wait = 0; return (s, rng) => {
+    const p = noPad(), me = s.p[i]; if (me.out > 0) return p;
+    wait -= DT; const here = FLOOR_GAME.tileOf(me.x, me.y);
+    if (wait <= 0) {
+      wait = 0.2 + (1 - skill) * 0.6 * rng.next();
+      let to = null;
+      if (here >= 0 && s.tiles[here].st !== 'ok' && rng.chance(0.6 + skill * 0.5)) to = s.tiles.map((t, j) => j).filter((j) => s.tiles[j].st === 'ok').sort((a, b) => Math.hypot(FLOOR_GAME.at(a).x - me.x, FLOOR_GAME.at(a).y - me.y) - Math.hypot(FLOOR_GAME.at(b).x - me.x, FLOOR_GAME.at(b).y - me.y))[0];
+      else if (s.stars[0]) to = s.stars[0].tile;
+      const step = to == null || here < 0 ? to : to === here ? here : rng.chance(0.95) ? path(s, here, to) : to;
+      goal = step == null ? null : FLOOR_GAME.at(step);
+      // Para pasar a la baldosa de al lado, primero se alinea con el centro de la suya.
+      if (goal && here >= 0 && step !== here) { const c = FLOOR_GAME.at(here); if (Math.abs(goal.x - c.x) > 0.1) goal = { x: goal.x, y: c.y }; else goal = { x: c.x, y: goal.y }; }
+    }
+    if (goal) { p.x = (goal.x - me.x) * 2.5; p.y = (goal.y - me.y) * 2.5; }
+    return p;
+  }; });
+}
 
 function play(id, seed, make = bots[id]) {
   const g = GAMES[id], s = g.create(seed), rng = makeRng(seed + 3), b = make();
