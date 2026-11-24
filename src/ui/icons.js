@@ -1,5 +1,7 @@
 // Iconos dibujados en SVG, sin imágenes externas.
 const P = {
+  full: '<path d="M3 3h7v2H5v5H3V3zm11 0h7v7h-2V5h-5V3zM3 14h2v5h5v2H3v-7zm16 0h2v7h-7v-2h5v-5z"/>',
+  unfull: '<path d="M8 3h2v7H3V8h5V3zm6 0h2v5h5v2h-7V3zM3 14h7v7H8v-5H3v-2zm11 0h7v2h-5v5h-2v-7z"/>',
   exit: '<path d="M4 3h9a2 2 0 0 1 2 2v3h-2V5H5v14h8v-3h2v3a2 2 0 0 1-2 2H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm12.600 4.400L21.200 12l-4.600 4.600-1.400-1.400 2.200-2.200H9v-2h8.400l-2.200-2.200z"/>',
   hourglass: '<path d="M5 2h14v2h-1.500c0 4-3 5.500-4 8 1 2.500 4 4 4 8H19v2H5v-2h1.500c0-4 3-5.500 4-8-1-2.500-4-4-4-8H5zm3.500 2c0 3 3.500 4.500 3.500 7 0-2.500 3.500-4 3.500-7zM9 20h6c0-2-2-3-3-5-1 2-3 3-3 5z"/>',
   crown: '<path d="M3 18 2 7l5 4 5-7 5 7 5-4-1 11zM3 20h18v2H3z"/>',

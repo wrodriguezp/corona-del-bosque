@@ -76,16 +76,38 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Llegar primero gana el 71 % de las partidas simuladas (antes, el 62 %). Llegar primero yendo adelante y perder pasa en el 4 % (antes, el 10 %).
 - Pendiente: un modo totalmente cooperativo (V4).
 
+### V3.6: arreglos y Arcada (lista)
+- Botón de pantalla completa (en el menú y en la partida; tecla F).
+- «Cambiar lados» también cambia de lado a los personajes: la escena del minijuego se ve en espejo y cada quien queda junto a su control.
+- Cuenta conejos: cada toque se ve («+1» del color de cada quien) y suena con un tono propio.
+- Ritmo de hongos: más margen para acertar; si te adelantas o atrasas un poco dice «¡Antes!» o «¡Tarde!» y no resta. En celular, un toque en cualquier parte de la cruz cuenta (antes se perdía si caía entre dos flechas).
+- Al empezar se explica quién parte y por qué quien juega segundo trae 1 gema y 1 estrella extra.
+- Menos palizas: en los turnos finales el hada se queda solo con quien va 13 gemas o más atrás. Partidas con 20 o más gemas de diferencia: del ~23 % al ~17 %; llegar primero sigue ganando el ~72 %.
+- **Arcada:** jugar cualquier minijuego suelto desde el menú, con marcador (cada quien y «juntos»).
+
+### V3.7: el Rey Sombrío (siguiente)
+- La Sombra es el poder de un rey villano: bruto, feo, malvado y con bigote de villano. Diseño propio.
+- Secuaces hipnotizados: conejos y trolls con ojos morados.
+- Casillas de guardián al pasar de zona: minijuego cooperativo contra el rey o sus secuaces.
+- Los minijuegos en equipo van de fácil a difícil: al principio se avanza más, al final cuesta más, para alcanzar a aprender los controles.
+
+### V3.8: rondas de minijuegos
+- Cada pocas vueltas, un minijuego para todos; cada cierto número de rondas, uno cooperativo.
+- Nuevos en equipo: el puente, pasar la llama, runas en equipo.
+
 ### Después
 - Reliquias, misión secreta, poderes propios, más cartas (unas 40).
-- Modo con reloj opcional.
-- Adivinar la tirada del rival, para cuando cada quien juegue en su celular.
+
+### Descartado hasta nuevo aviso
+- Modo con reloj.
+- Adivinar la tirada del rival (necesita multijugador en línea).
 
 ## V4: modo cooperativo
-La sombra devora el tablero, tres runas por reunir y minijuegos en equipo.
+Menú para elegir el modo. Ganan o pierden juntos contra el Rey Sombrío: la sombra devora el tablero, tres runas por reunir y minijuegos en equipo.
 
 ## Más adelante
-- Sala con código: cada quien en su celular.
+- Jugar solo contra la computadora (una IA).
+- Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
 - Más personajes y más apariencias.
 - Más adornos y sonidos.
 

@@ -35,8 +35,8 @@ npm run build
 node tools/medir.js    # palizas, quién gana, eventos por partida
 node tools/final.js    # ¿conviene llegar primero?
 ```
-Referencias actuales (V3.5, 600 partidas simuladas):
-- Hay 20 o más gemas de diferencia en el ~20 % de las partidas.
+Referencias actuales (V3.6, 600 partidas simuladas):
+- Hay 20 o más gemas de diferencia en el ~17 % de las partidas.
 - Quien llega primero gana el ~71 %.
 - Princesa y Mago ganan ~50 % cada uno.
 
@@ -66,13 +66,20 @@ Referencias actuales (V3.5, 600 partidas simuladas):
   - Si ahora conviene llegar primero.
   - Si las nuevas instrucciones se entienden sin haber jugado.
   - Cómo se ve en celular e iPad.
+- **Después de la V3.5 (comentarios):**
+  - Lo más entretenido son los minijuegos, más que avanzar por el tablero. Quieren más cooperativos y no solo competir.
+  - Hubo una victoria de sobra que se sintió aburrida.
+  - Cuenta conejos se sentía raro: no se notaba si el toque contaba. El ritmo de hongos a veces no detectaba el toque.
+  - Faltaba pantalla completa, y al cambiar de lados los personajes no se movían.
+  - En el bote (remar juntos) les costó coordinarse: piden que los cooperativos vayan de fácil a difícil.
+  - Todo esto, salvo lo cooperativo, se corrigió en la V3.6.
 - **Otros factores:** jugar bien los minijuegos pesa. Con un 75 % de minijuegos ganados se gana ~65 % de las partidas.
 
 ## Pendiente
-La lista completa está en ROADMAP («Después», V4 y «Más adelante»). Lo más pedido:
-- **Modo totalmente cooperativo (V4):** ganan o pierden juntos contra la Sombra.
-- **Más minijuegos en equipo:** el puente, pasar la llama, runas en equipo.
-- **Reliquias, misión secreta y más cartas.**
+La lista completa está en ROADMAP. Orden acordado:
+- **V3.7 el Rey Sombrío:** villano con secuaces y casillas de guardián cooperativas; coop de fácil a difícil.
+- **V3.8 rondas de minijuegos** cada pocas vueltas, con cooperativos cada cierto número.
+- **V4 modo cooperativo** y menú de modos. Después: IA para jugar solo.
 
 ## Servidor de vista previa (Claude Code)
 `.claude/` no se sube. Para la vista previa, crear `.claude/launch.json` con:

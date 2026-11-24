@@ -8,7 +8,7 @@ import { Session, localStore } from './core/session.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
-import { RUSH, TEAM_WIN, TEAM_LOSE } from './core/game.js';
+import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
@@ -701,6 +701,35 @@ async function minigame(d) {
   return w;
 }
 
+/* ---------- Arcada: minijuegos sueltos, sin tablero ---------- */
+async function arcade(names) {
+  const score = [0, 0, 0], versus = MINIGAMES, team = TEAM_GAMES;
+  hud.games = GAMES;
+  for (;;) {
+    let id = await hud.arcade(names, versus, team, score);
+    if (!id) return location.reload();
+    if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
+    const isTeam = team.includes(id), rules = GAMES[id];
+    await hud.miniIntro(rules, isTeam ? 'Arcada · en equipo' : 'Arcada', names, stage.mobile, isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), sides);
+    await hud.fade(true);
+    stage.locked = true;
+    stage.setMood('day', 0);
+    view.group.visible = false;
+    mini = new MiniView(stage, hud, heroes, names, { game: id, seed: newSeed(), team: isTeam }, sides.swap);
+    await hud.fade(false);
+    await mini.countdown();
+    const w = await mini.play();
+    await mini.celebrate(w);
+    if (isTeam) { if (w === -1) score[2]++; } else if (w >= 0) score[w]++;
+    await hud.fade(true);
+    mini.dispose();
+    mini = null;
+    view.group.visible = true;
+    pose();
+    await hud.fade(false);
+  }
+}
+
 /* ---------- Entrada ---------- */
 let mapOn = false;
 hud.on = {
@@ -795,7 +824,9 @@ async function home() {
   const c = await hud.title(prefs, saved?.game, PRINCESS_SKINS);
   unlock();
   if (c === 'resume') return resume(saved);
-  Object.assign(prefs, c);
+  const { arcade: wantsArcade, ...pick } = c;
+  Object.assign(prefs, pick);
+  if (wantsArcade) return arcade(prefs.names);
   start({ ...prefs });
 }
 
@@ -811,6 +842,9 @@ async function start(opts) {
   Object.assign(stage.cam, { wYaw: baseYaw(), wPitch: 0.6, wDist: 15, pitch: 0.6, dist: 15, yaw: baseYaw() });
   await sleep(0.9);
   await stage.focus(b, { dist: 12, dur: 3.2 });
+  // Se dice quién empieza y por qué la otra persona trae algo extra.
+  const one = g.players[g.turn], two = g.players[1 - g.turn];
+  await hud.message('star', `Empieza ${one.name}`, `Lo decidió la suerte. Como ${two.name} juega en segundo lugar, parte con 1 gema y 1 estrella extra para compensar.`, false, `${one.name}: ${one.gems} gemas · ${two.name}: ${two.gems} gemas y 1 estrella`);
   stage.locked = false;
   act({ type: 'begin' });
 }

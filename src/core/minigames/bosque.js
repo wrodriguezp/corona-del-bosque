@@ -127,11 +127,11 @@ export const pesca = {
 /* ---------- Ritmo de hongos: tres carriles al compás ---------- */
 // Los hongos caen por tres carriles (← ↑ →). Se pulsa la dirección justo cuando
 // el hongo toca la línea. Los dos tocan la misma canción.
-export const BEAT = { lead: 1.5, good: 0.16, perfect: 0.07, notes: 30 };
+export const BEAT = { lead: 1.5, good: 0.2, perfect: 0.08, near: 0.45, notes: 30 };
 const LANES = [3, 0, 1];
 export const hongos = {
   name: 'Ritmo de hongos', icon: 'sound', input: 'dirs',
-  goal: ['Es un juego de música. Por tres carriles (izquierda, centro y derecha) bajan hongos hacia una línea, al ritmo de la canción.', 'Cuando un hongo llegue a la línea, pulsa la dirección de su carril: izquierda, arriba (para el del centro) o derecha. No mantengas apretado: es un toque por cada hongo.', 'A tiempo: 1 punto. Justo en el momento: 2. Si pulsas cuando no hay hongo, o en el carril equivocado, pierdes 1. Gana quien tenga más puntos al terminar la canción.'],
+  goal: ['Es un juego de música. Por tres carriles (izquierda, centro y derecha) bajan hongos hacia una línea, al ritmo de la canción.', 'Cuando un hongo llegue a la línea, pulsa la dirección de su carril: izquierda, arriba (para el del centro) o derecha. No mantengas apretado: es un toque por cada hongo.', 'A tiempo: 1 punto. Justo en el momento: 2. Si te adelantas o atrasas un poco, el juego te avisa «¡Antes!» o «¡Tarde!» y no pierdes nada. Si pulsas cuando no viene ningún hongo, o en el carril equivocado, pierdes 1. Gana quien tenga más puntos al terminar la canción.'],
   create(seed) {
     const s = { ...base(seed), notes: [], next: 0 };
     let t = 2, lane = 1;
@@ -158,7 +158,8 @@ export const hongos = {
         const pts = off <= BEAT.perfect ? 2 : 1;
         s.score[i] += pts;
         emit(s, 'hit', { p: i, lane, n: pts, pitch: best.pitch });
-      } else { s.score[i] = Math.max(0, s.score[i] - 1); emit(s, 'miss', { p: i, lane }); }
+      } else if (best && off <= BEAT.near) emit(s, 'near', { p: i, lane, early: best.t > s.t }); // casi: se avisa y no resta
+      else { s.score[i] = Math.max(0, s.score[i] - 1); emit(s, 'miss', { p: i, lane }); }
     }
     if (s.t >= s.end) finish(s);
   },

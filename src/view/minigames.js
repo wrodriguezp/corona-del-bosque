@@ -244,6 +244,8 @@ export class MiniView {
       return { x: p.x - C.x, y: p.z - C.z };
     }, this.rules.input, stage.mobile, swap);
     this.hudEl = hud.miniHud(names, this.rules.name, this.s.left, swap);
+    this.swap = swap;
+    stage.mirror(swap);
     this.hudEl.classList.toggle('low', !!this.view.low);
     this.view.init(this);
     heroes.forEach((h) => { h.set('idle'); h.root.scale.setScalar(1.04); });
@@ -275,7 +277,7 @@ export class MiniView {
       this.acc = Math.min(0.12, this.acc + dt);
       while (this.acc >= DT && !this.s.done) {
         this.acc -= DT;
-        this.rules.step(this.s, this.bot ? this.bot(this.s) : this.pads.read(this.rules.input, this.s));
+        this.rules.step(this.s, this.bot ? this.bot(this.s) : this.flip(this.pads.read(this.rules.input, this.s)));
       }
       for (const e of this.s.events.splice(0)) this.view.on(this, e);
       this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
@@ -284,6 +286,17 @@ export class MiniView {
     if (!this.show) this.view.update(this, dt, time);
     this.heroes.forEach((h) => (h.ground = this.view.floor ? C.y : h.root.position.y));
     if (this.stage.w !== this.lw || this.stage.h !== this.lh) { this.lw = this.stage.w; this.lh = this.stage.h; this.camera(true); }
+  }
+
+  // Con la escena en espejo, izquierda y derecha se invierten para que cada mando
+  // mueva hacia donde se ve en pantalla. Apuntar ya llega corregido desde el escenario.
+  flip(pads) {
+    if (!this.swap) return pads;
+    for (const p of pads) {
+      if (p.x) p.x = -p.x;
+      if (p.d === 1 || p.d === 3) p.d = 4 - p.d;
+    }
+    return pads;
   }
 
   async countdown() {
@@ -377,6 +390,7 @@ export class MiniView {
     this.stage.scene.remove(this.group);
     this.group.traverse((o) => o.geometry?.dispose());
     this.pads.stop();
+    this.stage.mirror(false);
     this.hudEl.remove();
     this.heroes.forEach((h) => { h.root.visible = true; h.set('idle'); });
   }

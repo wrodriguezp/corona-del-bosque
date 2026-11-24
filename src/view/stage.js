@@ -252,14 +252,18 @@ export class Stage {
   }
 
   ndc(e) {
-    const r = this.el.getBoundingClientRect();
-    return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    const r = this.el.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    return new THREE.Vector2(this.mirrored ? -x : x, -((e.clientY - r.top) / r.height) * 2 + 1);
   }
 
   project(v) {
-    const p = v.clone().project(this.camera);
-    return { x: (p.x * 0.5 + 0.5) * this.w, y: (-p.y * 0.5 + 0.5) * this.h, behind: p.z > 1 };
+    const p = v.clone().project(this.camera), x = (p.x * 0.5 + 0.5) * this.w;
+    return { x: this.mirrored ? this.w - x : x, y: (-p.y * 0.5 + 0.5) * this.h, behind: p.z > 1 };
   }
+
+  // Escena en espejo (para los minijuegos con lados cambiados): cada personaje
+  // queda del lado de la pantalla donde está su control.
+  mirror(on) { this.mirrored = on; this.renderer.domElement.classList.toggle('mirror', on); }
 
   resize() {
     const p = this.el?.parentElement ?? this.renderer.domElement.parentElement;

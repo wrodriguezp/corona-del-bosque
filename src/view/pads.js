@@ -46,8 +46,17 @@ export class Pads {
     on(this.el, 'contextmenu', (e) => e.preventDefault());
     on(this.el, 'pointerdown', (e) => {
       e.preventDefault();
-      const b = e.target.closest?.('[data-d]');
-      if (b) { this.dirs[b.dataset.p].push(+b.dataset.d); b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); return; }
+      // Un toque en cualquier parte de la cruz cuenta: se toma la flecha más cercana
+      // (antes, un dedo que caía entre dos flechas no hacía nada).
+      const pad = e.target.closest?.('.dpad');
+      if (pad) {
+        let b = e.target.closest('[data-d]');
+        if (!b) {
+          const r = pad.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+          b = pad.querySelector(`.d${Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : dy > 0 ? 2 : 0}`);
+        }
+        this.dirs[b.dataset.p].push(+b.dataset.d); b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); return;
+      }
       try { this.el.setPointerCapture(e.pointerId); } catch {}
       if (e.pointerType === 'mouse') { this.aim = this.aimAt(e); this.shot = this.aim; this.hit[1] = true; this.mouse = true; return; }
       const side = e.clientX < innerWidth / 2 ? 0 : 1, i = P(side);

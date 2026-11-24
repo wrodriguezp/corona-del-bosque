@@ -188,7 +188,8 @@ export class Game {
       const was = this.aid[p.id], gap = this.behind(p);
       let now = 0;
       for (const k of [1, 2]) if (gap >= FAIRY[k][was >= k ? 1 : 0]) now = k;
-      if (p.arrived || this.first != null) now = 0; // en el tramo final el hada ya no ayuda
+      // En el tramo final el hada solo se queda con quien va muy atrás (nivel 2): evita palizas sin regalar partidas parejas.
+      if (p.arrived || (this.first != null && now < 2)) now = 0;
       if (now === was) continue;
       this.aid[p.id] = now;
       ev.push({ t: 'fairy', kind: now ? 'llega' : 'adios', p: p.id, level: now, was });

@@ -15,6 +15,8 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - Un final justo: quien llega primero gana 10 gemas, queda a salvo y sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
+- **Arcada:** desde el menú se puede jugar cualquier minijuego suelto, con marcador.
+- Pantalla completa, y en los minijuegos cada quien elige su lado: los personajes se cambian con los controles.
 - Partida guardada automáticamente.
 
 ## Jugar y desarrollar

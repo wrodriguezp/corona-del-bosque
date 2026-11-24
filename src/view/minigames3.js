@@ -114,7 +114,7 @@ export const FOREST_VIEWS = {
         const h = v.heroes[e.p], p = h.root.position, from = V(0.8, 1.3, -0.2);
         sfx('fire'); h.set('hurt', SLEEPY.stun + 0.3);
         for (let k = 0; k < 24; k++) { const q = from.clone().lerp(up(p, 0.8), k / 24); st.sparks.emit({ x: q.x, y: q.y, z: q.z, vx: 0, vy: 1, vz: 0, life: 0.35 + k * 0.015, size: 0.3, color: k % 2 ? '#ff7a2e' : '#ffd84a' }); }
-        v.float(up(p, 1.8), '¡Te vio! ←', 'down');
+        v.float(up(p, 1.8), '¡Te vio! Retrocedes', 'down');
       }
       if (e.t === 'end') {
         if (e.w >= 0 && v.s.pos[e.w] >= SLEEPY.goal) { const p = v.hoard.position; sfx('chest'); st.sparks.burst(p.x, p.y + 0.4, p.z, 50, { color: ['#ffd84a', '#7df9ff', COLORS[e.w]], speed: 3.5, life: 0.8, size: 0.28 }); v.say(`¡${v.names[e.w]} llegó al tesoro!`, '', 1.4); }
@@ -153,9 +153,11 @@ export const FOREST_VIEWS = {
     on(v, e) {
       if (e.t === 'round') { v.heroes.forEach((h) => h.set('idle')); v.say(`Ronda ${e.n}`, 'Cuenta solo los conejos blancos', 1.4); }
       if (e.t === 'tap') {
+        // Cada toque se nota: «+1» flotando, chispas de su color y un tono propio de cada quien.
         const h = v.heroes[e.p], p = h.root.position;
-        sfx('click'); h.set('throw', 0.2);
-        v.stage.sparks.burst(p.x, p.y + 1.7, p.z, 4, { color: COLORS[e.p], speed: 1, life: 0.3, size: 0.16 });
+        sfx('note', e.p ? 7 : 0); h.set('throw', 0.25);
+        v.stage.sparks.burst(p.x, p.y + 1.9, p.z, 12, { color: [COLORS[e.p], '#ffffff'], speed: 1.8, life: 0.4, size: 0.22 });
+        v.float(up(p, 2.1), '+1', `up p${e.p}`);
       }
       if (e.t === 'reveal') {
         sfx('chest');
@@ -274,7 +276,8 @@ export const FOREST_VIEWS = {
         st.sparks.burst(p.x, p.y, p.z + 0.2, e.n > 1 ? 18 : 8, { color: [LANE[e.lane], '#ffffff'], speed: 2.2, life: 0.45, size: 0.2 });
         v.float(up(p, 0.6), e.n > 1 ? '¡Perfecto!' : '+1', 'up');
       }
-      if (e.t === 'miss') { if (e.lane >= 0) v.targets[e.p][e.lane].bad = 1; sfx('feint'); }
+      if (e.t === 'near') { const g = v.targets[e.p][e.lane]; g.glow = 0.4; sfx('tick'); v.float(up(g.position, 0.6), e.early ? '¡Antes!' : '¡Tarde!', 'down'); }
+      if (e.t === 'miss') { if (e.lane >= 0) { const g = v.targets[e.p][e.lane]; g.bad = 1; v.float(up(g.position, 0.6), '−1', 'down'); } sfx('feint'); }
     },
   },
 

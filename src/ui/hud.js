@@ -13,6 +13,20 @@ const el = (cls, html = '', tag = 'div') => {
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'], sun: ['sun', '#d8981a'] };
 const AV = ['crown', 'hat'];
+
+// Pantalla completa (en iPhone Safari no existe: ahí el botón no aparece).
+const D = document, FS = !!(D.fullscreenEnabled || D.webkitFullscreenEnabled);
+const isFull = () => !!(D.fullscreenElement || D.webkitFullscreenElement);
+const toggleFull = () => {
+  try {
+    if (isFull()) (D.exitFullscreen || D.webkitExitFullscreen).call(D);
+    else { const e = D.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); }
+  } catch {}
+};
+const fullBtn = (cls = '') => (FS ? `<button class="${cls}" data-a="full" title="Pantalla completa (F)" aria-label="Pantalla completa">${icon(isFull() ? 'unfull' : 'full')}</button>` : '');
+const paintFull = () => D.querySelectorAll('[data-a=full]').forEach((b) => (b.innerHTML = (b.dataset.l ? `${icon(isFull() ? 'unfull' : 'full')}${b.dataset.l}` : icon(isFull() ? 'unfull' : 'full'))));
+D.addEventListener('fullscreenchange', paintFull);
+D.addEventListener('webkitfullscreenchange', paintFull);
 // Resumen dibujado de un efecto: «{rival} −3 {gem}» → avatar del rival, número grande e ícono.
 export const bigLine = (str, p) => str.replace(/\{(\w+)\}/g, (_, k) => (k === 'rival' ? `<span class="av p${1 - (p ?? 0)}">${icon(AV[1 - (p ?? 0)])}</span>` : icon(k)));
 const cardHtml = (id, big, p) => {
@@ -55,7 +69,7 @@ export class Hud {
     this.time(g.turns % DAY.len, g.night);
     this.setOmen(g.omen);
     this.act = el('act');
-    this.tools = el('tools', `<button data-a="map" title="Ver el mapa (M)" aria-label="Ver el mapa">${icon('map')}</button><button data-a="sound" title="Sonido" aria-label="Sonido">${icon(isMuted() ? 'mute' : 'sound')}</button><button data-a="help" title="Cómo se juega (H)" aria-label="Cómo se juega">${icon('help')}</button><button data-a="exit" title="Salir al menú" aria-label="Salir al menú">${icon('exit')}</button>`);
+    this.tools = el('tools', `<button data-a="map" title="Ver el mapa (M)" aria-label="Ver el mapa">${icon('map')}</button><button data-a="sound" title="Sonido" aria-label="Sonido">${icon(isMuted() ? 'mute' : 'sound')}</button><button data-a="help" title="Cómo se juega (H)" aria-label="Cómo se juega">${icon('help')}</button>${fullBtn()}<button data-a="exit" title="Salir al menú" aria-label="Salir al menú">${icon('exit')}</button>`);
     this.tools.onclick = (e) => {
       const b = e.target.closest('button');
       if (!b) return;
@@ -65,6 +79,7 @@ export class Hud {
       if (b.dataset.a === 'map') this.on.map?.();
       if (b.dataset.a === 'help') this.help();
       if (b.dataset.a === 'exit') this.leave();
+      if (b.dataset.a === 'full') toggleFull();
     };
     this.game.append(this.track, this.under, this.act, this.tools);
     this.shade(g.shade || 0);
@@ -381,7 +396,7 @@ export class Hud {
     this.helpOpen = true;
     const li = (i, c, t) => `<li><span style="color:${c}">${icon(i)}</span><span>${t}</span></li>`;
     const s = el('help', `<h2>Cómo se juega</h2>
-      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>10 gemas</b> y queda <b>a salvo</b>: nadie le puede quitar gemas. Sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b></p>
+      <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>10 gemas</b> y queda <b>a salvo</b>: nadie le puede quitar gemas. Sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b> La suerte decide quién empieza; quien juega segundo parte con <b>1 gema y 1 estrella</b> extra.</p>
       <ul>
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
@@ -391,7 +406,7 @@ export class Hud {
       ${li('duel', '#d2452f', '<b>Minijuegos.</b> En el torneo, en las arenas y al caer donde está tu rival.')}
       ${li('star', '#d8981a', '<b>3 estrellas</b> te dan una carta. Ganas una estrella por turno.')}
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
-      ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada.')}
+      ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada. Cuando alguien llega al castillo se despide, salvo que vayas 13 gemas o más atrás.')}
       ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
       ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque de la Sombra.')}
       ${li('sun', '#d8981a', '<b>Juntos contra la Sombra.</b> En cada partida la Sombra ataca al menos una vez: juegan un minijuego en equipo y, si ganan, los dos ganan gemas.')}
@@ -427,8 +442,8 @@ export class Hud {
       const s = el('title', `<h1>La Corona<small>del Bosque Errante</small></h1>
         <div class="setup">
           <div class="names"><label>${icon('crown')}<input maxlength="12" aria-label="Nombre de la princesa" value="${esc(defaults.names[0])}"></label><label>${icon('hat')}<input maxlength="12" aria-label="Nombre del mago" value="${esc(defaults.names[1])}"></label></div>
-          <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button></div>
-          <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button></div>
+          <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button>${fullBtn('link')}</div>
+          <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button><button class="cta alt" data-a="arcade">${icon('duel')}Arcada</button></div>
         </div>`);
       this.root.append(s);
       let len = defaults.len;
@@ -438,18 +453,29 @@ export class Hud {
       seg.forEach((b) => (b.onclick = () => { len = +b.dataset.l; mark(); sfx('click'); this.on.preview?.(len, false); }));
       s.querySelector('[data-a=new]').onclick = () => { sfx('flip'); this.on.preview?.(len, true); };
       s.querySelector('[data-a=help]').onclick = () => this.help();
+      const fb = s.querySelector('[data-a=full]');
+      if (fb) { fb.dataset.l = 'Pantalla completa'; paintFull(); fb.onclick = () => { sfx('click'); toggleFull(); }; }
       const sk = s.querySelector('[data-a=skin]');
       const paintSkin = () => { const k = skins.find((q) => q.id === defaults.skin) || skins[0]; sk.innerHTML = `<i style="background:${k.hair}"></i>${k.name}`; sk.title = 'Cambiar la apariencia de la princesa'; };
       paintSkin();
       sk.onclick = () => { sfx('card'); defaults.skin = skins[(skins.findIndex((q) => q.id === defaults.skin) + 1) % skins.length].id; paintSkin(); this.on.skin?.(defaults.skin); };
       const resume = s.querySelector('[data-a=resume]');
       if (resume) resume.onclick = () => { s.remove(); res('resume'); };
-      s.querySelector('[data-a=start]').onclick = () => {
-        const names = [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
-        s.remove();
-        res({ names, len });
-      };
+      const names = () => [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
+      s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len }); };
+      s.querySelector('[data-a=arcade]').onclick = () => { const n = names(); sfx('click'); s.remove(); res({ names: n, len, arcade: true }); };
     });
+  }
+
+  // Arcada: elegir un minijuego suelto. Devuelve su id, 'random' o null para volver.
+  arcade(names, versus, team, score) {
+    const GAMES = this.games, btn = (id) => `<button class="pick" data-i="${id}">${icon(GAMES[id].icon)}<span>${esc(GAMES[id].name)}</span></button>`;
+    const s = el('sheet arcade', `<h2>Arcada</h2>
+      <div class="score"><div class="p0">${esc(names[0])}<b>${score[0]}</b></div><div class="team">Juntos<b>${score[2]}</b></div><div class="p1">${esc(names[1])}<b>${score[1]}</b></div></div>
+      <h3>${icon('duel')}Uno contra otro</h3><div class="grid">${versus.map(btn).join('')}</div>
+      <h3>${icon('sun')}Juntos contra la Sombra</h3><div class="grid">${team.map(btn).join('')}</div>
+      <div class="line"><button class="cta" data-i="random" data-ok="1">${icon('dice')}Al azar</button><button class="link" data-i="back">Volver al menú</button></div>`);
+    return this.ask(s, 'arcade').then((v) => (v === 'back' ? null : v));
   }
 
   over(g, tie) {
@@ -477,6 +503,7 @@ export class Hud {
       else if (/^[btrp]$/i.test(e.key)) this.on.buy?.({ b: 'sobre', t: 'trampa', r: 'repetir', p: 'paso' }[e.key.toLowerCase()]);
       else if (e.key === 'm' || e.key === 'M') this.on.map?.();
       else if (e.key === 'h' || e.key === 'H') this.help();
+      else if ((e.key === 'f' || e.key === 'F') && FS) toggleFull();
       else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') { if (this.on.cycle?.(1)) e.preventDefault(); }
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { if (this.on.cycle?.(-1)) e.preventDefault(); }
       else if (e.key === 'Enter') this.on.confirm?.();
