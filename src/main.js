@@ -10,6 +10,7 @@ import { makeRng } from './core/rng.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
+import { RELICS } from './core/relics.js';
 import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS, COOP, BOSSES, BOSS_GEM } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
@@ -369,6 +370,14 @@ const play = {
   async gain(e) { hud.refresh(); sfx('card'); hud.float(head(e.p), `+ ${CARDS[e.card].name}`, 'up'); sparkle(e.p, FAMILIES[CARDS[e.card].family].color, 24); await sleep(0.7); },
   async lose(e) { hud.refresh(); sfx('lose'); hud.float(head(e.p), `− ${CARDS[e.card].name}`, 'down'); heroes[e.p].set('hurt', 1); await sleep(0.9); },
   async buy(e) { hud.clearAct(); sfx('coin'); hud.refresh(); await sleep(0.1); },
+  async altar(e) { view.takeRelic(e.id); },
+  async relic(e) {
+    hud.refresh(); sfx('chest');
+    const who = e.team ? g.players.map((_, i) => i) : [e.p];
+    who.forEach((i) => { heroes[i].set('cheer', 1); sparkle(i, ['#8ef0e2', '#fff3a0', '#b8f4ff'], 36); });
+    hud.float(head(e.p), `${icon(RELICS[e.id].icon)} ${RELICS[e.id].name}`, 'star');
+    await sleep(0.8);
+  },
   async adventure(e) { sfx('chest'); sparkle(e.p, ['#ff9cc8', '#ffe27a', '#8fe0ff'], 40); follow(e.p, { dist: 9 }); await sleep(0.5); },
   async shop(e) { sfx('star'); follow(g.turn, { dist: 8.5, pitch: 0.6 }); await sleep(0.6); },
   async cave() { sfx('rumble'); follow(g.turn, { dist: 8, pitch: 0.6 }); await sleep(0.8); },

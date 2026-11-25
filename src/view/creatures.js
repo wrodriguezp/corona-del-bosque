@@ -280,3 +280,24 @@ export function makeFairy() {
   g.userData.fly(0);
   return g;
 }
+
+// Altar antiguo con una reliquia que flota y gira. Cuando alguien se la lleva, queda vacío.
+export const RELIC_COLOR = { bolsa: '#c98a4e', moneda: '#ffd84a', botas: '#7fd8ff', farol: '#b6ff6a', amuleto: '#ff6fa8', raiz: '#6fcf6a', corona: '#ff9ad5', roble: '#ff6b8a', vela: '#ffcf6a', cuerno: '#d9c4ff' };
+export function altarMesh(c) {
+  const g = new THREE.Group(), S = ['#9b93ad', '#b9b2c8'];
+  g.add(mesh([
+    paintBy(at(cyl(0.62, 0.7, 0.18, 8), { p: [0, 0.09, 0] }), (v) => (v.y > 0.12 ? S[1] : S[0])),
+    paintBy(at(cyl(0.34, 0.42, 0.55, 8), { p: [0, 0.45, 0] }), (v) => (v.y > 0.6 ? S[1] : S[0])),
+    paint(at(cyl(0.46, 0.4, 0.1, 8), { p: [0, 0.77, 0] }), S[1]),
+    ...[0, 1, 2, 3].map((i) => paint(at(box(0.12, 1.1, 0.12), { r: [0, i * 1.57 + 0.78, 0.08 * (i % 2 ? 1 : -1)], p: [Math.sin(i * 1.57 + 0.78) * 0.62, 0.55, Math.cos(i * 1.57 + 0.78) * 0.62] }), S[0])),
+    ...[0, 1, 2].map((i) => paint(at(octa(0.07), { p: [Math.sin(i * 2.1) * 0.5, 0.2, Math.cos(i * 2.1) * 0.5] }), '#8ef0e2')),
+  ], undefined, true));
+  const color = RELIC_COLOR[c.relic] || '#fff';
+  const orb = mesh([paint(ico(0.2, 1), color), paint(at(octa(0.3), { s: [0.6, 1.2, 0.6] }), '#ffffff')], matGlow, false);
+  orb.position.y = 1.25;
+  orb.visible = c.taken == null;
+  g.add(orb);
+  g.userData.relic = orb;
+  g.userData.color = color;
+  return g;
+}

@@ -154,7 +154,7 @@ test('quien llega primero juega desde el castillo y las cartas sobrantes se vuel
     const castle = after.filter((e) => e.t === 'castleTurn');
     assert.ok(castle.every((e) => e.p === g.first && e.die >= 1 && e.die <= 6));
     seen += castle.length;
-    for (const e of log.filter((x) => x.t === 'cash')) assert.ok(e.n >= 1 && e.n <= 4);
+    for (const e of log.filter((x) => x.t === 'cash')) assert.ok(e.n >= 1 && e.n <= 5);
     assert.ok(g.players.every((p) => p.hand.length === 0 && p.chest === 0));
     // Quien no llegó pierde algo al final.
     for (const p of g.players) if (!p.arrived) assert.ok(log.some((e) => e.t === 'gems' && e.why === 'late' && e.p === p.id) || p.gems === 0);

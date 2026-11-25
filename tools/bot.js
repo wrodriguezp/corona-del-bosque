@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { Session } from '../src/core/session.js';
 import { makeRng } from '../src/core/rng.js';
 import { decide } from '../src/core/ai.js';
+import { handLimit } from '../src/core/relics.js';
 
 // Jugador simulado. style: 'corre' va directo; 'explora' busca lugares especiales.
 // skill: probabilidad de que la princesa gane un minijuego.
@@ -19,13 +20,13 @@ export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.
     assert.ok(steps++ < 3000, `la partida ${seed} no termina (fase ${g.phase})`);
     const before = s.log.length, p = g.player;
     for (const q of g.players) {
-      assert.ok(q.gems >= 0 && q.hand.length <= 4 && q.stars >= 0);
+      assert.ok(q.gems >= 0 && q.hand.length <= handLimit(q) && q.stars >= 0);
       assert.equal(g.tile(q.tile).kind, 'path');
     }
     if (ai[g.turn] && g.phase !== 'duel') act(decide(g, rng, ai[g.turn]));
     else if (g.phase === 'pick') act({ type: 'pick', i: rng.int(0, 2) });
     else if (g.phase === 'adventure') { let i; do i = rng.int(0, 2); while (!g.canChoose(i)); act({ type: 'choose', i }); }
-    else if (g.phase === 'shop') { const i = g.shop.items.findIndex((it) => !it.sold && it.price <= p.gems - 4 && p.hand.length < 4); act({ type: 'shop', i: i >= 0 && rng.chance(0.5) ? i : null }); }
+    else if (g.phase === 'shop') { const i = g.shop.items.findIndex((it) => !it.sold && it.price <= p.gems - 4 && p.hand.length < handLimit(p)); act({ type: 'shop', i: i >= 0 && rng.chance(0.5) ? i : null }); }
     else if (g.phase === 'cave') act({ type: 'cave', what: g.cave.grabs < 3 ? 'grab' : 'leave' });
     else if (g.phase === 'castle') act({ type: 'castle', what: g.coop ? (g.shade > 0 && rng.chance(0.5) ? 'farol' : 'viento') : rng.chance(0.5) ? 'cofre' : 'torre' });
     else if (g.phase === 'duel') act({ type: 'duel', winner: g.duel.team ? (rng.chance(team) ? -1 : -2) : rng.chance(0.1) ? -1 : rng.chance(skill) ? 0 : 1 });

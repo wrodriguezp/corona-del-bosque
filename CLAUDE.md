@@ -35,7 +35,7 @@ npm run build
 node tools/medir.js    # palizas, quién gana, eventos por partida
 node tools/final.js    # ¿conviene llegar primero?
 ```
-Referencias actuales (V4.3, 600 partidas simuladas):
+Referencias actuales (V4.4, 600 partidas simuladas):
 - Hay 20 o más gemas de diferencia en el ~17–19 % de las partidas (varía con el orden del azar).
 - Quien llega primero gana el ~68 %.
 - Minijuegos en equipo (bots): faroles ~96 %, remar ~90 %, escudo ~73 %, puente ~93 %, llama ~77 %, runas en equipo ~88 %, cruzar juntos ~71 %, piso ~79 %, carruaje ~94 %, muralla ~73 %, garra en equipo ~84 %, mina ~92 %, poción ~91 %, globo ~78 %.
@@ -77,6 +77,7 @@ Referencias actuales (V4.3, 600 partidas simuladas):
   - Faltaba pantalla completa, y al cambiar de lados los personajes no se movían.
   - En el bote (remar juntos) les costó coordinarse: piden que los cooperativos vayan de fácil a difícil.
   - Todo esto, salvo lo cooperativo, se corrigió en la V3.6. Lo cooperativo (guardianes y coop de fácil a difícil), en la V3.7.
+- **Por confirmar después de la V4.4:** si vale la pena desviarse a los altares, si se entiende qué hace cada reliquia (bajo el nombre, al pasar el dedo) y si las reliquias de equipo se notan en el modo juntos.
 - **Por confirmar después de la V4.3:** si se entiende cuándo pegarle al jefe, si las ondas del conejo y la embestida del troll se leen bien en celular, y si el golpe juntos del Rey se coordina.
 - **Por confirmar después de la V4.2:** si los 12 minijuegos nuevos se entienden, sobre todo la carrera en celular, la poción y la garra en equipo.
 - **Por confirmar después de la V4.1:** si las tres dificultades contra la computadora se sienten distintas y si sus pausas son muy largas o muy cortas.
@@ -88,7 +89,7 @@ Referencias actuales (V4.3, 600 partidas simuladas):
 
 ## Pendiente
 La lista completa está en ROADMAP. Orden acordado:
-- **Siguiente:** reliquias y más cartas; la misión secreta no es prioridad. Más adelante: sala con código y poderes propios (por ahora no les ven gracia).
+- **Siguiente:** más cartas (algunas ligadas a las reliquias, que están en `src/core/relics.js`); la misión secreta no es prioridad. Más adelante: sala con código y poderes propios (por ahora no les ven gracia).
 
 ## Servidor de vista previa (Claude Code)
 `.claude/` no se sube. Para la vista previa, crear `.claude/launch.json` con:

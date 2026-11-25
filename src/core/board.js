@@ -1,3 +1,4 @@
+import { ALTAR_RELICS } from './relics.js';
 import { makeRng } from './rng.js';
 
 export const BIOMES = [
@@ -146,17 +147,22 @@ export function makeBoard(seed, len = 28) {
 
   // Lugares visibles desde lejos: dan metas y motivos para desviarse.
   const playable = tiles.filter((t) => t.kind === 'path' && t !== start && t !== castle && dStart.get(t.id) > 1);
-  const place = (frac, type) => {
+  const place = (frac, type, far = [1, 4], extra = {}) => {
     const goal = board.length * frac;
     const spots = playable.filter((t) => !t.content && t.dist > 2 && Math.abs(t.dist - goal) <= 2)
       .filter((t) => !tiles.some((o) => o.landmark && Math.hypot(o.x - t.x, o.z - t.z) < 4));
     if (!spots.length) return;
-    const aside = spots.filter((t) => t.detour >= 1 && t.detour <= 4);
+    const aside = spots.filter((t) => t.detour >= far[0] && t.detour <= far[1]);
     const t = rng.pick(aside.length ? aside : spots);
-    t.content = { type, done: [false, false] };
+    t.content = { type, done: [false, false], ...extra };
     t.landmark = t.revealed = true;
   };
   place(0.82, 'cave'); place(0.66, 'shop'); place(0.48, 'cave'); place(0.3, 'shop'); place(0.16, 'cave');
+  // Altares antiguos con una reliquia, en los desvíos más lejanos: se la lleva quien llega primero.
+  const relics = rng.shuffle(ALTAR_RELICS);
+  place(0.24, 'altar', [2, 4], { relic: relics[0], taken: null });
+  place(0.56, 'altar', [2, 4], { relic: relics[1], taken: null });
+  place(0.74, 'altar', [2, 4], { relic: relics[2], taken: null });
 
   // Saltos largos, como serpientes y escaleras: águilas, gusanos y portales.
   const free = rng.shuffle(playable.filter((t) => t.dist > 2));

@@ -28,6 +28,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .pl .gm .ic { color: #55e39a; }
 .pl .st { display: flex; gap: 2px; font-size: 17px; color: #67508f; }
 .pl .st .f { color: var(--gold); }
+.pl .rl { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; font-size: 16px; color: #8ef0e2; }
+.pl .rl:empty { display: none; }
+.pl .rl i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: #2b5b62; cursor: help; }
 .pl .hn { margin-left: auto; white-space: nowrap; font-size: 14px; opacity: .85; font-weight: 500; }
 .fx { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0 -50px; }
 .fx:empty { display: none; }

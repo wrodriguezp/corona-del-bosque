@@ -59,7 +59,7 @@ export const CRITTERS = {
 };
 export const CRITTER = { max: 4, spawn: 0.4, from: 2, near: [3, 8], wolf: 3, toll: 2, rabbit: 2 };
 const WEIGHTS = { day: { conejo: 3, hada: 2, lobo: 1, troll: 2 }, night: { conejo: 1, hada: 2, lobo: 4, troll: 1 } };
-const LEAPS = ['portal', 'eagle', 'worm', 'shop', 'cave'];
+const LEAPS = ['portal', 'eagle', 'worm', 'shop', 'cave', 'altar'];
 
 export const critterAt = (g, id) => g.critters.find((c) => c.tile === id);
 

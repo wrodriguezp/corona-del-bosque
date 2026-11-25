@@ -166,9 +166,16 @@ Los guardianes dejan de ser un minijuego cualquiera y pasan a ser una batalla pr
 - Se dejó para más adelante la batalla final del modo juntos en la puerta del castillo: con los tres guardianes como batallas ya hay tres peleas por partida.
 - Por confirmar jugando: si se entiende cuándo pegar, si las ondas del conejo y la embestida del troll se leen bien en celular, y si el golpe juntos del Rey se coordina.
 
+## V4.4: reliquias (lista)
+Objetos que duran toda la partida, con un poder pequeño y fijo. Se ven bajo el nombre de cada quien; al pasar el dedo o el ratón se lee qué hacen, y la ayuda las lista todas.
+- **Altares:** cada tablero tiene 2 o 3, en desvíos lejanos (2 a 4 casillas fuera del camino), y se ven desde lejos con su reliquia flotando. Al pasar te detienes; se la lleva quien llega primero y el altar queda vacío.
+- **Siete reliquias de altar:** Bolsa sin fondo (5 cartas en la mano), Moneda del mercader (todo cuesta 1 gema menos), Botas de siete leguas (un 1 en el dado vale 3), Farol de luciérnagas (de noche, gemas y fogatas dan +2), Amuleto del duende (las trampas quitan hasta 2 menos), Raíz del roble (el pozo y el gusano ya no te hacen retroceder) y Corona de flores (cada estrella da también 1 gema).
+- **Modo juntos:** las reliquias son del equipo y sirven a los dos. Cada guardián vencido da una reliquia de equipo: Corazón de roble (+1 corazón y uno más de máximo), Vela del alba (al perder un minijuego, la Sombra avanza 1 menos) o Cuerno del alba (al ganar, retrocede 1 más).
+- Equilibrio: los altares lejanos a 2–4 casillas no suben las palizas (20 gemas o más: ~17 %), y la reliquia se reparte entre quien gana y quien pierde.
+- Por confirmar jugando: si vale la pena el desvío, y si se entiende qué hace cada reliquia.
+
 ## Después
-- Reliquias: objetos que duran toda la partida con un poder fijo (por ejemplo, ignorar una trampa una vez o +1 en cada fogata). Se ganan en lugares lejanos o venciendo guardianes.
-- Más cartas (unas 40), algunas ligadas a las reliquias.
+- **Siguiente:** más cartas (unas 40), algunas ligadas a las reliquias.
 - Misión secreta. Ojo: en una pantalla compartida el otro la vería. Opciones: revelarla al final, mirarla con «el otro cierra los ojos» o esperar a la sala con código.
 
 ## Más adelante

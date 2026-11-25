@@ -1,6 +1,7 @@
 import { makeRng } from './rng.js';
 import { makeBoard, bfs, pathTo } from './board.js';
-import { CARDS, COMMON, TEAM_DECK, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
+import { CARDS, COMMON, TEAM_DECK, comebackCard, offerCards } from './cards.js';
+import { RELICS, ALTAR_RELICS, TEAM_RELICS, hasRelic, handLimit, priceOf } from './relics.js';
 import { DAY, NIGHT, worldTick } from './world.js';
 import { ADVENTURES, byId, describe, friendly } from './adventures.js';
 import { critterAt, meet, progress, shadeRaw, shadeTick } from './critters.js';
@@ -73,7 +74,7 @@ export class Game {
     this.board = makeBoard(seed, len);
     this.rng = makeRng(seed ^ 0x9e3779b9);
     this.players = names.map((name, id) => ({
-      id, name, tile: this.board.startId, gems: 5, stars: 0, hand: [], arrived: false, chest: 0, flags: {}, fx: newFx(),
+      id, name, tile: this.board.startId, gems: 5, stars: 0, hand: [], relics: [], arrived: false, chest: 0, flags: {}, fx: newFx(),
     }));
     this.turn = this.rng.int(0, 1);
     this.players[1 - this.turn].stars = 1; // compensa empezar segundo
@@ -160,6 +161,17 @@ export class Game {
   addStar(ev, p, n = 1) {
     p.stars += n;
     ev.push({ t: 'star', p: p.id, n });
+    if (hasRelic(p, 'corona')) this.addGems(ev, p, n, 'relic');
+  }
+
+  // Reliquias: en el modo juntos son del equipo, así que las reciben los dos.
+  giveRelic(ev, p, id) {
+    const who = this.coop ? this.players : [p];
+    for (const x of who) if (!x.relics.includes(id)) x.relics.push(id);
+    ev.push({ t: 'relic', p: p.id, id, team: this.coop });
+    const R = RELICS[id];
+    this.msg(ev, 'chest', `¡${R.name}!`, `${this.coop ? 'El equipo gana' : `${p.name} gana`} una reliquia para toda la partida. ${R.text}`, false);
+    if (id === 'roble') { this.maxHearts++; this.gainHeart(ev); }
   }
 
   msg(ev, kind, title, text, quick, note) { ev.push({ t: 'msg', kind, title, text, quick, note }); }
@@ -204,7 +216,7 @@ export class Game {
   }
 
   giveCard(ev, p, card = this.aid[p.id] && this.rng.chance(0.2 * this.aid[p.id]) ? comebackCard(this.rng) : this.rng.pick(this.coop ? TEAM_DECK : COMMON)) {
-    if (p.hand.length >= HAND_LIMIT) { this.addGems(ev, p, 3, 'full'); return; }
+    if (p.hand.length >= handLimit(p)) { this.addGems(ev, p, 3, 'full'); return; }
     p.hand.push(card);
     ev.push({ t: 'gain', p: p.id, card });
   }
@@ -328,8 +340,8 @@ export class Game {
 
   makeOffer(ev, why) {
     const p = this.player;
-    if (p.hand.length >= HAND_LIMIT) {
-      this.msg(ev, 'gem', 'Mano llena', 'Ya tienes 4 cartas: recibes 3 gemas en su lugar.');
+    if (p.hand.length >= handLimit(p)) {
+      this.msg(ev, 'gem', 'Mano llena', `Ya tienes ${handLimit(p)} cartas: recibes 3 gemas en su lugar.`);
       if (why === 'stars') ev.push({ t: 'spendStars', p: p.id });
       this.addGems(ev, p, 3, 'full');
       return false;
@@ -424,8 +436,8 @@ export class Game {
 
   canBuy(what) {
     const p = this.player;
-    if (p.fx.locked || p.gems < PRICES[what] || this.bought[what]) return false;
-    if (what === 'sobre') return this.phase === 'ready' && p.hand.length < HAND_LIMIT;
+    if (p.fx.locked || p.gems < priceOf(p, what) || this.bought[what]) return false;
+    if (what === 'sobre') return this.phase === 'ready' && p.hand.length < handLimit(p);
     if (what === 'trampa') return this.phase === 'ready' && !this.coop && !this.rival.arrived && this.snareSpots().length > 0;
     return this.phase === 'move';
   }
@@ -439,7 +451,7 @@ export class Game {
   buy(what) {
     if (!this.canBuy(what)) return [];
     const p = this.player, ev = [{ t: 'buy', p: p.id, what }];
-    this.addGems(ev, p, -PRICES[what], 'spend');
+    this.addGems(ev, p, -priceOf(p, what), 'spend');
     this.bought[what] = true;
     if (what === 'sobre') this.giveCard(ev, p);
     if (what === 'trampa') {
@@ -477,6 +489,7 @@ export class Game {
       if (fx.worst) mods.push('Nube gris: cuenta el menor');
     }
     const natural = total, kind = fx.fixed ? null : fx.die;
+    if (natural === 1 && !fx.fixed && hasRelic(p, 'botas')) { total += 2; mods.push('Botas de siete leguas: 1 vale 3'); }
     if (fx.plus) { total += fx.plus; mods.push(`Impulso +${fx.plus}`); }
     if (fx.minus) { total = Math.max(1, total - fx.minus); mods.push(`Raíces −${fx.minus}`); }
     if (fx.half) { total = Math.max(1, Math.ceil(total / 2)); mods.push('Enredo: la mitad'); }
@@ -504,7 +517,7 @@ export class Game {
     for (const [id, d] of dist) {
       if (d === 0 || d > this.total) continue;
       const t = this.tile(id);
-      const stop = id === this.board.castleId || t.content?.type === 'shop' || (t.content?.type === 'cave' && !t.content.done[this.turn])
+      const stop = id === this.board.castleId || t.content?.type === 'shop' || (t.content?.type === 'cave' && !t.content.done[this.turn]) || (t.content?.type === 'altar' && t.content.taken == null)
         || (!r.arrived && r.tile === id && id !== this.board.startId);
       if (stop) out.add(id);
     }
@@ -552,7 +565,7 @@ export class Game {
         ev.push({ t: 'trap', p: p.id, id: step, trap: 'red' });
         this.msg(ev, 'trap', '¡Una trampa escondida!', `${r.name} la puso aquí: te detienes aquí y te roba hasta 4 gemas.`);
         if (!this.shielded(ev, p, 'Trampa escondida')) {
-          this.rob(ev, r, p, 4);
+          this.rob(ev, r, p, hasRelic(p, 'amuleto') ? 2 : 4);
           return ev.concat(this.endTurn());
         }
       }
@@ -583,7 +596,7 @@ export class Game {
     const clear = () => { t.content = { type: 'visited' }; ev.push({ t: 'clear', id: t.id }); };
     switch (c.type) {
       case 'gem': {
-        let n = c.n + (this.night ? NIGHT.gem : 0) + this.nearCastle(t);
+        let n = c.n + (this.night ? NIGHT.gem + (hasRelic(p, 'farol') ? 2 : 0) : 0) + this.nearCastle(t);
         if (p.fx.golden) { n += GOLDEN; p.fx.golden--; this.msg(ev, 'gem', 'Toque dorado', `¡${GOLDEN} gemas de regalo! Recoges ${n}.`, true); }
         clear();
         if (this.aid[p.id]) { n += this.aid[p.id]; ev.push({ t: 'fairy', kind: 'regala', p: p.id, n: this.aid[p.id] }); }
@@ -596,13 +609,16 @@ export class Game {
         this.msg(ev, 'trap', tr.title, tr.text);
         if (this.shielded(ev, p, tr.title)) return false;
         const extra = this.night ? NIGHT.trap : 0;
-        if (extra && c.trap !== 'duende') this.addGems(ev, p, -extra, 'lost');
-        if (c.trap === 'duende') this.addGems(ev, p, -4 - extra, 'lost');
+        // Amuleto del duende: la trampa quita hasta 2 gemas menos en total.
+        let cut = hasRelic(p, 'amuleto') ? 2 : 0;
+        const lose = (n) => { const k = Math.min(cut, n); cut -= k; if (n - k) this.addGems(ev, p, -(n - k), 'lost'); };
+        if (extra && c.trap !== 'duende') lose(extra);
+        if (c.trap === 'duende') lose(4 + extra);
         if (c.trap === 'zarzas') p.fx.half = true;
-        if (c.trap === 'pozo') this.shove(ev, p, -3);
+        if (c.trap === 'pozo') { if (hasRelic(p, 'raiz')) this.msg(ev, 'root', 'Raíz del roble', 'Tus raíces te sostienen: no retrocedes.', true); else this.shove(ev, p, -3); }
         if (c.trap === 'urraca') {
           if (p.hand.length) { const [card] = p.hand.splice(this.rng.int(0, p.hand.length - 1), 1); ev.push({ t: 'lose', p: p.id, card }); }
-          else this.addGems(ev, p, -3, 'lost');
+          else lose(3);
         }
         return false;
       }
@@ -612,6 +628,7 @@ export class Game {
         if (c.type === 'eagle') this.msg(ev, 'eagle', '¡El águila gigante!', `Te toma por los hombros y vuelas ${n} casillas adelante.`);
         if (c.type === 'worm') this.msg(ev, 'worm', '¡El gran gusano!', `Te traga y te escupe ${n} casillas atrás.`);
         if (c.type === 'worm' && this.shielded(ev, p, 'El gran gusano')) return false;
+        if (c.type === 'worm' && hasRelic(p, 'raiz')) { this.msg(ev, 'root', 'Raíz del roble', 'Tus raíces te sostienen: el gusano no logra tragarte.', true); return false; }
         p.tile = to.id;
         ev.push({ t: c.type === 'portal' ? 'teleport' : c.type, p: p.id, from: t.id, id: to.id });
         if (c.type === 'portal') this.reveal(ev, to.id);
@@ -641,10 +658,16 @@ export class Game {
         return true;
       case 'adventure': return this.startAdventure(ev, t);
       case 'shop':
-        this.shop = { items: offerCards(this.rng, this.helps(p), this.coop).map((card, i) => ({ card, price: [3, 4, 4][i], sold: false })) };
+        this.shop = { items: offerCards(this.rng, this.helps(p), this.coop).map((card, i) => ({ card, price: priceOf(p, null, [3, 4, 4][i]), sold: false })) };
         this.phase = 'shop';
         ev.push({ t: 'shop' });
         return true;
+      case 'altar':
+        if (c.taken != null) { this.msg(ev, 'calm', 'Altar vacío', `${this.players[c.taken].name} ya se llevó la reliquia de este altar.`, true); return false; }
+        c.taken = p.id;
+        ev.push({ t: 'altar', id: t.id, p: p.id });
+        this.giveRelic(ev, p, c.relic);
+        return false;
       case 'cave':
         if (c.done[p.id]) { this.msg(ev, 'calm', 'Cueva vacía', 'Ya saqueaste este lugar. El dragón te olfatea, dormido.', true); return false; }
         c.done[p.id] = true;
@@ -653,7 +676,7 @@ export class Game {
         ev.push({ t: 'cave' });
         return true;
       default: {
-        const n = (this.night ? NIGHT.rest : 0) + this.nearCastle(t);
+        const n = (this.night ? NIGHT.rest + (hasRelic(p, 'farol') ? 2 : 0) : 0) + this.nearCastle(t);
         this.msg(ev, 'calm', this.night ? 'Fogata en la noche' : 'Descanso', `${this.rng.pick(CALM)} Ganas una estrella${n ? ` y ${n} ${n === 1 ? 'gema' : 'gemas'}` : ''}.`, true);
         if (n) this.addGems(ev, p, n, 'tile');
         this.addStar(ev, p);
@@ -741,7 +764,7 @@ export class Game {
     if (this.phase !== 'shop') return [];
     if (i == null) { const ev = []; return ev.concat(this.endTurn()); }
     const p = this.player, it = this.shop.items[i];
-    if (!it || it.sold || p.gems < it.price || p.hand.length >= HAND_LIMIT) return [];
+    if (!it || it.sold || p.gems < it.price || p.hand.length >= handLimit(p)) return [];
     const ev = [];
     it.sold = true;
     this.addGems(ev, p, -it.price, 'spend');
@@ -858,6 +881,10 @@ export class Game {
         this.msg(ev, 'sun', `¡Vencieron a ${G.name}!`, `Ganan la runa ${this.runes} de 3 y cada quien gana ${TEAM_WIN} gemas. El camino queda libre.`, true);
         ev.push({ t: 'rune', n: this.runes, guard, p: p.id });
         for (const x of this.players) this.addGems(ev, x, TEAM_WIN, 'team');
+        // Cada guardián vencido deja una reliquia del equipo.
+        const own = this.players[0].relics, pool = TEAM_RELICS.filter((k) => !own.includes(k)), rest = ALTAR_RELICS.filter((k) => !own.includes(k));
+        const gift = pool.length ? this.rng.pick(pool) : rest.length ? this.rng.pick(rest) : null;
+        if (gift) this.giveRelic(ev, p, gift);
       } else {
         q.done = false;
         this.msg(ev, 'omen', `Ganó ${G.name} esta vez`, `El equipo pierde un corazón. ${p.name} retrocede y ${G.name} vuelve a cerrar el paso.`, true);
@@ -868,14 +895,16 @@ export class Game {
       return ev.concat(this.endTurn());
     }
     if (won) {
-      this.msg(ev, 'sun', '¡Vencieron a la Sombra!', `La Sombra retrocede ${COOP.push} casillas y cada quien gana ${TEAM_WIN} gemas.`, true);
+      const push = COOP.push + (hasRelic(p, 'cuerno') ? 1 : 0);
+      this.msg(ev, 'sun', '¡Vencieron a la Sombra!', `La Sombra retrocede ${push} casillas y cada quien gana ${TEAM_WIN} gemas.`, true);
       for (const x of this.players) this.addGems(ev, x, TEAM_WIN, 'team');
       ev.push({ t: 'teamEnd', won });
-      this.pushShade(ev, COOP.push);
+      this.pushShade(ev, push);
     } else {
-      this.msg(ev, 'omen', 'Ganó la Sombra esta vez', `La Sombra avanza ${COOP.surge} casillas de golpe.`, true);
+      const surge = COOP.surge - (hasRelic(p, 'vela') ? 1 : 0);
+      this.msg(ev, 'omen', 'Ganó la Sombra esta vez', `La Sombra avanza ${surge} casillas de golpe.`, true);
       ev.push({ t: 'teamEnd', won });
-      this.pushShade(ev, -COOP.surge);
+      this.pushShade(ev, -surge);
     }
     if (!this.hearts) return ev.concat(this.finish());
     if (why === 'arena' || why === 'adventure') return ev.concat(this.endTurn());

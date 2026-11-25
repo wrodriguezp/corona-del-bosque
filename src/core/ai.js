@@ -1,4 +1,5 @@
-import { CARDS, PRICES, HAND_LIMIT } from './cards.js';
+import { CARDS } from './cards.js';
+import { handLimit } from './relics.js';
 import { byId } from './adventures.js';
 import { critterAt, CRITTERS, progress, shaded } from './critters.js';
 import { CAVE } from './game.js';
@@ -128,8 +129,9 @@ function tileScore(g, id, rng, L) {
       case 'chest': case 'adventure': v += 3; break;
       case 'shrine': v += 3; break;
       case 'duel': v += g.coop ? 1 : 0.5; break;
-      case 'shop': v += p.gems >= 7 && p.hand.length < HAND_LIMIT ? 3 : -1; break;
+      case 'shop': v += p.gems >= 7 && p.hand.length < handLimit(p) ? 3 : -1; break;
       case 'cave': v += c.done?.[p.id] ? -1 : 4; break;
+      case 'altar': v += c.taken == null ? 7 : -1; break;
       case 'visited': v += 0.5; break;
     }
   } else if (t.content == null || !t.revealed) v += 1.5;
@@ -154,7 +156,7 @@ export function decide(g, rng, level = 'normal') {
       return { type: 'choose', i: best };
     }
     case 'shop': {
-      if (p.hand.length >= HAND_LIMIT) return { type: 'shop', i: null };
+      if (p.hand.length >= handLimit(p)) return { type: 'shop', i: null };
       let best = null, bv = 0;
       g.shop.items.forEach((it, i) => { if (it.sold || p.gems - it.price < 3) return; const v = cardValue(g, it.card) - it.price * 0.7; if (v > bv) { bv = v; best = i; } });
       return { type: 'shop', i: best };

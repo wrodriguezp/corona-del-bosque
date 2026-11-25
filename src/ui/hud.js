@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
-import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
+import { CARDS, FAMILIES } from '../core/cards.js';
+import { RELICS, handLimit, priceOf } from '../core/relics.js';
 import { CAVE, COOP, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND, BOSS_GEM } from '../core/game.js';
 import { BOSS } from '../core/minigames/jefes.js';
 import { DAY, EVENTS, NIGHT } from '../core/world.js';
@@ -57,7 +58,7 @@ export class Hud {
     this.aid = [...g.aid];
     this.game.innerHTML = '';
     this.pl = g.players.map((p) => {
-      const e = el(`pl p${p.id}`, `<div class="av">${icon(AV[p.id])}</div><div class="nm">${esc(p.name)}</div><div class="row"><span class="gm">${icon('gem')}<b></b></span><span class="st" title="Con 3 estrellas eliges una oportunidad"></span><span class="hn"></span></div><div class="fx"></div>`);
+      const e = el(`pl p${p.id}`, `<div class="av">${icon(AV[p.id])}</div><div class="nm">${esc(p.name)}</div><div class="row"><span class="gm">${icon('gem')}<b></b></span><span class="st" title="Con 3 estrellas eliges una oportunidad"></span><span class="hn"></span></div><div class="rl"></div><div class="fx"></div>`);
       this.game.append(e);
       return e;
     });
@@ -100,6 +101,7 @@ export class Hud {
       const e = this.pl[i];
       e.querySelector('.gm b').textContent = this.shown[i];
       e.querySelector('.st').innerHTML = [0, 1, 2].map((k) => `<span class="${k < this.stars[i] ? 'f' : ''}">${icon('star')}</span>`).join('');
+      e.querySelector('.rl').innerHTML = p.relics.map((id) => `<i title="${esc(RELICS[id].name)}: ${esc(RELICS[id].text)}">${icon(RELICS[id].icon)}</i>`).join('');
       e.querySelector('.hn').textContent = p.hand.length === 1 ? '1 carta' : `${p.hand.length} cartas`;
       const f = p.fx, L = [];
       if (this.aid[i]) L.push(['fairy', this.aid[i] === 2 ? 'Hada madrina ×2' : 'Hada madrina']);
@@ -172,7 +174,7 @@ export class Hud {
   }
 
   buyButton(what, ic, label, key, tip) {
-    const b = el('buy', `${icon(ic)}<span>${label}</span><b>${PRICES[what]}${icon('gem')}</b>`, 'button');
+    const b = el('buy', `${icon(ic)}<span>${label}</span><b>${priceOf(this.g.player, what)}${icon('gem')}</b>`, 'button');
     b.title = `${tip} (${key})`;
     b.disabled = !this.g.canBuy(what);
     b.onclick = () => this.on.buy?.(what);
@@ -289,7 +291,7 @@ export class Hud {
   }
 
   shop(shop, player) {
-    const full = player.hand.length >= HAND_LIMIT;
+    const full = player.hand.length >= handLimit(player);
     const s = el('sheet', `<h2>Mercado del gato</h2><p>${full ? 'Tienes la mano llena: ya no puedes comprar.' : `${esc(player.name)}, tienes ${player.gems} gemas.`}</p><div class="offer"></div><button class="cta" data-i="out" data-ok="1">Seguir el viaje</button>`);
     shop.items.forEach((it, i) => {
       const b = el('card', cardHtml(it.card, true) + `<span class="price">${it.sold ? 'Vendida' : `${it.price}${icon('gem')}`}</span>`, 'button');
@@ -417,6 +419,7 @@ export class Hud {
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
       ${li('coin', '#b5811a', '<b>Mercado.</b> Se ve desde lejos. Puedes detenerte al pasar.')}
+      ${li('rune', '#2fa596', '<b>Altares.</b> Se ven desde lejos, en los desvíos más largos. Cada uno guarda una <b>reliquia</b> que dura toda la partida; se la lleva quien llega primero (al pasar te detienes). Pasa el dedo o el ratón sobre una reliquia, bajo tu nombre, para leerla.')}
       ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas y sal antes de que el dragón despierte.')}
       ${li('eagle', '#2b7fd0', '<b>Águila</b> te lleva adelante; el <b>gusano</b>, atrás.')}
       ${li('duel', '#d2452f', `<b>Minijuegos.</b> Cada ${TOURNEY_EVERY / 2} vueltas hay una ronda de minijuegos: un torneo (quien gana se lleva gemas y una carta) y, cada ${TEAM_ROUND} rondas, uno en equipo contra el Rey. También en las arenas y al caer donde está tu rival.`)}
@@ -432,8 +435,10 @@ export class Hud {
       ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo, hasta que alguien llega al castillo.')}
       ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
+      <h3>${icon('rune')}Reliquias</h3>
+      <ul>${Object.values(RELICS).map((r) => li(r.icon, '#2fa596', `<b>${r.name}${r.team ? ' (solo en el modo juntos)' : ''}.</b> ${r.text}`)).join('')}</ul>
       <h3>${icon('heart')}Modo juntos</h3>
-      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos (5 en Tranquila y 3 en Difícil). Cada guardián se enfrenta en una batalla de jefe y, vencido, da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
+      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos (5 en Tranquila y 3 en Difícil). Cada guardián se enfrenta en una batalla de jefe y, vencido, da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Cada guardián vencido da también <b>una reliquia del equipo</b>, y las reliquias de los altares sirven a los dos. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);
     const m = this.modal(s);

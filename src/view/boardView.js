@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mat, matMetal, matGlow, paint, paintBy, at, loft, tube, merge, ball, ico, octa, box, cone, cyl, ringGeo, star, mesh } from './geo.js';
-import { caveMesh, shopMesh, nestMesh, holeMesh, arenaMesh, fireMesh, bookMesh, starMesh } from './creatures.js';
+import { caveMesh, shopMesh, nestMesh, holeMesh, arenaMesh, fireMesh, bookMesh, starMesh, altarMesh } from './creatures.js';
 import { ease } from './stage.js';
 import { makeRng } from '../core/rng.js';
 import { makeCritter } from './critters.js';
@@ -14,8 +14,8 @@ const GROUND = [
   ['#f0b24e', '#e6a343', '#f5bf62'],
   ['#e3ecff', '#d3dffa', '#f2f6ff'],
 ];
-const TYPE_COLOR = { gem: '#ffe07a', trap: '#b8556b', chest: '#ffb35c', shrine: '#8ef0e2', portal: '#b98aff', eagle: '#9fd8ff', worm: '#a8765c', duel: '#ff9a7a', adventure: '#ffd0e4', shop: '#ffc27a', cave: '#8f86b5' };
-const MODEL = { gem: (c) => gemMesh(c.n), chest: chestMesh, trap: (c) => trapMesh(c.trap), portal: portalMesh, shrine: shrineMesh, shop: shopMesh, cave: caveMesh, eagle: nestMesh, worm: holeMesh, duel: arenaMesh, calm: fireMesh, adventure: bookMesh };
+const TYPE_COLOR = { gem: '#ffe07a', trap: '#b8556b', chest: '#ffb35c', shrine: '#8ef0e2', portal: '#b98aff', eagle: '#9fd8ff', worm: '#a8765c', duel: '#ff9a7a', adventure: '#ffd0e4', shop: '#ffc27a', cave: '#8f86b5', altar: '#8ef0e2' };
+const MODEL = { gem: (c) => gemMesh(c.n), chest: chestMesh, trap: (c) => trapMesh(c.trap), portal: portalMesh, shrine: shrineMesh, shop: shopMesh, cave: caveMesh, altar: altarMesh, eagle: nestMesh, worm: holeMesh, duel: arenaMesh, calm: fireMesh, adventure: bookMesh };
 const HEX = 0.93;
 
 const prism = (top, bottom, h) => loft([
@@ -684,6 +684,16 @@ export class BoardView {
     this.group.remove(g);
   }
 
+  // Alguien se llevó la reliquia del altar: sube, brilla y desaparece.
+  async takeRelic(id) {
+    const g = this.contents.get(id), t = this.board.tiles[id], o = g?.userData.relic;
+    if (!o) return;
+    g.userData.taking = true;
+    this.stage.sparks.burst(t.x, t.h + 1.3, t.z, 30, { color: [g.userData.color, '#ffffff'], speed: 2.6, up: 2, life: 0.9, size: 0.28 });
+    await this.stage.tween(0.6, (k) => { o.position.y = 1.25 + k * 1.6; o.scale.setScalar(Math.max(0.01, 1 - k)); }, ease.lin);
+    o.visible = false;
+  }
+
   update(dt, time) {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
     for (const [id, d] of this.mistData) {
@@ -722,6 +732,7 @@ export class BoardView {
     for (const [, g] of this.contents) {
       const u = g.userData;
       if (u.spin) g.rotation.y += dt * u.spin;
+      if (u.relic && !u.taking) { u.relic.rotation.y += dt * 1.6; u.relic.position.y = 1.25 + Math.sin(time * 2) * 0.08; }
       if (u.portal) u.portal.value = time;
       if (u.dragon) u.dragon.userData.breathe(time);
       if (u.cat) { u.cat.position.y = Math.abs(Math.sin(time * 2)) * 0.03; u.cat.rotation.y = Math.sin(time * 0.8) * 0.3; }
@@ -745,6 +756,7 @@ export class BoardView {
       this.ambT = 0.16;
       for (const [id, g] of this.contents) {
         const t = this.board.tiles[id];
+        if (g.userData.relic?.visible && Math.random() < 0.35) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5) * 0.5, y: t.h + 1.1, z: t.z + (Math.random() - 0.5) * 0.5, vy: 0.6, color: g.userData.color, size: 0.16, life: 1 });
         if (g.userData.dragon && Math.random() < 0.14) this.stage.smoke.emit({ x: t.x + 0.4, y: t.h + 0.5, z: t.z, vx: 0.15, vy: 0.5, color: '#e9e4f5', size: 0.14, life: 1.6, grow: 0.12, alpha: 0.7 });
         if (g.userData.cat && Math.random() < 0.3) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5), y: t.h + 0.6 + Math.random(), z: t.z - 0.3, vy: 0.4, color: '#ffd36b', size: 0.2, life: 1.2 });
         if (t.content?.type === 'calm' && Math.random() < 0.5) this.stage.sparks.emit({ x: t.x + (Math.random() - 0.5) * 0.2, y: t.h + 0.4, z: t.z - 0.42, vy: 0.9, color: '#ff9a3d', size: 0.14, life: 0.9 });
