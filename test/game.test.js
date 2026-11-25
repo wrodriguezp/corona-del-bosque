@@ -64,8 +64,9 @@ test('una partida guardada se reconstruye idéntica', () => {
 
 test('cada carta se puede jugar y el escudo bloquea', () => {
   for (const id of Object.keys(CARDS)) {
-    const g = new Game({ seed: 5 });
+    const team = CARDS[id].family === 'equipo', g = new Game({ seed: 5, mode: team ? 'coop' : 'versus' });
     g.apply({ type: 'begin' });
+    if (team) { g.hearts = 2; g.shade = 5; }
     g.player.hand = [id]; g.rival.gems = 10;
     assert.equal(g.playCard(0, 4)[0].card, id);
     assert.equal(g.player.hand.length, 0);

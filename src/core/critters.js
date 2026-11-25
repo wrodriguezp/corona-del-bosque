@@ -8,9 +8,18 @@ import { bfs } from './board.js';
 // cubre todo lo que está a menos de `front` pasos del comienzo del camino.
 export const SHADE = { from: 6, speed: 1.0, accel: 0.05, gems: 3, spit: 2, stop: 4 };
 
-export const shadeFront = (g) => {
+export const shadeRaw = (g) => {
   const k = g.turns - SHADE.from;
-  return k <= 0 ? 0 : Math.min(g.board.length - SHADE.stop, Math.floor(k * SHADE.speed + SHADE.accel * k * k));
+  return k <= 0 ? 0 : Math.floor(k * SHADE.speed + SHADE.accel * k * k);
+};
+// En el modo cooperativo la Sombra se puede hacer retroceder (`shadeBack`) y espera
+// detrás del primer guardián que siga en pie.
+export const shadeFront = (g) => {
+  const raw = shadeRaw(g);
+  if (raw <= 0) return 0;
+  let cap = g.board.length - SHADE.stop;
+  if (g.coop) for (const q of g.guards) if (!q.done) cap = Math.min(cap, q.p - 1);
+  return Math.max(0, Math.min(cap, raw - (g.shadeBack || 0)));
 };
 
 // Cuántos pasos lleva recorridos esta casilla desde la salida.
@@ -20,16 +29,23 @@ export const shaded = (g, t) => g.shade > 0 && t.dist != null && progress(g, t) 
 export function shadeTick(g, ev) {
   const front = shadeFront(g);
   if (front <= g.shade) return;
-  const first = g.shade === 0;
+  const first = !g.shadeMet;
+  g.shadeMet = true;
   g.shade = front;
   ev.push({ t: 'shade', front });
-  if (first) g.msg(ev, 'omen', 'El Rey Sombrío suelta su Sombra', 'Desde la salida avanza la Sombra del Rey, cada vez más rápido. Si te alcanza, te quita gemas y te escupe hacia adelante. Por el camino, sus guardianes les cierran el paso.', false, `Si te alcanza: pierdes hasta ${SHADE.gems} gemas (el escudo protege) y sales ${SHADE.spit} casillas por delante de ella`);
+  if (first && g.coop) g.msg(ev, 'omen', 'El Rey Sombrío suelta su Sombra', 'Desde la salida avanza la Sombra del Rey, cada vez más rápido. Si alcanza a alguien, el equipo pierde un corazón. Espera detrás de cada guardián hasta que lo venzan.', false, `Si te alcanza: el equipo pierde 1 corazón (el escudo protege) y sales ${SHADE.spit} casillas por delante de ella`);
+  else if (first) g.msg(ev, 'omen', 'El Rey Sombrío suelta su Sombra', 'Desde la salida avanza la Sombra del Rey, cada vez más rápido. Si te alcanza, te quita gemas y te escupe hacia adelante. Por el camino, sus guardianes les cierran el paso.', false, `Si te alcanza: pierdes hasta ${SHADE.gems} gemas (el escudo protege) y sales ${SHADE.spit} casillas por delante de ella`);
   for (const c of [...g.critters]) if (shaded(g, g.tile(c.tile))) gone(g, ev, c);
   for (const p of g.players) {
     if (p.arrived || !shaded(g, g.tile(p.tile))) continue;
     ev.push({ t: 'shadeCatch', p: p.id });
-    g.msg(ev, 'omen', `¡La Sombra alcanzó a ${p.name}!`, `Te quita hasta ${SHADE.gems} gemas y te escupe hacia adelante.`, true);
-    if (!g.shielded(ev, p, 'La Sombra')) g.addGems(ev, p, -SHADE.gems, 'lost');
+    if (g.coop) {
+      g.msg(ev, 'omen', `¡La Sombra alcanzó a ${p.name}!`, 'El equipo pierde un corazón y la Sombra te escupe hacia adelante.', true);
+      if (!g.shielded(ev, p, 'La Sombra')) g.loseHeart(ev, 'shade', p.id);
+    } else {
+      g.msg(ev, 'omen', `¡La Sombra alcanzó a ${p.name}!`, `Te quita hasta ${SHADE.gems} gemas y te escupe hacia adelante.`, true);
+      if (!g.shielded(ev, p, 'La Sombra')) g.addGems(ev, p, -SHADE.gems, 'lost');
+    }
     g.shove(ev, p, g.shade + SHADE.spit - progress(g, g.tile(p.tile)));
   }
 }

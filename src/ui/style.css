@@ -285,3 +285,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .title .go [data-a=arcade] { display: inline-flex; gap: 8px; align-items: center; }
 .arcade .grid .pick { color: var(--ink); }
 .arcade .score div { min-width: 0; padding: 8px 18px; font-size: 20px; } .arcade .score div b { font-size: 34px; }
+
+/* Modo juntos: corazones y runas del equipo */
+.sky.team { background: #1d4f7a; color: #fff; gap: 10px; }
+.sky.team .hearts, .sky.team .runes { display: inline-flex; gap: 2px; }
+.sky.team i { display: inline-flex; opacity: .3; transition: opacity .3s, transform .3s; }
+.sky.team i.f { opacity: 1; }
+.sky.team .hearts i .ic { color: #ff6f91; } .sky.team .runes i .ic { color: #8fe3ff; }
+.sky.team i.pop { animation: pop .6s ease-out; }
+@keyframes pop { 40% { transform: scale(1.7); } }
+.seg.mode button { display: inline-flex; gap: 6px; align-items: center; }
+.score .hh .ic { color: #ff6f91; } .score .rr .ic { color: #8fe3ff; }

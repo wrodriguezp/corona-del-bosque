@@ -1,9 +1,9 @@
 import { makeRng } from './rng.js';
 import { makeBoard, bfs, pathTo } from './board.js';
-import { CARDS, COMMON, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
+import { CARDS, COMMON, TEAM_DECK, HAND_LIMIT, PRICES, comebackCard, offerCards } from './cards.js';
 import { DAY, NIGHT, worldTick } from './world.js';
-import { ADVENTURES, byId, describe } from './adventures.js';
-import { critterAt, meet, progress } from './critters.js';
+import { ADVENTURES, byId, describe, friendly } from './adventures.js';
+import { critterAt, meet, progress, shadeRaw, shadeTick } from './critters.js';
 
 // Reglas puras: sin gráficos. Toda jugada entra por apply(acción) y devuelve una
 // lista de eventos que la vista anima en orden. Con la misma semilla y las mismas
@@ -35,6 +35,10 @@ export const GUARDS = [
   { at: 0.53, kind: 'troll', name: 'el Troll Hipnotizado', title: '¡Un troll hipnotizado!', text: 'El Rey Sombrío puso a su troll más grande a cuidar el camino. ¡A vencerlo juntos!' },
   { at: 0.78, kind: 'rey', name: 'el Rey Sombrío', title: '¡El Rey Sombrío en persona!', text: 'El dueño de la Sombra les cierra el paso al castillo. ¡A vencerlo juntos!' },
 ];
+// Modo cooperativo: ganan o pierden juntos contra el Rey Sombrío.
+// hearts: corazones del equipo · push: casillas que retrocede la Sombra si ganan un
+// minijuego · surge: casillas que avanza si pierden · lamp: carta Farol del alba.
+export const COOP = { hearts: 4, push: 2, surge: 3, lamp: 4, meet: 2 };
 export const GOLDEN = 3; // gemas extra del «Toque dorado» en cada casilla de gemas // tramos del camino donde los premios crecen
 
 const TRAPS = {
@@ -54,8 +58,12 @@ const CALM = [
 const newFx = () => ({ shield: false, golden: 0, magnet: false, map: false, plus: 0, double: false, fixed: 0, die: null, again: false, worst: false, minus: 0, half: false, locked: false, rush: false });
 
 export class Game {
-  constructor({ seed = Date.now(), len = 28, names = ['Princesa', 'Mago'] } = {}) {
+  constructor({ seed = Date.now(), len = 28, names = ['Princesa', 'Mago'], mode = 'versus' } = {}) {
     this.seed = seed;
+    this.coop = mode === 'coop';
+    this.hearts = this.coop ? COOP.hearts : 0;
+    this.runes = 0;
+    this.shadeBack = 0;
     this.board = makeBoard(seed, len);
     this.rng = makeRng(seed ^ 0x9e3779b9);
     this.players = names.map((name, id) => ({
@@ -150,6 +158,37 @@ export class Game {
 
   msg(ev, kind, title, text, quick, note) { ev.push({ t: 'msg', kind, title, text, quick, note }); }
 
+  /* ---------- Modo cooperativo ---------- */
+  loseHeart(ev, why, p = this.turn) {
+    if (this.hearts <= 0) return;
+    this.hearts--;
+    ev.push({ t: 'heart', n: -1, left: this.hearts, why, p });
+  }
+
+  gainHeart(ev) {
+    if (this.hearts >= COOP.hearts) return;
+    this.hearts++;
+    ev.push({ t: 'heart', n: 1, left: this.hearts, p: this.turn });
+  }
+
+  // La Sombra retrocede n casillas (n < 0: avanza) y se recalcula al momento.
+  pushShade(ev, n) {
+    if (n > 0) {
+      const to = Math.max(0, this.shade - n);
+      if (to === this.shade) return;
+      this.shadeBack = Math.max(this.shadeBack, shadeRaw(this) - to);
+      this.shade = to;
+      ev.push({ t: 'shade', front: to, back: true });
+    } else {
+      this.shadeBack += n;
+      shadeTick(this, ev);
+    }
+  }
+
+  // ¿Hay un guardián en pie antes de este punto del camino? Basta estar a su altura:
+  // los eventos del bosque cambian las distancias y nadie debe saltárselo.
+  crossed(b) { return this.coop ? this.guards.find((q) => !q.done && b >= q.p) : null; }
+
   // Devuelve true si el escudo detuvo el golpe.
   shielded(ev, p, what) {
     if (!p.fx.shield) return false;
@@ -158,7 +197,7 @@ export class Game {
     return true;
   }
 
-  giveCard(ev, p, card = this.aid[p.id] && this.rng.chance(0.2 * this.aid[p.id]) ? comebackCard(this.rng) : this.rng.pick(COMMON)) {
+  giveCard(ev, p, card = this.aid[p.id] && this.rng.chance(0.2 * this.aid[p.id]) ? comebackCard(this.rng) : this.rng.pick(this.coop ? TEAM_DECK : COMMON)) {
     if (p.hand.length >= HAND_LIMIT) { this.addGems(ev, p, 3, 'full'); return; }
     p.hand.push(card);
     ev.push({ t: 'gain', p: p.id, card });
@@ -171,6 +210,7 @@ export class Game {
     for (let k = 0; k < Math.abs(n); k++) {
       const next = parent.get(p.tile);
       if (next == null || next === this.board.castleId) break;
+      if (n > 0 && this.crossed(progress(this, this.tile(next)))) break;
       p.tile = next;
       ev.push({ t: 'step', p: p.id, id: next, back: n < 0, shove: true });
       const ids = this.look(next);
@@ -198,7 +238,7 @@ export class Game {
   }
 
   updateFairy(ev) {
-    if (this.turns < FAIRY_FROM) return;
+    if (this.coop || this.turns < FAIRY_FROM) return;
     for (const p of this.players) {
       const was = this.aid[p.id], gap = this.behind(p);
       let now = 0;
@@ -235,15 +275,16 @@ export class Game {
     ev.push({ t: 'turn', p: p.id, extra, left: this.first != null ? this.finalTurns : null });
     this.updateFairy(ev);
     if (!extra) worldTick(this, ev);
+    if (this.coop && !this.hearts) return ev.concat(this.finish());
     if (this.shadowAttack) {
       this.shadowAttack = false;
       this.startDuel(ev, 'sombra');
       return ev;
     }
-    if (!extra && this.first == null && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
+    if (!extra && (this.first == null || this.coop) && this.turns > 0 && this.turns % TOURNEY_EVERY === 0 && this.lastTourney !== this.turns) {
       this.lastTourney = this.turns;
       this.rounds = (this.rounds || 0) + 1;
-      this.startDuel(ev, this.rounds % TEAM_ROUND === 0 ? 'ronda' : 'torneo');
+      this.startDuel(ev, this.coop || this.rounds % TEAM_ROUND === 0 ? 'ronda' : 'torneo');
       return ev;
     }
     this.checkStars(ev);
@@ -259,6 +300,7 @@ export class Game {
 
   endTurn() {
     const p = this.player, ev = [];
+    if (this.coop && !this.hearts) return this.finish();
     p.fx.locked = false;
     p.fx.rush = false;
     this.adventure = this.shop = this.cave = null;
@@ -268,6 +310,7 @@ export class Game {
     }
     this.addStar(ev, p);
     this.turns++;
+    if (this.first != null && this.coop) return ev.concat(this.castleTurn());
     if (this.first != null) {
       this.finalTurns--;
       if (this.finalTurns <= 0) return ev.concat(this.finish());
@@ -285,7 +328,7 @@ export class Game {
       this.addGems(ev, p, 3, 'full');
       return false;
     }
-    this.offer = { cards: offerCards(this.rng, this.helps(p)), why };
+    this.offer = { cards: offerCards(this.rng, this.helps(p), this.coop), why };
     this.phase = 'pick';
     ev.push({ t: 'offer', p: p.id, why });
     return true;
@@ -303,7 +346,12 @@ export class Game {
 
   /* ---------- Cartas y compras ---------- */
   // En el castillo se está a salvo: las cartas contra el rival no sirven si ya llegó.
-  canCard(card) { return !(this.rival.arrived && (CARDS[card].family === 'travesura' || card === 'cometa')); }
+  canCard(card) {
+    if (card === 'abrazo') return this.hearts < COOP.hearts;
+    if (card === 'farol') return this.shade > 0;
+    if (card === 'lazo') return !this.rival.arrived;
+    return !(this.rival.arrived && (CARDS[card].family === 'travesura' || card === 'cometa'));
+  }
 
   playCard(i, value) {
     const p = this.player, r = this.rival, card = p.hand[i];
@@ -349,6 +397,9 @@ export class Game {
         this.shove(ev, p, Math.max(0, Math.min(8, this.tile(p.tile).dist - this.tile(r.tile).dist - 2)));
         break;
       case 'cuerno': this.addGems(ev, p, 6, 'card'); this.addStar(ev, p, 2); break;
+      case 'abrazo': this.gainHeart(ev); break;
+      case 'farol': this.pushShade(ev, COOP.lamp); break;
+      case 'lazo': ev.push({ t: 'lazo', p: p.id, to: r.id }); this.shove(ev, r, 3); break;
     }
     ev.push({ t: 'hud' });
     return ev;
@@ -369,7 +420,7 @@ export class Game {
     const p = this.player;
     if (p.fx.locked || p.gems < PRICES[what] || this.bought[what]) return false;
     if (what === 'sobre') return this.phase === 'ready' && p.hand.length < HAND_LIMIT;
-    if (what === 'trampa') return this.phase === 'ready' && !this.rival.arrived && this.snareSpots().length > 0;
+    if (what === 'trampa') return this.phase === 'ready' && !this.coop && !this.rival.arrived && this.snareSpots().length > 0;
     return this.phase === 'move';
   }
 
@@ -469,10 +520,16 @@ export class Game {
     const path = this.pathFor(id);
     let walked = 0, before = progress(this, this.tile(p.tile));
     for (const step of path) {
+      const now = progress(this, this.tile(step)), guard = this.crossed(now) || this.guards.find((q) => !q.done && before < q.p && now >= q.p);
+      before = now;
+      // En el modo cooperativo la puerta del castillo solo se abre con las tres runas.
+      if (guard && step === this.board.castleId && this.coop) {
+        const last = ev.findLast((e) => e.t === 'step');
+        if (last) last.last = true;
+        return ev.concat(this.meetGuard(guard));
+      }
       p.tile = step;
       walked++;
-      const now = progress(this, this.tile(step)), guard = this.guards.find((q) => !q.done && before < q.p && now >= q.p);
-      before = now;
       if (guard && step !== this.board.castleId) {
         ev.push({ t: 'step', p: p.id, id: step, last: true });
         return ev.concat(this.meetGuard(guard));
@@ -500,7 +557,10 @@ export class Game {
     }
     if (id === this.board.castleId) return ev.concat(this.arrive());
     if (p.fx.map) { p.fx.map = false; this.msg(ev, 'gem', 'Mapa del tesoro', '¡Aquí era! Desentierras 5 gemas.', true); this.addGems(ev, p, 5, 'card'); }
-    if (r.tile === id && !r.arrived && id !== this.board.startId) {
+    if (this.coop && r.tile === id && !r.arrived && id !== this.board.startId) {
+      this.msg(ev, 'shrine', '¡Juntos otra vez!', `${p.name} alcanza a ${r.name}. Se dan ánimo: cada quien gana ${COOP.meet} gemas.`, true);
+      for (const q of this.players) this.addGems(ev, q, COOP.meet, 'team');
+    } else if (r.tile === id && !r.arrived && id !== this.board.startId) {
       this.msg(ev, 'duel', '¡Encuentro!', `${p.name} alcanza a ${r.name}. Se decide con un minijuego.`);
       this.startDuel(ev, 'encuentro');
       return ev;
@@ -551,6 +611,9 @@ export class Game {
         if (c.type === 'portal') this.reveal(ev, to.id);
         const ids = this.look(to.id);
         if (ids.length) ev.push({ t: 'seen', ids });
+        // En el modo cooperativo nadie se salta a un guardián: los espera donde aterrizas.
+        const q = this.crossed(progress(this, to));
+        if (q) { ev.push(...this.meetGuard(q)); return true; }
         return false;
       }
       case 'shrine':
@@ -565,13 +628,14 @@ export class Game {
         return this.makeOffer(ev, 'chest');
       case 'duel':
         clear();
+        if (this.coop) { this.msg(ev, 'duel', 'Arena antigua', 'Las piedras despiertan a la Sombra: juegan juntos un minijuego en equipo.'); this.startDuel(ev, 'arena'); return true; }
         if (r.arrived) { this.msg(ev, 'gem', 'Arena vacía', 'No hay con quién competir: ganas 3 gemas.'); this.addGems(ev, p, 3, 'tile'); return false; }
         this.msg(ev, 'duel', 'Arena antigua', 'Las piedras exigen un minijuego: quien gane le quita gemas a quien pierda.');
         this.startDuel(ev, 'arena');
         return true;
       case 'adventure': return this.startAdventure(ev, t);
       case 'shop':
-        this.shop = { items: offerCards(this.rng, this.helps(p)).map((card, i) => ({ card, price: [3, 4, 4][i], sold: false })) };
+        this.shop = { items: offerCards(this.rng, this.helps(p), this.coop).map((card, i) => ({ card, price: [3, 4, 4][i], sold: false })) };
         this.phase = 'shop';
         ev.push({ t: 'shop' });
         return true;
@@ -596,9 +660,10 @@ export class Game {
   startAdventure(ev, t) {
     const p = this.player;
     const open = (a) => !this.usedAdventures.includes(a.id) && (a.biome == null || a.biome === t.biome) && (!a.night || this.night);
-    const follow = ADVENTURES.filter((a) => a.need && p.flags[a.need] && p.flags[a.need] < this.turns);
-    let list = follow.length && this.rng.chance(0.75) ? follow : ADVENTURES.filter((a) => !a.need && open(a));
-    if (!list.length) { this.usedAdventures = []; list = ADVENTURES.filter((a) => !a.need && open(a)); }
+    const pool = this.coop ? ADVENTURES.filter(friendly) : ADVENTURES;
+    const follow = pool.filter((a) => a.need && p.flags[a.need] && p.flags[a.need] < this.turns);
+    let list = follow.length && this.rng.chance(0.75) ? follow : pool.filter((a) => !a.need && open(a));
+    if (!list.length) { this.usedAdventures = []; list = pool.filter((a) => !a.need && open(a)); }
     const a = this.rng.pick(list);
     if (!a.need) this.usedAdventures.push(a.id);
     t.content = { type: 'visited' };
@@ -659,7 +724,7 @@ export class Game {
       case 'unflag': delete p.flags[v]; break;
       case 'swap': this.swap(ev); break;
       case 'duel':
-        if (r.arrived) this.addGems(ev, p, 3, 'adventure');
+        if (r.arrived && !this.coop) this.addGems(ev, p, 3, 'adventure');
         else this.startDuel(ev, 'arena');
         break;
     }
@@ -710,7 +775,7 @@ export class Game {
     const ev = [], G = GUARDS[q.i];
     q.done = true;
     ev.push({ t: 'guard', i: q.i, kind: q.kind, p: this.turn, id: this.player.tile });
-    this.msg(ev, 'omen', G.title, G.text, false, `Si ganan: ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: hasta −${TEAM_LOSE} a cada quien`);
+    this.msg(ev, 'omen', G.title, G.text, false, this.coop ? `Si ganan: la runa ${q.i + 1} de 3 y ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: pierden 1 corazón y sigue cerrando el paso` : `Si ganan: ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: hasta −${TEAM_LOSE} a cada quien`);
     this.startDuel(ev, 'guardia');
     this.duel.guard = q.i;
     return ev;
@@ -718,7 +783,7 @@ export class Game {
 
   /* ---------- Minijuegos ---------- */
   startDuel(ev, why) {
-    const team = why === 'sombra' || why === 'guardia' || why === 'ronda', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
+    const team = this.coop || why === 'sombra' || why === 'guardia' || why === 'ronda', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
     if (!this[key]?.length) this[key] = this.rng.shuffle(list);
     this.duel = { why, game: this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
     this.phase = 'duel';
@@ -731,6 +796,7 @@ export class Game {
     if (team ? w > -1 : w === -2) return [];
     this.duel = null;
     this.phase = 'resolving';
+    if (team && this.coop) return this.coopResult(ev, w === -1, why, guard);
     if (team) {
       const foe = why === 'guardia' ? GUARDS[guard].name : 'la Sombra del Rey';
       if (w === -1) {
@@ -765,6 +831,43 @@ export class Game {
     return ev.concat(this.endTurn());
   }
 
+  // Modo cooperativo: los guardianes dan runas o quitan corazones; los demás
+  // minijuegos empujan la Sombra hacia atrás o la dejan avanzar.
+  coopResult(ev, won, why, guard) {
+    const p = this.player;
+    if (guard != null) {
+      const G = GUARDS[guard], q = this.guards[guard];
+      if (won) {
+        this.runes++;
+        this.msg(ev, 'sun', `¡Vencieron a ${G.name}!`, `Ganan la runa ${this.runes} de 3 y cada quien gana ${TEAM_WIN} gemas. El camino queda libre.`, true);
+        ev.push({ t: 'rune', n: this.runes, guard, p: p.id });
+        for (const x of this.players) this.addGems(ev, x, TEAM_WIN, 'team');
+      } else {
+        q.done = false;
+        this.msg(ev, 'omen', `Ganó ${G.name} esta vez`, `El equipo pierde un corazón. ${p.name} retrocede y ${G.name} vuelve a cerrar el paso.`, true);
+        this.loseHeart(ev, 'guard');
+        for (let k = 0; k < 12 && progress(this, this.tile(p.tile)) >= q.p - 1; k++) this.shove(ev, p, -1);
+      }
+      ev.push({ t: 'teamEnd', won, guard, stay: !won });
+      return ev.concat(this.endTurn());
+    }
+    if (won) {
+      this.msg(ev, 'sun', '¡Vencieron a la Sombra!', `La Sombra retrocede ${COOP.push} casillas y cada quien gana ${TEAM_WIN} gemas.`, true);
+      for (const x of this.players) this.addGems(ev, x, TEAM_WIN, 'team');
+      ev.push({ t: 'teamEnd', won });
+      this.pushShade(ev, COOP.push);
+    } else {
+      this.msg(ev, 'omen', 'Ganó la Sombra esta vez', `La Sombra avanza ${COOP.surge} casillas de golpe.`, true);
+      ev.push({ t: 'teamEnd', won });
+      this.pushShade(ev, -COOP.surge);
+    }
+    if (!this.hearts) return ev.concat(this.finish());
+    if (why === 'arena' || why === 'adventure') return ev.concat(this.endTurn());
+    this.phase = 'ready';
+    if (why !== 'reto') this.checkStars(ev);
+    return ev;
+  }
+
   /* ---------- Final ---------- */
   arrive() {
     const p = this.player, ev = [];
@@ -774,6 +877,13 @@ export class Game {
     ev.push({ t: 'arrive', p: p.id, first: isFirst });
     this.addGems(ev, p, isFirst ? ARRIVE_FIRST : ARRIVE_SECOND, 'castle');
     this.cashCards(ev, p);
+    if (isFirst && this.coop) {
+      this.first = p.id;
+      this.turn = this.rival.id;
+      this.finalTurns = null;
+      this.msg(ev, 'castle', `¡${p.name} llegó al castillo!`, `Las tres runas abren la puerta. Desde la torre ayuda en cada vuelta: tira un dado para frenar la Sombra o empujar a ${this.player.name}. Cuando llegue ${this.player.name}, ganan los dos.`);
+      return ev.concat(this.startTurn());
+    }
     if (isFirst) {
       this.first = p.id;
       this.turn = this.rival.id;
@@ -796,10 +906,12 @@ export class Game {
   }
 
   castleAct(what) {
-    if (this.phase !== 'castle' || !['cofre', 'torre'].includes(what)) return [];
+    if (this.phase !== 'castle' || !(this.coop ? ['farol', 'viento'] : ['cofre', 'torre']).includes(what)) return [];
     const p = this.player, r = this.rival, n = this.castle.die, ev = [{ t: 'castleAct', p: p.id, what, n }];
     this.castle = null;
-    if (what === 'cofre') p.chest += n;
+    if (what === 'farol') this.pushShade(ev, n);
+    else if (what === 'viento') this.shove(ev, r, Math.ceil(n / 2));
+    else if (what === 'cofre') p.chest += n;
     else if (!this.shielded(ev, r, 'Torre del castillo')) this.shove(ev, r, -n);
     this.turn = r.id;
     this.phase = 'resolving';
@@ -817,6 +929,12 @@ export class Game {
 
   finish() {
     const ev = [];
+    if (this.coop) {
+      this.phase = 'over';
+      const won = this.players.every((p) => p.arrived);
+      this.winner = won ? -1 : -2;
+      return [{ t: 'over', coop: true, won, hearts: this.hearts, runes: this.runes }];
+    }
     for (const p of this.players) {
       if (p.chest) { ev.push({ t: 'chest', p: p.id, n: p.chest }); this.addGems(ev, p, p.chest, 'chest'); p.chest = 0; }
       this.cashCards(ev, p);

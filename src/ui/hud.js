@@ -1,6 +1,6 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
-import { CAVE, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND } from '../core/game.js';
+import { CAVE, COOP, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND } from '../core/game.js';
 import { DAY, EVENTS, NIGHT } from '../core/world.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
@@ -11,7 +11,7 @@ const el = (cls, html = '', tag = 'div') => {
   return e;
 };
 export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const KIND = { fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'], sun: ['sun', '#d8981a'] };
+const KIND = { heart: ['heart', '#d6365f'], rune: ['rune', '#1d6fa8'], fairy: ['star', '#d6468f'], gem: ['gem', '#1f9d63'], star: ['star', '#d8981a'], trap: ['trap', '#b3204f'], portal: ['portal', '#7c3fd0'], shrine: ['shrine', '#139a94'], steal: ['steal', '#8d2bb8'], castle: ['castle', '#c42c6d'], calm: ['calm', '#3f9a4b'], shield: ['shield', '#2b7fd0'], duel: ['duel', '#d2452f'], eagle: ['eagle', '#2b7fd0'], worm: ['worm', '#b3466c'], flame: ['flame', '#e0651f'], crown: ['crown', '#c98a12'], coin: ['coin', '#b5811a'], cloud: ['cloud', '#5d5a8f'], hand: ['hand', '#a8552f'], bag: ['bag', '#8d5a2b'], swap: ['swap', '#7c3fd0'], again: ['again', '#1f9d63'], help: ['help', '#7c3fd0'], sound: ['sound', '#c42c6d'], moon: ['moon', '#4a4fb0'], omen: ['omen', '#6a2fa0'], snow: ['snow', '#2b86c0'], tree: ['tree', '#2f8f5b'], sun: ['sun', '#d8981a'] };
 const AV = ['crown', 'hat'];
 
 // Pantalla completa (en iPhone Safari no existe: ahí el botón no aparece).
@@ -65,7 +65,10 @@ export class Hud {
     this.sky = el('sky');
     this.omen = el('sky omen hidden');
     this.final = el('final hidden');
-    this.under.append(this.sky, this.omen, this.final);
+    this.hearts = g.hearts;
+    this.runes = g.runes;
+    this.team = el(`sky team${g.coop ? '' : ' hidden'}`);
+    this.under.append(this.team, this.sky, this.omen, this.final);
     this.time(g.turns % DAY.len, g.night);
     this.setOmen(g.omen);
     this.act = el('act');
@@ -89,6 +92,9 @@ export class Hud {
 
   refresh() {
     const g = this.g;
+    if (g.coop) {
+      this.team.innerHTML = `<span class="hearts" title="Corazones del equipo: si se acaban, gana el Rey">${Array.from({ length: COOP.hearts }, (_, k) => `<i class="${k < this.hearts ? 'f' : ''}">${icon('heart')}</i>`).join('')}</span><span class="runes" title="Runas: una por cada guardián vencido. Con las tres se abre el castillo">${[0, 1, 2].map((k) => `<i class="${k < this.runes ? 'f' : ''}">${icon('rune')}</i>`).join('')}</span>`;
+    }
     g.players.forEach((p, i) => {
       const e = this.pl[i];
       e.querySelector('.gm b').textContent = this.shown[i];
@@ -180,7 +186,7 @@ export class Hud {
         const b = el('card', cardHtml(id, false, p.id), 'button');
         b.style.setProperty('--f', FAMILIES[CARDS[id].family].color);
         const safe = !this.g.canCard(id);
-        b.title = safe ? 'Tu rival ya está a salvo en el castillo' : CARDS[id].text;
+        b.title = safe ? (CARDS[id].family === 'equipo' ? 'Ahora no tiene efecto' : 'Tu rival ya está a salvo en el castillo') : CARDS[id].text;
         b.disabled = !playable || safe;
         b.onclick = () => this.on.card?.(i);
         h.append(b);
@@ -190,7 +196,8 @@ export class Hud {
     const row = el('row2');
     const r = el('roll', `${icon('dice')}Tirar el dado`, 'button');
     r.onclick = () => this.on.roll?.();
-    row.append(this.buyButton('sobre', 'bag', 'Sobre misterioso', 'B', 'Recibes una carta al azar'), r, this.buyButton('trampa', 'trap', 'Trampa escondida', 'T', 'Se esconde en el camino de tu rival: si la pisa, se detiene y le robas hasta 4 gemas'));
+    row.append(this.buyButton('sobre', 'bag', 'Sobre misterioso', 'B', 'Recibes una carta al azar'), r);
+    if (!this.g.coop) row.append(this.buyButton('trampa', 'trap', 'Trampa escondida', 'T', 'Se esconde en el camino de tu rival: si la pisa, se detiene y le robas hasta 4 gemas'));
     this.act.append(row);
   }
 
@@ -304,6 +311,13 @@ export class Hud {
 
   // Turno del castillo: el dado ya salió y se elige qué hacer con él, con dibujos grandes.
   castle(p, die, rival) {
+    if (this.g.coop) {
+      const half = Math.ceil(die / 2), cas = (n) => `${n} ${n === 1 ? 'casilla' : 'casillas'}`;
+      const s = el('tale castle', `<div class="orn">${icon('castle')}</div><h2>Ayuda desde la torre</h2><p>${esc(p.name)}, salió un <b class="bigdie">${die}</b>. ¿Cómo ayudas a ${esc(rival.name)}?</p>
+      <div class="picks two"><button class="pick big" data-i="farol" ${this.g.shade > 0 ? '' : 'disabled'}><span class="pic">${icon('sun')}<b>${icon('omen')}←${die}</b></span><span>La Sombra retrocede ${cas(die)}.<small>${this.g.shade > 0 ? 'Le da más tiempo al equipo.' : 'Todavía no hay Sombra.'}</small></span></button>
+      <button class="pick big" data-i="viento"><span class="pic">${icon('cloud')}<b>${icon(AV[1 - p.id])}→${half}</b></span><span>${esc(rival.name)} avanza ${cas(half)}.<small>La mitad del dado, hacia arriba.</small></span></button></div>`);
+      return this.ask(s, 'low');
+    }
     const s = el('tale castle', `<div class="orn">${icon('castle')}</div><h2>Turno del castillo</h2><p>${esc(p.name)}, salió un <b class="bigdie">${die}</b>. ¿Qué haces con él?</p>
       <div class="picks two"><button class="pick big" data-i="cofre"><span class="pic">${icon('chest')}<b>+${die}${icon('gem')}</b></span><span>Guardar ${die} ${die === 1 ? "gema" : "gemas"} en tu cofre.<small>Se abre al final de la partida.</small></span></button>
       <button class="pick big" data-i="torre"><span class="pic">${icon('bolt')}<b>${icon(AV[1 - p.id])}−${die}</b></span><span>${esc(rival.name)} retrocede ${die} ${die === 1 ? 'casilla' : 'casillas'}.<small>Se le hace más difícil llegar.</small></span></button></div>`);
@@ -416,6 +430,8 @@ export class Hud {
       ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo, hasta que alguien llega al castillo.')}
       ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
+      <h3>${icon('heart')}Modo juntos</h3>
+      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos. Cada guardián vencido da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);
     const m = this.modal(s);
@@ -443,12 +459,17 @@ export class Hud {
       const s = el('title', `<h1>La Corona<small>del Bosque Errante</small></h1>
         <div class="setup">
           <div class="names"><label>${icon('crown')}<input maxlength="12" aria-label="Nombre de la princesa" value="${esc(defaults.names[0])}"></label><label>${icon('hat')}<input maxlength="12" aria-label="Nombre del mago" value="${esc(defaults.names[1])}"></label></div>
+          <div class="line"><div class="seg mode" role="group" aria-label="Modo de juego"><button data-m="versus">${icon('duel')}Uno contra otro</button><button data-m="coop">${icon('heart')}Juntos contra el Rey</button></div></div>
           <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button>${fullBtn('link')}</div>
           <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button><button class="cta alt" data-a="arcade">${icon('duel')}Arcade</button></div>
         </div>`);
       this.root.append(s);
-      let len = defaults.len;
-      const seg = [...s.querySelectorAll('.seg button')];
+      let len = defaults.len, mode = defaults.mode || 'versus';
+      const modes = [...s.querySelectorAll('.seg.mode button')];
+      const markMode = () => modes.forEach((b) => b.setAttribute('aria-pressed', b.dataset.m === mode));
+      markMode();
+      modes.forEach((b) => (b.onclick = () => { mode = b.dataset.m; markMode(); sfx('click'); }));
+      const seg = [...s.querySelectorAll('.seg:not(.mode) button')];
       const mark = () => seg.forEach((b) => b.setAttribute('aria-pressed', +b.dataset.l === len));
       mark();
       seg.forEach((b) => (b.onclick = () => { len = +b.dataset.l; mark(); sfx('click'); this.on.preview?.(len, false); }));
@@ -463,7 +484,7 @@ export class Hud {
       const resume = s.querySelector('[data-a=resume]');
       if (resume) resume.onclick = () => { s.remove(); res('resume'); };
       const names = () => [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
-      s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len }); };
+      s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len, mode }); };
       s.querySelector('[data-a=arcade]').onclick = () => { const n = names(); sfx('click'); s.remove(); res({ names: n, len, arcade: true }); };
     });
   }
@@ -480,6 +501,14 @@ export class Hud {
   }
 
   over(g, tie) {
+    if (g.coop) return new Promise((res) => {
+      const won = g.winner === -1, n = g.players.map((p) => esc(p.name)).join(' y ');
+      const s = el('sheet', `<h2>${won ? '¡Ganaron la corona juntos!' : 'Ganó el Rey Sombrío'}</h2><p>${won ? `${n} vencieron a los tres guardianes y llegaron al castillo.` : `${n} se quedaron sin corazones. ¡La próxima vez será!`}</p>
+        <div class="score"><div class="team">Corazones<b class="hh">${icon('heart')}${g.hearts}</b></div><div class="team">Runas<b class="rr">${icon('rune')}${g.runes}</b></div><div class="team">Turnos<b>${g.turns}</b></div></div>
+        <div class="line"><button class="cta" data-a="again">${won ? 'Otra aventura' : 'Intentar de nuevo'}</button><button class="link" data-a="home">Volver al inicio</button></div>`);
+      const m = this.modal(s, 'over');
+      s.onclick = (e) => { const a = e.target.closest('button')?.dataset.a; if (a) { m.remove(); res(a); } };
+    });
     const w = g.players[g.winner];
     return new Promise((res) => {
       const s = el('sheet', `<h2>¡${esc(w.name)} gana la corona!</h2><p>${tie ? 'Empate en gemas: decide quién llegó primero.' : w.id === g.first ? 'Llegó primero y con los bolsillos llenos.' : 'Llegó después, pero con más tesoro.'}</p>

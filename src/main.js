@@ -8,7 +8,7 @@ import { Session, localStore } from './core/session.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
-import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS } from './core/game.js';
+import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS, COOP } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
@@ -262,6 +262,14 @@ const play = {
   },
   async shade(e) {
     hud.shade(e.front);
+    if (e.back) {
+      // La Sombra retrocede: las casillas vuelven a la luz.
+      sfx('star');
+      await view.setShade(e.front, true);
+      hud.float(stage.project(view.pos(g.board.startId).add(new THREE.Vector3(0, 2, 0))), '¡La Sombra retrocede!', 'up');
+      await sleep(0.6);
+      return;
+    }
     if (view.shade > 0) { view.setShade(e.front, true); return; }
     const edge = g.board.tiles.filter((t) => t.kind === 'path' && g.board.length - t.dist < e.front).map((t) => view.pos(t.id));
     if (edge.length) await stage.focus(new THREE.Box3().setFromPoints(edge).getCenter(new THREE.Vector3()), { dist: stage.portrait ? 18 : 15, pitch: 0.8, dur: 1 });
@@ -289,7 +297,32 @@ const play = {
     hud.banner(e.p, GUARDS[e.i].name.replace(/^el /, '¡El ') + '!', 'Cierra el paso');
     await sleep(0.8);
   },
-  async teamEnd(e) { if (e.guard != null) await view.removeGuard(e.guard, e.won); },
+  async teamEnd(e) { if (e.guard != null) await (e.stay ? view.guardHome(e.guard) : view.removeGuard(e.guard, e.won)); },
+  // Modo juntos: corazones y runas del equipo.
+  async heart(e) {
+    hud.hearts = e.left;
+    hud.refresh();
+    const i = hud.team.querySelectorAll('.hearts i')[e.n < 0 ? e.left : e.left - 1];
+    i?.classList.add('pop');
+    sfx(e.n < 0 ? 'curse' : 'star');
+    if (e.n < 0) { stage.shake(0.2); hud.float(head(e.p), `−1 ${icon('heart')} · quedan ${e.left}`, 'down'); }
+    else hud.float(head(e.p), `+1 ${icon('heart')}`, 'up');
+    await sleep(0.9);
+  },
+  async rune(e) {
+    hud.runes = e.n;
+    hud.refresh();
+    hud.team.querySelectorAll('.runes i')[e.n - 1]?.classList.add('pop');
+    sfx('chest');
+    heroes.forEach((h) => h.set('cheer', 1.2));
+    hud.banner(e.p, `¡Runa ${e.n} de 3!`, e.n === 3 ? 'El castillo ya puede abrirse' : `Faltan ${3 - e.n}`);
+    await sleep(1.1);
+  },
+  async lazo(e) {
+    sfx('flip');
+    heroes[e.p].set('cast', 0.8);
+    await sleep(0.4);
+  },
   async critterGone(e) { view.removeCritter(e.id, false); },
   async meet(e) {
     const h = heroes[e.p];
@@ -598,6 +631,8 @@ const play = {
   },
   async castleAct(e) {
     dice.hide();
+    if (e.what === 'farol') { sfx('star'); heroes[e.p].set('cast', 1); hud.float(head(e.p), `${icon('sun')} La Sombra retrocede ${e.n}`, 'up'); await sleep(0.6); return; }
+    if (e.what === 'viento') { sfx('flip'); heroes[e.p].set('cast', 1); hud.float(head(e.p), `Viento: ${g.players[1 - e.p].name} avanza ${Math.ceil(e.n / 2)}`, 'up'); await sleep(0.6); return; }
     if (e.what === 'cofre') { sfx('chest'); hud.float(head(e.p), `+${e.n} ${icon('gem')} al cofre`, 'star'); heroes[e.p].set('cheer', 1); await sleep(0.9); return; }
     // Un rayo sale de la torre hacia el rival.
     sfx('zap');
@@ -609,6 +644,7 @@ const play = {
   async over(e) {
     hud.clearAct();
     view.showOptions([], '#fff');
+    if (e.coop) return coopOver(e);
     const w = heroes[g.winner], l = heroes[1 - g.winner];
     for (const d of view.mistData.values()) d.goal = 0;
     // Ceremonia frente al castillo.
@@ -628,6 +664,30 @@ const play = {
     return 'stop';
   },
 };
+
+// Final del modo juntos: los dos celebran frente al castillo, o el Rey se ríe.
+async function coopOver(e) {
+  const v = view.pos(g.board.castleId);
+  if (e.won) for (const d of view.mistData.values()) d.goal = 0;
+  heroes.forEach((h, k) => { h.root.position.copy(v).add(new THREE.Vector3(-0.1, 0, k ? 0.55 : -0.55)); h.ground = v.y; });
+  hud.game.classList.add('hidden');
+  const yaw = -Math.PI / 2 + 0.12;
+  heroes.forEach((h) => { h.turnTo = yaw; h.set(e.won ? 'cheer' : 'sad'); });
+  sfx(e.won ? 'win' : 'curse');
+  await stage.focus(v.clone().add(new THREE.Vector3(0, 1.05, 0)), { dist: stage.portrait ? 8.5 : 7, yaw, pitch: 0.12, dur: 1.4 });
+  let alive = true;
+  (async () => {
+    while (alive) {
+      if (e.won) stage.sparks.burst(v.x + Math.random() * 3, v.y + 2.6 + Math.random() * 1.6, v.z + (Math.random() - 0.5) * 4, 46, { color: ['#ffd84a', COLORS[0], COLORS[1], '#ffffff'], speed: 3.4, g: 2.2, life: 1.5, size: 0.28 });
+      else stage.smoke.burst(v.x + Math.random() * 2, v.y + 1 + Math.random(), v.z + (Math.random() - 0.5) * 3, 20, { color: ['#2e2342', '#4b3a66', '#1c1528'], speed: 1.2, up: 1.2, life: 1.6, size: 0.7, grow: 0.6, alpha: 0.8 });
+      await sleep(0.7);
+    }
+  })();
+  const a = await hud.over(g);
+  alive = false;
+  if (a === 'again') start({ ...S.opts, seed: newSeed() }); else home();
+  return 'stop';
+}
 
 async function run(events) {
   busy = true;
@@ -681,7 +741,11 @@ function auto() {
 const WHY = { sombra: '¡Juntos contra la Sombra del Rey!', guardia: '¡Juntos contra el guardián!', torneo: 'Ronda de minijuegos · torneo real', ronda: 'Ronda en equipo contra el Rey Sombrío', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
 async function minigame(d) {
   const names = g.players.map((p) => p.name), rules = GAMES[d.game];
-  await hud.miniIntro(rules, WHY[d.why], names, stage.mobile, d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
+  const foe = d.guard != null ? GUARDS[d.guard].name : 'la Sombra';
+  const coopPrize = d.guard != null
+    ? [{ cls: 'team', icon: 'rune', text: `Si ganan: la runa ${d.guard + 1} de 3` }, { cls: 'shadow', icon: 'heart', text: `Si gana ${foe}: −1 corazón` }]
+    : [{ cls: 'team', icon: 'sun', text: `Si ganan: la Sombra retrocede ${COOP.push}` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: avanza ${COOP.surge}` }];
+  await hud.miniIntro(rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], names, stage.mobile, g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');
@@ -854,7 +918,8 @@ async function start(opts) {
   await stage.focus(b, { dist: 12, dur: 3.2 });
   // Se dice quién empieza y por qué la otra persona trae algo extra.
   const one = g.players[g.turn], two = g.players[1 - g.turn];
-  await hud.message('star', `Empieza ${one.name}`, `Lo decidió la suerte. Como ${two.name} juega en segundo lugar, parte con 1 gema y 1 estrella extra para compensar.`, false, `${one.name}: ${one.gems} gemas · ${two.name}: ${two.gems} gemas y 1 estrella`);
+  if (g.coop) await hud.message('heart', 'Juntos contra el Rey Sombrío', `Empieza ${one.name}. Venzan a los tres guardianes para reunir las tres runas y lleguen los dos al castillo antes de que se acaben los corazones.`, false, `${COOP.hearts} corazones · 3 runas por reunir · todos los minijuegos son en equipo`);
+  else await hud.message('star', `Empieza ${one.name}`, `Lo decidió la suerte. Como ${two.name} juega en segundo lugar, parte con 1 gema y 1 estrella extra para compensar.`, false, `${one.name}: ${one.gems} gemas · ${two.name}: ${two.gems} gemas y 1 estrella`);
   stage.locked = false;
   act({ type: 'begin' });
 }

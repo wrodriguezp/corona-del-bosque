@@ -117,11 +117,21 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Modo con reloj.
 - Adivinar la tirada del rival (necesita multijugador en línea).
 
-## V4: modo cooperativo (siguiente)
-Menú para elegir el modo. Ganan o pierden juntos contra el Rey Sombrío: la sombra devora el tablero, tres runas por reunir y minijuegos en equipo.
+## V4: modo juntos (lista)
+- En el menú se elige el modo: «Uno contra otro» o «Juntos contra el Rey».
+- Ganan o pierden juntos contra el Rey Sombrío. Tienen 4 corazones entre los dos.
+- Cada guardián vencido da una runa. Si gana el guardián, pierden un corazón, quien llegó retrocede y el guardián sigue cerrando el paso. Nadie se lo salta: ni con águilas, portales, catapultas ni cambios del bosque. La puerta del castillo se abre con las tres runas.
+- La Sombra es el reloj: si alcanza a alguien, pierden un corazón. Espera detrás de cada guardián que siga en pie.
+- Todos los minijuegos son en equipo (rondas, arenas, ataques del Rey): si ganan, la Sombra retrocede 2 casillas; si pierden, avanza 3.
+- Sin travesuras, trampas ni hada madrina. Tres cartas de equipo: Abrazo de hada (+1 corazón), Farol del alba (la Sombra retrocede 4) y Lazo de amistad (el compañero avanza 3). Solo salen aventuras que no dañan al compañero.
+- Quien llega primero ayuda desde la torre: con su dado hace retroceder la Sombra o empuja a su compañero. Ganan cuando llegan los dos; pierden si se acaban los corazones.
+- Con jugadores simulados: si ganan el 50 % de los minijuegos, ganan la partida ~50 %; con 65 %, ~70 %; con 80 %, ~90 %.
+- Por confirmar jugando: si 4 corazones son pocos o muchos, y si la ayuda desde la torre se siente útil.
+
+## Siguiente
+- Jugar solo contra la computadora (una IA).
 
 ## Más adelante
-- Jugar solo contra la computadora (una IA).
 - Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
 - Más personajes y más apariencias.
 - Más adornos y sonidos.

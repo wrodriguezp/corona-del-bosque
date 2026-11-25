@@ -4,6 +4,7 @@ export const FAMILIES = {
   impulso: { name: 'Impulso', color: '#39b87f' },
   travesura: { name: 'Travesura', color: '#a558d8' },
   remontada: { name: 'Remontada', color: '#ff6fa8' }, // solo la trae el hada, a quien va atrás
+  equipo: { name: 'Equipo', color: '#3aa0e6' }, // solo en el modo cooperativo
 };
 
 export const CARDS = {
@@ -35,16 +36,23 @@ export const CARDS = {
   cometa: { family: 'remontada', name: 'Cometa real', icon: 'star', big: '{rival} −5 {gem} → tú', text: 'Le robas hasta 5 gemas a tu rival.' },
   estela: { family: 'remontada', name: 'Estela de hada', icon: 'portal', big: '+3 {gem} · vuelas', text: 'Ganas 3 gemas y vuelas hasta quedar 2 casillas detrás de tu rival (máx. 8).' },
   cuerno: { family: 'remontada', name: 'Cuerno mágico', icon: 'gem', big: '+6 {gem} +2 {star}', text: 'Ganas 6 gemas y 2 estrellas.' },
+  abrazo: { family: 'equipo', name: 'Abrazo de hada', icon: 'heart', big: '+1 {heart}', text: 'El equipo recupera 1 corazón (máximo 4).' },
+  farol: { family: 'equipo', name: 'Farol del alba', icon: 'sun', big: '{omen} ← 4 casillas', text: 'La Sombra retrocede 4 casillas.' },
+  lazo: { family: 'equipo', name: 'Lazo de amistad', icon: 'hand', big: '{rival} → 3 casillas', text: 'Tu compañero avanza 3 casillas hacia el castillo. Un guardián lo detiene antes.' },
 };
 
 export const HAND_LIMIT = 4;
 export const PRICES = { sobre: 4, trampa: 4, repetir: 2, paso: 3 };
 
 const OF = Object.fromEntries(Object.keys(FAMILIES).map((f) => [f, Object.keys(CARDS).filter((k) => CARDS[k].family === f)]));
-export const COMMON = Object.keys(CARDS).filter((k) => CARDS[k].family !== 'remontada');
+export const COMMON = Object.keys(CARDS).filter((k) => ['fortuna', 'impulso', 'travesura'].includes(CARDS[k].family));
+// En el modo cooperativo no hay travesuras: en su lugar vienen cartas de equipo.
+// El Diezmo real se queda fuera porque habla del rival.
+export const TEAM_DECK = Object.keys(CARDS).filter((k) => ['fortuna', 'impulso', 'equipo'].includes(CARDS[k].family) && k !== 'trueque');
 
 // Una carta por familia; con `help`, una familia al azar se cambia por remontada.
-export function offerCards(rng, help = false) {
+export function offerCards(rng, help = false, coop = false) {
+  if (coop) return ['fortuna', 'impulso', 'equipo'].map((f) => rng.pick(OF[f].filter((k) => k !== 'trueque')));
   const fam = ['fortuna', 'impulso', 'travesura'];
   if (help) fam[rng.int(0, 2)] = 'remontada';
   return fam.map((f) => rng.pick(OF[f]));

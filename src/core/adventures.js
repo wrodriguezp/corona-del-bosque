@@ -198,3 +198,7 @@ export function describe(fx, rival) {
   };
   return fx.map(line).filter(Boolean).join(' · ') || 'No pasa nada';
 }
+
+// En el modo cooperativo solo salen aventuras que no dañan ni retan al compañero.
+const harms = (fx) => fx.some(([k, v]) => (k === 'rival' && v < 0) || ['steal', 'pay', 'rivalMove', 'rivalFx', 'swap', 'duel'].includes(k));
+export const friendly = (a) => !a.choices.some((c) => [c, c.ok, c.fail].some((o) => o?.fx && harms(o.fx))) && !/rival/i.test(a.text + a.choices.map((c) => c.label + (c.text || '') + (c.ok?.text || '') + (c.fail?.text || '')).join(' '));

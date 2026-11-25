@@ -392,7 +392,14 @@ export class BoardView {
   async setShade(front, anim) {
     const was = new Set(this.board.tiles.filter((t) => this.shaded(t)).map((t) => t.id));
     this.shade = front;
+    // En el modo juntos la Sombra puede retroceder: esas casillas vuelven a la luz.
+    const back = this.board.tiles.filter((t) => was.has(t.id) && !this.shaded(t));
+    if (back.length) {
+      this.recolor(back.map((t) => t.id));
+      back.forEach((t) => { this.gloomGoal[t.id] = 0; if (anim) this.stage.sparks.burst(t.x, t.h + 0.3, t.z, 4, { color: ['#fff3a0', '#ffffff'], speed: 1, up: 1.2, life: 0.8, size: 0.22 }); });
+    }
     const now = this.board.tiles.filter((t) => this.shaded(t) && !was.has(t.id));
+    if (!now.length) return;
     if (!anim) { this.recolor(now.map((t) => t.id)); now.forEach((t) => { this.gloomGoal[t.id] = 1; this.gloomK[t.id] = 1; }); return; }
     const p0 = Math.min(...now.map((t) => this.progOf(t)));
     await Promise.all(now.map((t) => this.stage.wait((this.progOf(t) - p0) * 0.25 + t.rand * 0.15).then(() => {
@@ -409,6 +416,7 @@ export class BoardView {
     f.root.position.copy(p);
     f.root.rotation.y = Math.atan2(s.x - p.x, s.z - p.z);
     if (q.kind === 'rey') f.root.scale.setScalar(1.1);
+    f.post = q.tile;
     f.aura = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.62, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#b14bff', transparent: true, opacity: 0.7, depthWrite: false }));
     f.aura.position.copy(p).setY(p.y + 0.04);
     this.group.add(f.root, f.aura);
@@ -423,6 +431,17 @@ export class BoardView {
     f.root.rotation.y = Math.atan2(by.x - b.x, by.z - b.z);
     f.set('cheer', 1.4);
     if (a.distanceTo(b) > 0.05) await this.stage.tween(0.55, (k) => { f.root.position.lerpVectors(a, b, k); f.root.position.y += Math.sin(k * Math.PI) * 1.2; }, ease.lin);
+    f.aura.position.copy(b).setY(b.y + 0.04);
+  }
+
+  // Modo juntos: si el guardián gana, vuelve a su puesto a seguir cerrando el paso.
+  async guardHome(i) {
+    const f = this.guards.get(i);
+    if (!f) return;
+    f.set('cheer', 1.4);
+    const a = f.root.position.clone(), b = this.pos(f.post), s = this.board.tiles[this.board.startId];
+    if (a.distanceTo(b) > 0.05) await this.stage.tween(0.55, (k) => { f.root.position.lerpVectors(a, b, k); f.root.position.y += Math.sin(k * Math.PI) * 1.2; }, ease.lin);
+    f.root.rotation.y = Math.atan2(s.x - b.x, s.z - b.z);
     f.aura.position.copy(b).setY(b.y + 0.04);
   }
 

@@ -11,11 +11,12 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - Criaturas que vagan por el tablero: conejos y hadas que ayudan, lobos y trolls que estorban.
 - Cerca del castillo las gemas y las fogatas dan más, hasta que alguien llega.
 - Tres guardianes cierran el camino (el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío): quien llega se detiene y juegan juntos un minijuego en equipo (faroles, remar juntos, el escudo de luz, el puente, pasar la llama, runas en equipo, cruzar juntos o el piso que se cae). Ganan o pierden los dos, y cada minijuego empieza fácil y se pone difícil al final.
-- 28 cartas y gemas para gastar en pleno turno.
+- 31 cartas (3 solo del modo juntos) y gemas para gastar en pleno turno.
 - Un final justo: quien llega primero gana 10 gemas, queda a salvo y sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
 - Cada 3 vueltas hay una ronda de minijuegos: un torneo y, cada tercera ronda, uno en equipo contra el Rey.
+- **Modo juntos:** en el menú se elige entre jugar uno contra otro o juntos contra el Rey Sombrío. En el modo juntos comparten 4 corazones, vencen a los tres guardianes para reunir tres runas y ganan cuando llegan los dos al castillo. Todos los minijuegos son en equipo, hay cartas de equipo y quien llega primero ayuda desde la torre.
 - **Arcade:** desde el menú se puede jugar cualquier minijuego suelto, con marcador.
 - Pantalla completa, y en los minijuegos cada quien elige su lado: los personajes se cambian con los controles.
 - Partida guardada automáticamente.
