@@ -58,10 +58,12 @@ const CALM = [
 const newFx = () => ({ shield: false, golden: 0, magnet: false, map: false, plus: 0, double: false, fixed: 0, die: null, again: false, worst: false, minus: 0, half: false, locked: false, rush: false });
 
 export class Game {
-  constructor({ seed = Date.now(), len = 28, names = ['Princesa', 'Mago'], mode = 'versus' } = {}) {
+  constructor({ seed = Date.now(), len = 28, names = ['Princesa', 'Mago'], mode = 'versus', level = 'normal' } = {}) {
     this.seed = seed;
     this.coop = mode === 'coop';
-    this.hearts = this.coop ? COOP.hearts : 0;
+    // En el modo juntos el nivel elige los corazones: Tranquila 5, Normal 4, Difícil 3.
+    this.maxHearts = COOP.hearts + (level === 'facil' ? 1 : level === 'dificil' ? -1 : 0);
+    this.hearts = this.coop ? this.maxHearts : 0;
     this.runes = 0;
     this.shadeBack = 0;
     this.board = makeBoard(seed, len);
@@ -166,7 +168,7 @@ export class Game {
   }
 
   gainHeart(ev) {
-    if (this.hearts >= COOP.hearts) return;
+    if (this.hearts >= this.maxHearts) return;
     this.hearts++;
     ev.push({ t: 'heart', n: 1, left: this.hearts, p: this.turn });
   }
@@ -347,7 +349,7 @@ export class Game {
   /* ---------- Cartas y compras ---------- */
   // En el castillo se está a salvo: las cartas contra el rival no sirven si ya llegó.
   canCard(card) {
-    if (card === 'abrazo') return this.hearts < COOP.hearts;
+    if (card === 'abrazo') return this.hearts < this.maxHearts;
     if (card === 'farol') return this.shade > 0;
     if (card === 'lazo') return !this.rival.arrived;
     return !(this.rival.arrived && (CARDS[card].family === 'travesura' || card === 'cometa'));

@@ -296,3 +296,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 @keyframes pop { 40% { transform: scale(1.7); } }
 .seg.mode button { display: inline-flex; gap: 6px; align-items: center; }
 .score .hh .ic { color: #ff6f91; } .score .rr .ic { color: #8fe3ff; }
+/* Solo: el mago lo juega la computadora. */
+.names label.cpu { position: relative; }
+.names label.cpu::after { content: 'compu'; font: 700 12px var(--body); background: var(--c); color: var(--ink); border-radius: 8px; padding: 2px 7px; }
+.seg.lvl[hidden] { display: none; }
+.seg.who button, .seg.lvl button { padding: 8px 14px; }

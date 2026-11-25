@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { Session } from '../src/core/session.js';
 import { makeRng } from '../src/core/rng.js';
+import { decide } from '../src/core/ai.js';
 
 // Jugador simulado. style: 'corre' va directo; 'explora' busca lugares especiales.
 // skill: probabilidad de que la princesa gane un minijuego.
 // mode 'coop': juegan juntos; team es la probabilidad de ganar un minijuego en equipo.
-export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.5, { mode = 'versus', team = 0.65 } = {}) {
-  const s = new Session({ seed, len, mode });
+// ai: [nivel o null, nivel o null] → ese jugador lo maneja la IA del juego.
+// level: la dificultad de la partida (en el modo juntos da los corazones).
+export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.5, { mode = 'versus', team = 0.65, ai = [null, null], level = ai[1] || ai[0] || 'normal' } = {}) {
+  const s = new Session({ seed, len, mode, level });
   const g = s.game, rng = makeRng(seed + 7), log = [];
   const act = (a) => log.push(...s.dispatch(a));
   let steps = 0, rolls = 0, swaps = 0, lead = -1;
@@ -19,7 +22,8 @@ export function autoplay(seed, styles = ['mixto', 'mixto'], len = 28, skill = 0.
       assert.ok(q.gems >= 0 && q.hand.length <= 4 && q.stars >= 0);
       assert.equal(g.tile(q.tile).kind, 'path');
     }
-    if (g.phase === 'pick') act({ type: 'pick', i: rng.int(0, 2) });
+    if (ai[g.turn] && g.phase !== 'duel') act(decide(g, rng, ai[g.turn]));
+    else if (g.phase === 'pick') act({ type: 'pick', i: rng.int(0, 2) });
     else if (g.phase === 'adventure') { let i; do i = rng.int(0, 2); while (!g.canChoose(i)); act({ type: 'choose', i }); }
     else if (g.phase === 'shop') { const i = g.shop.items.findIndex((it) => !it.sold && it.price <= p.gems - 4 && p.hand.length < 4); act({ type: 'shop', i: i >= 0 && rng.chance(0.5) ? i : null }); }
     else if (g.phase === 'cave') act({ type: 'cave', what: g.cave.grabs < 3 ? 'grab' : 'leave' });

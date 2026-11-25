@@ -8,6 +8,7 @@ import { TEAM_VIEWS } from './minigames4.js';
 import { ROAD_VIEWS } from './minigames5.js';
 import { makeFoe } from './foes.js';
 import { Pads } from './pads.js';
+import { brain } from '../core/bots.js';
 import { sfx } from '../audio.js';
 
 const FEINT = ['#b14be0', '#ff5d4a', '#3fb8ff'];
@@ -145,7 +146,7 @@ const VIEWS = {
         m.fill.scale.setScalar(Math.max(0.01, 1 - q.t / CHASE.warn));
       }
       for (const [id, m] of v.items) if (!m.live) { v.group.remove(m); v.items.delete(id); }
-      const aim = v.pads.aim;
+      const aim = v.ai === 1 - s.runner ? null : v.pads.aim;
       v.aimRing.visible = !!aim && s.phase === 'run';
       if (aim) v.aimRing.position.copy(V(aim.x, 0.04, aim.y));
       v.aimRing.material.opacity = s.cool > 0 ? 0.25 : 0.7;
@@ -234,9 +235,11 @@ const SCENES = [
 ];
 
 export class MiniView {
-  constructor(stage, hud, heroes, names, duel, swap) {
+  // `ai = {i, level}`: la computadora maneja a esa persona; la otra puede usar los dos lados.
+  constructor(stage, hud, heroes, names, duel, swap, ai = null) {
     Object.assign(this, { stage, hud, heroes, names, id: duel.game, rules: GAMES[duel.game], view: VIEWS[duel.game] });
     this.s = this.rules.create(duel.seed);
+    if (ai) { this.ai = ai.i; this.brain = brain(duel.game, ai.i, ai.level, duel.seed); }
     this.group = new THREE.Group();
     if (this.view.island) this.group.add(island(this.view.island));
     stage.scene.add(this.group);
@@ -290,7 +293,7 @@ export class MiniView {
       this.acc = Math.min(0.12, this.acc + dt);
       while (this.acc >= DT && !this.s.done) {
         this.acc -= DT;
-        this.rules.step(this.s, this.bot ? this.bot(this.s) : this.flip(this.pads.read(this.rules.input, this.s)));
+        this.rules.step(this.s, this.bot ? this.bot(this.s) : this.input());
       }
       for (const e of this.s.events.splice(0)) { this.view.on(this, e); if (this.foe && (e.t === 'lost' || e.t === 'saved')) this.foe.set(e.t === 'lost' ? 'cheer' : 'hurt', 1.5); }
       this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
@@ -304,6 +307,24 @@ export class MiniView {
 
   // Con la escena en espejo, izquierda y derecha se invierten para que cada mando
   // mueva hacia donde se ve en pantalla. Apuntar ya llega corregido desde el escenario.
+  input() {
+    const ps = this.flip(this.pads.read(this.rules.input, this.s));
+    if (this.brain) {
+      const o = ps[this.ai], h = ps[1 - this.ai];
+      // Sola contra la computadora, cualquier tecla o mitad de la pantalla sirve
+      // (salvo en el fugitivo, donde el teclado y el mouse son de papeles distintos).
+      if (this.rules.input !== 'chase') {
+        if (o.a) h.a = true;
+        if (o.h) h.h = true;
+        if (!h.x) h.x = o.x;
+        if (!h.y) h.y = o.y;
+        if (h.d == null) h.d = o.d;
+      }
+      ps[this.ai] = this.brain(this.s);
+    }
+    return ps;
+  }
+
   flip(pads) {
     if (!this.swap) return pads;
     for (const p of pads) {

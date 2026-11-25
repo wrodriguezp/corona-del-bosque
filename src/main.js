@@ -5,6 +5,8 @@ import '@fontsource/alegreya-sans/latin-700.css';
 import './ui/style.css';
 import * as THREE from 'three';
 import { Session, localStore } from './core/session.js';
+import { decide } from './core/ai.js';
+import { makeRng } from './core/rng.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
@@ -16,7 +18,7 @@ import { DAY, EVENTS } from './core/world.js';
 import { makeEagle, makeFairy, makeFlyingDragon, makeWorm } from './view/creatures.js';
 import { MiniView } from './view/minigames.js';
 import { DiceTable, makeCoin } from './view/dice.js';
-import { Hud, bigLine } from './ui/hud.js';
+import { Hud, bigLine, esc } from './ui/hud.js';
 import { icon } from './ui/icons.js';
 import { setNight, sfx, unlock } from './audio.js';
 
@@ -699,6 +701,7 @@ const act = (action) => run(S.dispatch(action));
 // Muestra lo que el jugador en turno tiene que decidir según la fase.
 async function prompt() {
   const p = g.player;
+  if (cpuNow()) return cpuPlay();
   if (!['ready', 'move'].includes(g.phase)) hurry();
   switch (g.phase) {
     case 'ready': busy = false; hud.showRoll(p, !g.cardPlayed && !p.fx.locked); hurry(); break;
@@ -710,6 +713,45 @@ async function prompt() {
     case 'cave': { const what = await hud.cave(g.cave, p); return act({ type: 'cave', what }); }
     case 'duel': { const winner = await minigame(g.duel); return act({ type: 'duel', winner }); }
   }
+}
+
+/* ---------- La computadora (jugar solo) ---------- */
+// Juega con el mago. Decide como una persona (ver core/ai.js) y cuenta qué eligió,
+// con pausas cortas para que se alcance a seguir. Mientras tanto no se acepta nada.
+const cpuRng = makeRng(newSeed());
+const cpuNow = () => S?.opts.ai != null && g.turn === S.opts.ai && g.phase !== 'duel' && g.winner == null;
+const cpuMini = (o = S?.opts) => (o?.ai != null ? { i: o.ai, level: o.level || 'normal' } : null);
+const BUY_NAME = { sobre: 'un sobre misterioso', trampa: 'una trampa escondida', repetir: 'repetir la tirada', paso: 'un paso más' };
+async function cpuPlay() {
+  busy = true;
+  const p = g.player, a = decide(g, cpuRng, S.opts.level);
+  if (!a) return;
+  const say = (t) => hud.showHint(`${icon('hat')} ${t}`), quick = (kind, title, text) => hud.message(kind, title, text, true);
+  switch (a.type) {
+    case 'roll': if (g.cardPlayed) follow(g.turn); say(`Juega ${esc(p.name)}…`); await sleep(0.8); break;
+    case 'card': say(`${esc(p.name)} juega la carta <b>${esc(CARDS[p.hand[a.i]].name)}</b>${a.value ? ` y elige el ${a.value}` : ''}`); await sleep(1.6); break;
+    case 'buy': say(`${esc(p.name)} compra ${BUY_NAME[a.what]}`); await sleep(1.4); break;
+    case 'move': {
+      say(`${esc(p.name)} elige camino…`);
+      await sleep(0.7);
+      hoverTile(a.id);
+      await sleep(0.9);
+      view.showOptions([], '#fff');
+      sfx('click');
+      break;
+    }
+    case 'pick': await quick('star', 'Elige una carta', `${p.name} se queda con «${CARDS[g.offer.cards[a.i]].name}».`); break;
+    case 'choose': { const ad = byId[g.adventure]; await quick('calm', ad.title, `${ad.text} ${p.name} elige: ${ad.choices[a.i].label}.`); break; }
+    case 'shop': await quick('bag', 'Mercado', a.i == null ? `${p.name} no compra nada.` : `${p.name} compra «${CARDS[g.shop.items[a.i].card].name}» por ${g.shop.items[a.i].price} gemas.`); break;
+    case 'cave': await quick('flame', 'Cueva del dragón', a.what === 'grab' ? `${p.name} saca otro puñado…` : `${p.name} sale con ${g.cave.bag} ${g.cave.bag === 1 ? 'gema' : 'gemas'}.`); break;
+    case 'castle': {
+      const n = g.castle.die, r = g.rival;
+      await quick('castle', g.coop ? 'Ayuda desde la torre' : 'Turno del castillo', a.what === 'cofre' ? `${p.name} guarda ${n} ${n === 1 ? 'gema' : 'gemas'} en su cofre.` : a.what === 'torre' ? `${r.name} retrocede ${n} ${n === 1 ? 'casilla' : 'casillas'}.` : a.what === 'farol' ? `La Sombra retrocede ${n} ${n === 1 ? 'casilla' : 'casillas'}.` : `${r.name} avanza ${Math.ceil(n / 2)} ${Math.ceil(n / 2) === 1 ? 'casilla' : 'casillas'}.`);
+      break;
+    }
+  }
+  hud.clearAct();
+  return act(a);
 }
 
 // Qué lado de la pantalla usa cada quien: se recuerda mientras dure la sesión.
@@ -724,7 +766,7 @@ function moveHint() {
 // acaba, el juego tira el dado y elige un camino al azar por quien está en turno.
 let rush = null;
 function hurry() {
-  const on = ['ready', 'move'].includes(g.phase) && g.player.fx.rush;
+  const on = ['ready', 'move'].includes(g.phase) && g.player.fx.rush && !cpuNow();
   if (!on) { rush?.stop(); if (!g.player.fx.rush) rush = null; else if (rush) rush.stop = () => {}; return; }
   const key = `${g.turns}:${g.turn}`;
   if (rush?.key !== key) {
@@ -745,6 +787,7 @@ async function minigame(d) {
   const coopPrize = d.guard != null
     ? [{ cls: 'team', icon: 'rune', text: `Si ganan: la runa ${d.guard + 1} de 3` }, { cls: 'shadow', icon: 'heart', text: `Si gana ${foe}: −1 corazón` }]
     : [{ cls: 'team', icon: 'sun', text: `Si ganan: la Sombra retrocede ${COOP.push}` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: avanza ${COOP.surge}` }];
+  sides.cpu = S.opts.ai;
   await hud.miniIntro(rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], names, stage.mobile, g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
@@ -754,7 +797,7 @@ async function minigame(d) {
   stage.locked = true;
   stage.setMood('day', 0); // la arena siempre se juega con buena luz
   view.group.visible = false;
-  mini = new MiniView(stage, hud, heroes, names, d.guard != null ? { ...d, foe: GUARDS[d.guard].kind, foeName: GUARDS[d.guard].name } : d, sides.swap);
+  mini = new MiniView(stage, hud, heroes, names, d.guard != null ? { ...d, foe: GUARDS[d.guard].kind, foeName: GUARDS[d.guard].name } : d, sides.swap, cpuMini());
   await hud.fade(false);
   await mini.countdown();
   const w = await mini.play();
@@ -784,12 +827,13 @@ async function arcade(names) {
     if (!id) return location.reload();
     if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
     const isTeam = team.includes(id), rules = GAMES[id];
+    sides.cpu = prefs.ai;
     await hud.miniIntro(rules, isTeam ? 'Arcade · en equipo' : 'Arcade', names, stage.mobile, isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), sides);
     await hud.fade(true);
     stage.locked = true;
     stage.setMood('day', 0);
     view.group.visible = false;
-    mini = new MiniView(stage, hud, heroes, names, { game: id, seed: newSeed(), team: isTeam }, sides.swap);
+    mini = new MiniView(stage, hud, heroes, names, { game: id, seed: newSeed(), team: isTeam }, sides.swap, cpuMini(prefs));
     await hud.fade(false);
     await mini.countdown();
     const w = await mini.play();
@@ -918,7 +962,7 @@ async function start(opts) {
   await stage.focus(b, { dist: 12, dur: 3.2 });
   // Se dice quién empieza y por qué la otra persona trae algo extra.
   const one = g.players[g.turn], two = g.players[1 - g.turn];
-  if (g.coop) await hud.message('heart', 'Juntos contra el Rey Sombrío', `Empieza ${one.name}. Venzan a los tres guardianes para reunir las tres runas y lleguen los dos al castillo antes de que se acaben los corazones.`, false, `${COOP.hearts} corazones · 3 runas por reunir · todos los minijuegos son en equipo`);
+  if (g.coop) await hud.message('heart', 'Juntos contra el Rey Sombrío', `Empieza ${one.name}. Venzan a los tres guardianes para reunir las tres runas y lleguen los dos al castillo antes de que se acaben los corazones.`, false, `${g.maxHearts} corazones · 3 runas por reunir · todos los minijuegos son en equipo`);
   else await hud.message('star', `Empieza ${one.name}`, `Lo decidió la suerte. Como ${two.name} juega en segundo lugar, parte con 1 gema y 1 estrella extra para compensar.`, false, `${one.name}: ${one.gems} gemas · ${two.name}: ${two.gems} gemas y 1 estrella`);
   stage.locked = false;
   act({ type: 'begin' });

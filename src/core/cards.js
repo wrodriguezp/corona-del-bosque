@@ -36,7 +36,7 @@ export const CARDS = {
   cometa: { family: 'remontada', name: 'Cometa real', icon: 'star', big: '{rival} −5 {gem} → tú', text: 'Le robas hasta 5 gemas a tu rival.' },
   estela: { family: 'remontada', name: 'Estela de hada', icon: 'portal', big: '+3 {gem} · vuelas', text: 'Ganas 3 gemas y vuelas hasta quedar 2 casillas detrás de tu rival (máx. 8).' },
   cuerno: { family: 'remontada', name: 'Cuerno mágico', icon: 'gem', big: '+6 {gem} +2 {star}', text: 'Ganas 6 gemas y 2 estrellas.' },
-  abrazo: { family: 'equipo', name: 'Abrazo de hada', icon: 'heart', big: '+1 {heart}', text: 'El equipo recupera 1 corazón (máximo 4).' },
+  abrazo: { family: 'equipo', name: 'Abrazo de hada', icon: 'heart', big: '+1 {heart}', text: 'El equipo recupera 1 corazón (no pasa del máximo con que empezaron).' },
   farol: { family: 'equipo', name: 'Farol del alba', icon: 'sun', big: '{omen} ← 4 casillas', text: 'La Sombra retrocede 4 casillas.' },
   lazo: { family: 'equipo', name: 'Lazo de amistad', icon: 'hand', big: '{rival} → 3 casillas', text: 'Tu compañero avanza 3 casillas hacia el castillo. Un guardián lo detiene antes.' },
 };

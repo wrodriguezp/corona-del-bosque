@@ -35,12 +35,13 @@ npm run build
 node tools/medir.js    # palizas, quién gana, eventos por partida
 node tools/final.js    # ¿conviene llegar primero?
 ```
-Referencias actuales (V4, 600 partidas simuladas):
+Referencias actuales (V4.1, 600 partidas simuladas):
 - Hay 20 o más gemas de diferencia en el ~17–19 % de las partidas (varía con el orden del azar).
 - Quien llega primero gana el ~69 %.
 - Minijuegos en equipo (bots): faroles ~96 %, remar ~90 %, escudo ~73 %, puente ~93 %, llama ~77 %, runas en equipo ~88 %, cruzar juntos ~71 %, piso ~79 %.
 - Princesa y Mago ganan ~50 % cada uno.
 - Modo juntos: con 65 % de minijuegos ganados, el equipo gana la partida ~70 % (con 50 %, ~50 %; con 80 %, ~90 %).
+- La computadora (`src/core/ai.js` en el tablero, `brain()` de `src/core/bots.js` en los minijuegos) le gana ~70 % a un jugador al azar. En minijuegos gana ~31 / 42 / 48 % según la dificultad. Si cambia un minijuego, recalibrar `TUNE` con `node tools/calibrar.js`.
 
 ### En el navegador (`npm run dev`)
 - `window.__corona` da acceso al juego. Por ejemplo:
@@ -75,6 +76,7 @@ Referencias actuales (V4, 600 partidas simuladas):
   - Faltaba pantalla completa, y al cambiar de lados los personajes no se movían.
   - En el bote (remar juntos) les costó coordinarse: piden que los cooperativos vayan de fácil a difícil.
   - Todo esto, salvo lo cooperativo, se corrigió en la V3.6. Lo cooperativo (guardianes y coop de fácil a difícil), en la V3.7.
+- **Por confirmar después de la V4.1:** si las tres dificultades contra la computadora se sienten distintas y si sus pausas son muy largas o muy cortas.
 - **Por confirmar después de la V4:** si el modo juntos se entiende, si 4 corazones son pocos o muchos y si la ayuda desde la torre sirve.
 - **Por confirmar después de la V3.9:** si cruza el camino, la enredadera y el piso que se cae se entienden y divierten.
 - **Por confirmar después de la V3.8:** si las rondas cada 3 vueltas son muchas o pocas, y si los tres minijuegos en equipo nuevos se entienden.
@@ -83,7 +85,7 @@ Referencias actuales (V4, 600 partidas simuladas):
 
 ## Pendiente
 La lista completa está en ROADMAP. Orden acordado:
-- **IA para jugar solo.** Después: sala con código para jugar cada quien en su celular.
+- **Sala con código** para jugar cada quien en su celular.
 
 ## Servidor de vista previa (Claude Code)
 `.claude/` no se sube. Para la vista previa, crear `.claude/launch.json` con:

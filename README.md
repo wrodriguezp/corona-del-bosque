@@ -16,7 +16,8 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
 - Cada 3 vueltas hay una ronda de minijuegos: un torneo y, cada tercera ronda, uno en equipo contra el Rey.
-- **Modo juntos:** en el menú se elige entre jugar uno contra otro o juntos contra el Rey Sombrío. En el modo juntos comparten 4 corazones, vencen a los tres guardianes para reunir tres runas y ganan cuando llegan los dos al castillo. Todos los minijuegos son en equipo, hay cartas de equipo y quien llega primero ayuda desde la torre.
+- **Modo juntos:** en el menú se elige entre jugar uno contra otro o juntos contra el Rey Sombrío. En el modo juntos comparten 4 corazones (5 en Tranquila y 3 en Difícil), vencen a los tres guardianes para reunir tres runas y ganan cuando llegan los dos al castillo. Todos los minijuegos son en equipo, hay cartas de equipo y quien llega primero ayuda desde la torre.
+- **Jugar solo:** en el menú se elige «Yo y la computadora». Tú juegas con la princesa y la computadora con el mago, en los dos modos y en el Arcade. Hay tres dificultades (Tranquila, Normal y Difícil). La computadora decide con lo mismo que ve una persona: nunca mira lo que esconde una casilla.
 - **Arcade:** desde el menú se puede jugar cualquier minijuego suelto, con marcador.
 - Pantalla completa, y en los minijuegos cada quien elige su lado: los personajes se cambian con los controles.
 - Partida guardada automáticamente.
@@ -41,4 +42,4 @@ npm run build    # genera dist/
 | `src/ui` | Interfaz, textos y estilos |
 | `test`, `tools` | Pruebas y simulador de partidas (`node tools/medir.js`) |
 
-`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md); cómo trabajar, observaciones de las pruebas y pendientes, en [CLAUDE.md](CLAUDE.md) y cada una tiene su etiqueta (`v1`, `v2`, `v2.1`, `v3.0`, `v3.1`, `v3.1.1`…).
+`visor.html` muestra los personajes de cerca. El plan de entregas está en [ROADMAP.md](ROADMAP.md); cómo trabajar, observaciones de las pruebas y pendientes, en [CLAUDE.md](CLAUDE.md) y cada una tiene su etiqueta (`v1`, `v2`, `v3.0`, `v4`, `v4.1`…).

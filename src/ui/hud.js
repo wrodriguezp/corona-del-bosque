@@ -93,7 +93,7 @@ export class Hud {
   refresh() {
     const g = this.g;
     if (g.coop) {
-      this.team.innerHTML = `<span class="hearts" title="Corazones del equipo: si se acaban, gana el Rey">${Array.from({ length: COOP.hearts }, (_, k) => `<i class="${k < this.hearts ? 'f' : ''}">${icon('heart')}</i>`).join('')}</span><span class="runes" title="Runas: una por cada guardián vencido. Con las tres se abre el castillo">${[0, 1, 2].map((k) => `<i class="${k < this.runes ? 'f' : ''}">${icon('rune')}</i>`).join('')}</span>`;
+      this.team.innerHTML = `<span class="hearts" title="Corazones del equipo: si se acaban, gana el Rey">${Array.from({ length: g.maxHearts }, (_, k) => `<i class="${k < this.hearts ? 'f' : ''}">${icon('heart')}</i>`).join('')}</span><span class="runes" title="Runas: una por cada guardián vencido. Con las tres se abre el castillo">${[0, 1, 2].map((k) => `<i class="${k < this.runes ? 'f' : ''}">${icon('rune')}</i>`).join('')}</span>`;
     }
     g.players.forEach((p, i) => {
       const e = this.pl[i];
@@ -355,7 +355,7 @@ export class Hud {
       <div class="ctl"></div><div class="prize">${prize.map((t, i) => (typeof t === 'string' ? `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>` : `<span class="${t.cls}">${icon(t.icon)}${esc(t.text)}</span>`)).join('')}</div>
       <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
     const draw = () => {
-      s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}</div>`; }).join('');
+      s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; if (!role && opt.cpu === i) return `<div class="p${i}"><b>${icon(AV[i])}${esc(names[i])}</b>Lo juega la computadora</div>`; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}${opt.cpu != null && !role ? `<small> (${mobile ? 'o en la otra mitad' : 'o con las teclas del otro lado'})</small>` : ''}</div>`; }).join('');
     };
     draw();
     s.querySelector('.swap').onclick = () => { opt.swap = !opt.swap; sfx('flip'); draw(); const c = s.querySelector('.ctl'); c.classList.remove('flip'); void c.offsetWidth; c.classList.add('flip'); };
@@ -412,6 +412,7 @@ export class Hud {
     const s = el('help', `<h2>Cómo se juega</h2>
       <p>Tira el dado y elige a qué casilla iluminada ir. Quien llega primero al castillo gana <b>10 gemas</b> y queda <b>a salvo</b>: nadie le puede quitar gemas. Sigue jugando desde allí con su cofre y su torre; a la otra persona le quedan <b>3 turnos</b>, y si no llega pierde 5 gemas. Las cartas que sobran valen <b>2 gemas</b> cada una. <b>Gana quien tenga más gemas.</b> La suerte decide quién empieza; quien juega segundo parte con <b>1 gema y 1 estrella</b> extra.</p>
       <ul>
+      ${li('hat', '#86b3ff', '<b>Jugar solo.</b> En el menú elige «Yo y la computadora»: tú juegas con la princesa y la computadora con el mago, en los dos modos. Ella tampoco sabe qué hay en las casillas sin revelar. La dificultad cambia qué tan bien juega los minijuegos: en Tranquila gana cerca de 3 de cada 10, en Normal 4 y en Difícil 5. En los minijuegos puedes usar cualquier lado del teclado o de la pantalla.')}
       ${li('help', '#7c3fd0', '<b>Todo es sorpresa.</b> Nadie sabe qué hay en una casilla hasta caer en ella.')}
       ${li('hand', '#a8552f', '<b>Aventuras.</b> Decide; algunas decisiones regresan después.')}
       ${li('coin', '#b5811a', '<b>Mercado.</b> Se ve desde lejos. Puedes detenerte al pasar.')}
@@ -431,7 +432,7 @@ export class Hud {
       ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
       <h3>${icon('heart')}Modo juntos</h3>
-      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos. Cada guardián vencido da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
+      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos (5 en Tranquila y 3 en Difícil). Cada guardián vencido da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);
     const m = this.modal(s);
@@ -460,6 +461,7 @@ export class Hud {
         <div class="setup">
           <div class="names"><label>${icon('crown')}<input maxlength="12" aria-label="Nombre de la princesa" value="${esc(defaults.names[0])}"></label><label>${icon('hat')}<input maxlength="12" aria-label="Nombre del mago" value="${esc(defaults.names[1])}"></label></div>
           <div class="line"><div class="seg mode" role="group" aria-label="Modo de juego"><button data-m="versus">${icon('duel')}Uno contra otro</button><button data-m="coop">${icon('heart')}Juntos contra el Rey</button></div></div>
+          <div class="line"><div class="seg who" role="group" aria-label="Quiénes juegan"><button data-w="2">Dos personas</button><button data-w="1">Yo y la computadora</button></div><div class="seg lvl" role="group" aria-label="Dificultad"><button data-v="facil">Tranquila</button><button data-v="normal">Normal</button><button data-v="dificil">Difícil</button></div></div>
           <div class="line"><div class="seg" role="group" aria-label="Duración"><button data-l="20">Breve</button><button data-l="28">Normal</button><button data-l="38">Larga</button></div><button class="link skin" data-a="skin"></button><button class="link" data-a="new">Otro reino</button><button class="link" data-a="help">Cómo se juega</button>${fullBtn('link')}</div>
           <div class="line go">${saved ? `<button class="cta" data-a="resume">Continuar: ${esc(saved.players[0].name)} y ${esc(saved.players[1].name)}</button>` : ''}<button class="cta ${saved ? 'alt' : ''}" data-a="start">${saved ? 'Partida nueva' : 'Comenzar la aventura'}</button><button class="cta alt" data-a="arcade">${icon('duel')}Arcade</button></div>
         </div>`);
@@ -469,7 +471,23 @@ export class Hud {
       const markMode = () => modes.forEach((b) => b.setAttribute('aria-pressed', b.dataset.m === mode));
       markMode();
       modes.forEach((b) => (b.onclick = () => { mode = b.dataset.m; markMode(); sfx('click'); }));
-      const seg = [...s.querySelectorAll('.seg:not(.mode) button')];
+      // Solo: la persona juega con la princesa y la computadora con el mago.
+      // La dificultad cuenta contra la computadora y, en el modo juntos, da los corazones.
+      let solo = !!defaults.solo, level = defaults.level || 'normal';
+      const whos = [...s.querySelectorAll('.seg.who button')], lvls = [...s.querySelectorAll('.seg.lvl button')], lvlSeg = s.querySelector('.seg.lvl');
+      const mage = s.querySelectorAll('input')[1];
+      const markWho = () => {
+        whos.forEach((b) => b.setAttribute('aria-pressed', (b.dataset.w === '1') === solo));
+        lvls.forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === level));
+        lvlSeg.hidden = !solo && mode === 'versus';
+        mage.title = solo ? 'Lo juega la computadora' : '';
+        mage.parentElement.classList.toggle('cpu', solo);
+      };
+      markWho();
+      whos.forEach((b) => (b.onclick = () => { solo = b.dataset.w === '1'; markWho(); sfx('click'); }));
+      lvls.forEach((b) => (b.onclick = () => { level = b.dataset.v; markWho(); sfx('click'); }));
+      modes.forEach((b) => b.addEventListener('click', markWho));
+      const seg = [...s.querySelectorAll('.seg:not(.mode):not(.who):not(.lvl) button')];
       const mark = () => seg.forEach((b) => b.setAttribute('aria-pressed', +b.dataset.l === len));
       mark();
       seg.forEach((b) => (b.onclick = () => { len = +b.dataset.l; mark(); sfx('click'); this.on.preview?.(len, false); }));
@@ -484,8 +502,8 @@ export class Hud {
       const resume = s.querySelector('[data-a=resume]');
       if (resume) resume.onclick = () => { s.remove(); res('resume'); };
       const names = () => [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
-      s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len, mode }); };
-      s.querySelector('[data-a=arcade]').onclick = () => { const n = names(); sfx('click'); s.remove(); res({ names: n, len, arcade: true }); };
+      s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len, mode, solo, level, ai: solo ? 1 : null }); };
+      s.querySelector('[data-a=arcade]').onclick = () => { const n = names(); sfx('click'); s.remove(); res({ names: n, len, solo, level, ai: solo ? 1 : null, arcade: true }); };
     });
   }
 

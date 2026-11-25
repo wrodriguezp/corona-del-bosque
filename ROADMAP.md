@@ -128,11 +128,19 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Con jugadores simulados: si ganan el 50 % de los minijuegos, ganan la partida ~50 %; con 65 %, ~70 %; con 80 %, ~90 %.
 - Por confirmar jugando: si 4 corazones son pocos o muchos, y si la ayuda desde la torre se siente útil.
 
+## V4.1: jugar solo (lista)
+- En el menú se elige «Dos personas» o «Yo y la computadora». La persona juega con la princesa y la computadora con el mago, en los dos modos y en el Arcade.
+- Tres dificultades: Tranquila, Normal y Difícil. En el modo juntos también dan los corazones: 5, 4 o 3.
+- En el tablero, la computadora decide con lo mismo que ve una persona: casillas reveladas, lugares a la vista, criaturas y la Sombra. Nunca mira lo que esconde una casilla. Usa cartas, compra, elige aventuras, entra a la cueva y juega desde el castillo. Cada decisión se cuenta en pantalla con una pausa corta.
+- En los minijuegos juega con su propio jugador simulado, con «distracciones» medidas para cada minijuego. Contra un jugador típico gana ~31 % en Tranquila, ~42 % en Normal y ~48 % en Difícil. En los minijuegos en equipo juega lo mejor que puede.
+- Sola contra la computadora, la persona puede usar cualquier lado del teclado o de la pantalla.
+- Con jugadores simulados: la computadora le gana ~70 % de las veces a un jugador que elige al azar. En el modo juntos, con 65 % de minijuegos ganados, el equipo gana ~87 % en Tranquila, ~86 % en Normal y ~80 % en Difícil.
+- Por confirmar jugando: si las dificultades se sienten distintas y si las pausas de la computadora son muy largas o muy cortas.
+
 ## Siguiente
-- Jugar solo contra la computadora (una IA).
+- Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
 
 ## Más adelante
-- Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
 - Más personajes y más apariencias.
 - Más adornos y sonidos.
 
