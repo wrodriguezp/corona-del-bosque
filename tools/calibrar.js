@@ -1,5 +1,5 @@
 // Ajusta cuánto se distrae la computadora en cada minijuego para cada nivel.
-// Uso: node tools/calibrar.js  → imprime la tabla TUNE para src/core/bots.js
+// Uso: node tools/calibrar.js [ids…]  → imprime la tabla TUNE para src/core/bots.js
 import { GAMES } from '../src/core/minigames/index.js';
 import { bots, brain, LEVELS } from '../src/core/bots.js';
 import { makeRng } from '../src/core/rng.js';
@@ -19,7 +19,8 @@ export function rate(id, k, n = N) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const out = {};
-  for (const id of Object.keys(GAMES).filter((id) => !GAMES[id].team)) {
+  const only = process.argv.slice(2);
+  for (const id of Object.keys(GAMES).filter((id) => !GAMES[id].team && (!only.length || only.includes(id)))) {
     out[id] = ['facil', 'normal'].map((lv) => {
       let lo = 0, hi = 1;
       for (let it = 0; it < 7; it++) { const mid = (lo + hi) / 2; if (rate(id, mid) > LEVELS[lv].goal) lo = mid; else hi = mid; }

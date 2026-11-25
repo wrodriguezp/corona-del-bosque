@@ -1,5 +1,6 @@
 import { noPad, DT, GAMES } from './minigames/index.js';
 import { makeRng } from './rng.js';
+import { bots2 } from './bots2.js';
 import { safeAt, enreda as VINE_GAME, VINE, piso as FLOOR_GAME } from './minigames/caminos.js';
 
 // Jugadores simulados de cada minijuego. Sirven para las pruebas y para jugar
@@ -46,6 +47,7 @@ export const bots = {
   cruceq: () => roadBot(0.75),
   enreda: () => [0, 1].map((i) => { let react = null; return (s, rng) => { const p = noPad(), me = s.p[i]; if (me.stun > 0 || me.h >= VINE.goal) return p; const off = Math.abs(VINE_GAME.hand(me) - s.grips[me.h]); if (off < VINE.zone * 0.9) { p.a = rng.chance(0.13); } else { p.a = rng.chance(0.0015); } return p; }; }),
   piso: () => floorBot(0.75),
+  ...bots2,
 };
 
 function roadBot(skill) {
@@ -102,6 +104,7 @@ export const TUNE = {
   duelo: [0.87, 0.03], lluvia: [0.16, 0.02], fuga: [0.13, 0.04], tira: [0.07, 0.03], runas: [0.25, 0.07], salto: [0.32, 0.13],
   choque: [0.01, 0], huevo: [0.16, 0.07], burbuja: [0.24, 0.09], dragon: [0.07, 0.02], conejos: [0.2, 0.08], pesca: [0.88, 0.53],
   hongos: [0.07, 0.04], pinta: [0.27, 0.06], topos: [0.1, 0.04], torre: [0.48, 0.3], cruce: [0.25, 0.09], enreda: [0.19, 0.09],
+  escobas: [0.07, 0.01], garra: [0.73, 0.04], nieve: [1, 0.68], catapulta: [0.29, 0.12], tortuga: [0.15, 0.09], hockey: [0.75, 0.32],
 };
 const SPAN = 20;
 

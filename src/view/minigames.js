@@ -6,6 +6,8 @@ import { NEW_VIEWS } from './minigames2.js';
 import { FOREST_VIEWS } from './minigames3.js';
 import { TEAM_VIEWS } from './minigames4.js';
 import { ROAD_VIEWS } from './minigames5.js';
+import { FAIR_VIEWS } from './minigames6.js';
+import { TEAM2_VIEWS } from './minigames7.js';
 import { makeFoe } from './foes.js';
 import { Pads } from './pads.js';
 import { brain } from '../core/bots.js';
@@ -176,6 +178,8 @@ const VIEWS = {
   ...FOREST_VIEWS,
   ...TEAM_VIEWS,
   ...ROAD_VIEWS,
+  ...FAIR_VIEWS,
+  ...TEAM2_VIEWS,
 };
 
 const place = (h, p) => h.root.position.copy(p);

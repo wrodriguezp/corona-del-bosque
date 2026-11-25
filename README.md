@@ -6,11 +6,11 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 
 - Aventuras con decisiones, algunas con consecuencias turnos después.
 - Mercado, cueva del dragón, un águila que te lleva y un gusano que te traga.
-- Dieciocho minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón, burbuja valiente, el dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, topos del jardín, la torre de piedras, cruza el camino y la enredadera.
+- Veinticuatro minijuegos para dos: duelo de hechizos, lluvia de gemas, hechizos al fugitivo, tira y afloja, memoria de runas, salta el rayo, choque en el hielo, huevo de dragón, burbuja valiente, el dragón dormido, cuenta conejos, la pesca, ritmo de hongos, pinta el claro, topos del jardín, la torre de piedras, cruza el camino, la enredadera, carrera de escobas, la garra del mercader, guerra de bolas de nieve, la catapulta mágica, el rey de la tortuga y hockey de hongos.
 - El Rey Sombrío, un villano bruto y bigotudo, manda la Sombra: avanza desde la salida, cada vez más rápido, y si te alcanza pierdes gemas y te escupe hacia adelante. Sus secuaces son conejos y trolls hipnotizados.
 - Criaturas que vagan por el tablero: conejos y hadas que ayudan, lobos y trolls que estorban.
 - Cerca del castillo las gemas y las fogatas dan más, hasta que alguien llega.
-- Tres guardianes cierran el camino (el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío): quien llega se detiene y juegan juntos un minijuego en equipo (faroles, remar juntos, el escudo de luz, el puente, pasar la llama, runas en equipo, cruzar juntos o el piso que se cae). Ganan o pierden los dos, y cada minijuego empieza fácil y se pone difícil al final.
+- Tres guardianes cierran el camino (el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío): quien llega se detiene y juegan juntos un minijuego en equipo (catorce en total: faroles, remar juntos, el escudo de luz, el puente, pasar la llama, runas en equipo, cruzar juntos, el piso que se cae, escobas contra el carruaje, defiende la muralla, la garra en equipo, la mina, la poción y el globo). Ganan o pierden los dos, y cada minijuego empieza fácil y se pone difícil al final.
 - 31 cartas (3 solo del modo juntos) y gemas para gastar en pleno turno.
 - Un final justo: quien llega primero gana 10 gemas, queda a salvo y sigue jugando desde el castillo con su cofre y su torre.
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.

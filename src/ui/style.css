@@ -301,3 +301,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .names label.cpu::after { content: 'compu'; font: 700 12px var(--body); background: var(--c); color: var(--ink); border-radius: 8px; padding: 2px 7px; }
 .seg.lvl[hidden] { display: none; }
 .seg.who button, .seg.lvl button { padding: 8px 14px; }
+/* Línea extra de los minijuegos V4.2 (vueltas, vidas, receta, papeles). */
+.minihud > .extra { position: absolute; top: calc(var(--pad) + 74px); left: 50%; transform: translateX(-50%); text-align: center; color: #fff; font: 700 16px/1.5 system-ui, sans-serif; text-shadow: 0 1px 0 var(--ink), 0 0 8px var(--ink); white-space: nowrap; }
+.minihud > .extra:empty { display: none; }
+.minihud > .extra b { font-weight: 800; } .minihud > .extra .p0 { color: #ff9ac8; } .minihud > .extra .p1 { color: #9cc2ff; }
+.minihud > .extra .hearts { color: #ff6b8a; letter-spacing: 1px; } .minihud > .extra .hearts i { color: #ffffff40; font-style: normal; }
+.minihud > .extra .ing { display: inline-block; margin: 2px 3px; padding: 1px 8px; border-radius: 10px; background: #1d1830cc; border: 2px solid var(--c); opacity: 0.7; }
+.minihud > .extra .ing.now { opacity: 1; transform: scale(1.15); box-shadow: 0 0 10px var(--c); } .minihud > .extra .ing.done { opacity: 0.35; text-decoration: line-through; }
+@media (max-width: 560px) { .minihud > .extra { top: calc(var(--pad) + 110px); font-size: 13px; white-space: normal; width: 94vw; } }

@@ -106,12 +106,10 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Equilibrio: 20 o más gemas de diferencia en el ~19 % de las partidas (cambió el orden del azar); llegar primero gana el 69 %.
 
 ### Más minijuegos (ideas que quedan)
-- En equipo: defiende tu nido, catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, escalar juntos atados con una cuerda, apagar incendios del bosque.
-- Para dos: carrera de escobas, pesca de estrellas en el cielo.
+- En equipo: catapulta mágica, dibujar un hechizo con el dedo, laberinto rápido, escalar juntos atados con una cuerda, apagar incendios del bosque.
+- Para dos: pesca de estrellas en el cielo.
 - Variantes de los que ya existen (hielo, noche, señales falsas…).
-
-### Después
-- Reliquias, misión secreta, poderes propios, más cartas (unas 40).
+- Las elegidas para la V4.2 ya están hechas (más abajo).
 
 ### Descartado hasta nuevo aviso
 - Modo con reloj.
@@ -137,10 +135,43 @@ Tablero hexagonal procedural, niebla, dado, caminos, gemas, trampas, portales, 1
 - Con jugadores simulados: la computadora le gana ~70 % de las veces a un jugador que elige al azar. En el modo juntos, con 65 % de minijuegos ganados, el equipo gana ~87 % en Tranquila, ~86 % en Normal y ~80 % en Difícil.
 - Por confirmar jugando: si las dificultades se sienten distintas y si las pausas de la computadora son muy largas o muy cortas.
 
-## Siguiente
-- Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
+## V4.2: muchos minijuegos (lista)
+Una entrega solo de minijuegos: 6 para dos y 6 en equipo. Todos cortos, de la semilla y probados con jugadores simulados; los de equipo van de fácil a difícil.
+- Para dos:
+  - **Carrera de escobas:** mini circuito alrededor de un lago, 3 vueltas. Las escobas derrapan y se puede embestir al otro: quien cae al lago o al barranco pierde un momento. Barro que frena y hongos dorados que impulsan. Quién sale por dentro lo decide el azar.
+  - **La garra del mercader:** cada quien su garra sobre el mismo montón de premios (gema 1, huevo 2, conejo 3). Si agarran lo mismo, se lo queda la garra más centrada.
+  - **Guerra de bolas de nieve:** cada quien en su trinchera; se lanza solo, derecho hacia adelante. Los muñecos de nieve tapan 3 bolas y vuelven a crecer.
+  - **La catapulta mágica:** mantener para cargar y soltar con la fuerza justa; 6 tiros a blancos cerca y lejos, con la barra cada vez más rápida. Reemplaza a las escondidas en la niebla, que no se podían jugar bien en una sola pantalla.
+  - **El rey de la tortuga:** los dos sobre un caparazón que se inclina hacia el peso y se mece cada vez más; al mejor de 3 rondas.
+  - **Hockey de hongos:** mini hockey de mesa con una semilla de luz y dos hongos saltarines; gana quien llega a 5 goles.
+- En equipo (contra el guardián o el Rey):
+  - **Escobas contra el carruaje:** el mismo circuito; entre los dos dan 6 vueltas antes de que el carruaje dé 3. Chocar con él saca de la pista.
+  - **Defiende la muralla:** ogros hipnotizados suben por los caminos; la magia sale sola. Los ogros grandes tienen escudo y solo se rompe si les aciertan los dos casi a la vez (el escudo toma el color de quien acertó primero). La muralla aguanta 5 golpes.
+  - **La garra en equipo:** una garra; la izquierda la detiene de lado a lado y la derecha adelante y atrás. Su sombra en el piso muestra dónde va a bajar. Hay que sacar 7 premios.
+  - **La mina:** quien maneja esquiva rocas por tres rieles; quien pica golpea las piedras brillantes cuando pasan por el aro dorado. A la mitad cambian de papel. 14 piedras, 3 vidas.
+  - **La poción:** quien revuelve calienta la olla sin pasarse; quien cocina echa los 5 ingredientes de la receta cuando hierve. Con cada poción cambian de papel. 3 pociones, 3 vidas.
+  - **El globo:** cada quien tira de su cuerda (izquierda o derecha); los dos a la vez avivan el fuego y suben más rápido. Hay que llegar a 100 metros esquivando ramas y cuervos, con 4 vidas.
+- Con jugadores simulados, el equipo gana: carruaje ~94 %, muralla ~73 %, garra en equipo ~84 %, mina ~92 %, poción ~91 %, globo ~78 %. Los de dos están parejos (diferencia menor al 15 %) y duran entre 12 y 36 segundos.
+- La computadora también los juega, calibrada como los demás.
+- Por confirmar jugando: si la carrera se entiende con los controles de celular, y si la poción y la garra en equipo se coordinan bien.
+
+## V4.3: batallas de jefe (siguiente)
+Los guardianes dejan de ser un minijuego cualquiera y pasan a ser una batalla propia, en equipo. Ritmo de cada batalla: el jefe ataca (se esquiva), después queda **noqueado** unos segundos (estrellitas) y ahí se le pega para bajarle la vida. Con cada golpe se pone más rápido; la primera parte es generosa para aprender.
+- **Conejo Gigante (a un cuarto):** salta y al caer hace ondas que hay que saltar, y lanza zanahorias. Después de varios saltos queda mareado.
+- **Troll Hipnotizado (a la mitad):** tira rocas (su sombra en el piso avisa dónde caen) y embiste. Si choca contra una roca queda atontado: uno lo atrae y el otro se aparta.
+- **Rey Sombrío (a tres cuartos):** por fases. Esquivar su bigote látigo, devolverle sus rayos con el escudo y, al final, pegarle los dos a la vez.
+- Vidas compartidas. En «uno contra otro» siguen siendo en equipo, con 1 gema extra para quien dé más golpes.
+- En el modo juntos, batalla final contra el Rey Sombrío en la puerta del castillo.
+- También se pueden jugar en el Arcade.
+
+## Después
+- Reliquias: objetos que duran toda la partida con un poder fijo (por ejemplo, ignorar una trampa una vez o +1 en cada fogata). Se ganan en lugares lejanos o venciendo guardianes.
+- Más cartas (unas 40), algunas ligadas a las reliquias.
+- Misión secreta. Ojo: en una pantalla compartida el otro la vería. Opciones: revelarla al final, mirarla con «el otro cierra los ojos» o esperar a la sala con código.
 
 ## Más adelante
+- Sala con código: cada quien en su celular. Con eso, más de dos jugadores.
+- Poderes propios de cada personaje.
 - Más personajes y más apariencias.
 - Más adornos y sonidos.
 
