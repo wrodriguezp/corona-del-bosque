@@ -1,6 +1,7 @@
 import { noPad, DT, GAMES } from './minigames/index.js';
 import { makeRng } from './rng.js';
 import { bots2 } from './bots2.js';
+import { bots3 } from './bots3.js';
 import { safeAt, enreda as VINE_GAME, VINE, piso as FLOOR_GAME } from './minigames/caminos.js';
 
 // Jugadores simulados de cada minijuego. Sirven para las pruebas y para jugar
@@ -48,6 +49,7 @@ export const bots = {
   enreda: () => [0, 1].map((i) => { let react = null; return (s, rng) => { const p = noPad(), me = s.p[i]; if (me.stun > 0 || me.h >= VINE.goal) return p; const off = Math.abs(VINE_GAME.hand(me) - s.grips[me.h]); if (off < VINE.zone * 0.9) { p.a = rng.chance(0.13); } else { p.a = rng.chance(0.0015); } return p; }; }),
   piso: () => floorBot(0.75),
   ...bots2,
+  ...bots3,
 };
 
 function roadBot(skill) {

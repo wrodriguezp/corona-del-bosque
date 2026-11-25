@@ -5,6 +5,7 @@ import { faroles, remar, escudo, puente, llama, runeq } from './equipo.js';
 import { cruce, cruceq, enreda, piso } from './caminos.js';
 import { escobas, garra, nieve, catapulta, tortuga, hockey } from './feria.js';
 import { carruaje, muralla, garraq, mina, pocion, globo } from './equipo2.js';
+import { jconejo, jtroll, jrey } from './jefes.js';
 
 export { DT, noPad };
 
@@ -173,5 +174,5 @@ const fuga = {
   },
 };
 
-export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja, dragon, conejos, pesca, hongos, pinta, topos, torre, cruce, enreda, faroles, remar, escudo, puente, llama, runeq, cruceq, piso, escobas, garra, nieve, catapulta, tortuga, hockey, carruaje, muralla, garraq, mina, pocion, globo };
+export const GAMES = { duelo, lluvia, fuga, tira, runas, salto, choque, huevo, burbuja, dragon, conejos, pesca, hongos, pinta, topos, torre, cruce, enreda, faroles, remar, escudo, puente, llama, runeq, cruceq, piso, escobas, garra, nieve, catapulta, tortuga, hockey, carruaje, muralla, garraq, mina, pocion, globo, jconejo, jtroll, jrey };
 export const TEAM = Object.keys(GAMES).filter((id) => GAMES[id].team);

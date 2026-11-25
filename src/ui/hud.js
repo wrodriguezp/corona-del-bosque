@@ -1,6 +1,7 @@
 import { icon } from './icons.js';
 import { CARDS, FAMILIES, PRICES, HAND_LIMIT } from '../core/cards.js';
-import { CAVE, COOP, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND } from '../core/game.js';
+import { CAVE, COOP, TEAM_WIN, TEAM_LOSE, TOURNEY_EVERY, TEAM_ROUND, BOSS_GEM } from '../core/game.js';
+import { BOSS } from '../core/minigames/jefes.js';
 import { DAY, EVENTS, NIGHT } from '../core/world.js';
 import { sfx, isMuted, setMuted } from '../audio.js';
 
@@ -425,14 +426,14 @@ export class Hud {
       ${li('moon', '#4a4fb0', `<b>De noche</b> las gemas dan +${NIGHT.gem}, las trampas quitan ${NIGHT.trap} más, se ve menos lejos y el dragón duerme profundo.`)}
       ${li('omen', '#6a2fa0', '<b>Presagios.</b> Avisan dos turnos antes: dragón, bosque, eclipse, helada, lluvia de estrellas o un ataque del Rey Sombrío (minijuego en equipo).')}
       ${li('crown', '#4b1f6e', '<b>El Rey Sombrío.</b> La Sombra es su poder. Sus secuaces son conejos y trolls hipnotizados (ojos morados).')}
-      ${li('sun', '#d8981a', `<b>Guardianes.</b> En el camino hay tres: el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío. Al pasar por uno, quien llega se detiene y juegan un minijuego en equipo. Si ganan, ${TEAM_WIN} gemas para cada quien; si pierden, hasta −${TEAM_LOSE}. Los primeros segundos son más fáciles y se pone difícil al final.`)}
+      ${li('sun', '#d8981a', `<b>Guardianes.</b> En el camino hay tres: el Conejo Gigante, el Troll Hipnotizado y el Rey Sombrío. Al pasar por uno, quien llega se detiene y los dos pelean juntos contra él: una <b>batalla de jefe</b>. El jefe ataca y hay que esquivar; cuando queda mareado (estrellitas sobre la cabeza), corran a chocarlo para pegarle. Tienen ${BOSS.lives} vidas entre los dos. Si ganan, ${TEAM_WIN} gemas para cada quien; si pierden, hasta −${TEAM_LOSE}. Quien pegue más golpes gana ${BOSS_GEM} gema extra. Al principio el jefe va lento y con cada golpe se pone más rápido.`)}
       ${li('omen', '#3d2b5c', '<b>La Sombra</b> avanza desde la salida, cada vez más rápido (se ve en la barra de arriba). Si te alcanza, pierdes hasta 3 gemas y te escupe hacia adelante.')}
       ${li('tree', '#3f8f4f', '<b>Criaturas.</b> Basta pasar por su casilla: el conejo suma 2 a tu próxima tirada y el hada te da una carta; el lobo te quita 3 gemas y el troll te detiene y cobra 2.')}
       ${li('gem', '#d8981a', '<b>Cerca del castillo</b> las gemas y las fogatas dan más: +1 desde la mitad del camino y +2 en el último tramo, hasta que alguien llega al castillo.')}
       ${li('shield', '#2b7fd0', '<b>Escudo.</b> Te protege una vez de trampas, travesuras, gusano, dragón, fuego, lobos, trolls o la Sombra.')}
       </ul>
       <h3>${icon('heart')}Modo juntos</h3>
-      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos (5 en Tranquila y 3 en Difícil). Cada guardián vencido da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
+      <p>Juegan en equipo contra el Rey Sombrío. Tienen <b>${COOP.hearts} corazones</b> entre los dos (5 en Tranquila y 3 en Difícil). Cada guardián se enfrenta en una batalla de jefe y, vencido, da <b>una runa</b>; con las <b>tres runas</b> se abre el castillo y <b>ganan cuando llegan los dos</b>. Si pierden contra un guardián, pierden un corazón y el guardián sigue cerrando el paso. Si la Sombra alcanza a alguien, también pierden un corazón; la Sombra espera detrás de cada guardián que siga en pie. Todos los minijuegos son en equipo: si ganan, la Sombra retrocede ${COOP.push} casillas; si pierden, avanza ${COOP.surge}. No hay travesuras ni hada madrina: en su lugar hay cartas de equipo (curar un corazón, frenar la Sombra, empujar al compañero). Quien llega primero ayuda desde la torre. <b>Si se acaban los corazones, gana el Rey.</b></p>
       <p><b>Controles:</b> espacio tira, 1 a 4 usan cartas o eligen, B y T compran, R repite la tirada, P da un paso más, flechas y Enter eligen casilla, M muestra el mapa. Arrastra para mover la cámara, usa el botón derecho para girarla y la rueda para acercar. En móvil, usa uno o dos dedos.</p>
       <button class="cta close">¡Entendido!</button>`);
     const m = this.modal(s);
@@ -508,12 +509,13 @@ export class Hud {
   }
 
   // Arcade: elegir un minijuego suelto. Devuelve su id, 'random' o null para volver.
-  arcade(names, versus, team, score) {
+  arcade(names, versus, team, score, bosses = []) {
     const GAMES = this.games, btn = (id) => `<button class="pick" data-i="${id}">${icon(GAMES[id].icon)}<span>${esc(GAMES[id].name)}</span></button>`;
     const s = el('sheet arcade', `<h2>Arcade</h2>
       <div class="score"><div class="p0">${esc(names[0])}<b>${score[0]}</b></div><div class="team">Juntos<b>${score[2]}</b></div><div class="p1">${esc(names[1])}<b>${score[1]}</b></div></div>
       <h3>${icon('duel')}Uno contra otro</h3><div class="grid">${versus.map(btn).join('')}</div>
       <h3>${icon('sun')}Juntos contra la Sombra</h3><div class="grid">${team.map(btn).join('')}</div>
+      ${bosses.length ? `<h3>${icon('crown')}Batallas de jefe</h3><div class="grid">${bosses.map(btn).join('')}</div>` : ''}
       <div class="line"><button class="cta" data-i="random" data-ok="1">${icon('dice')}Al azar</button><button class="link" data-i="back">Volver al menú</button></div>`);
     return this.ask(s, 'arcade').then((v) => (v === 'back' ? null : v));
   }

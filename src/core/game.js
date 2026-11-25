@@ -25,6 +25,10 @@ export const DUEL_GEMS = 4;
 export const CAVE = [2, 3, 3, 4, 5, 6];
 export const MINIGAMES = ['duelo', 'lluvia', 'fuga', 'tira', 'runas', 'salto', 'choque', 'huevo', 'burbuja', 'dragon', 'conejos', 'pesca', 'hongos', 'pinta', 'topos', 'torre', 'cruce', 'enreda', 'escobas', 'garra', 'nieve', 'catapulta', 'tortuga', 'hockey'];
 export const TEAM_GAMES = ['faroles', 'remar', 'escudo', 'puente', 'llama', 'runeq', 'cruceq', 'piso', 'carruaje', 'muralla', 'garraq', 'mina', 'pocion', 'globo'];
+// Batallas de jefe (V4.3): cada guardián tiene la suya. En «uno contra otro», quien
+// le pega más veces al jefe gana BOSS_GEM gema extra.
+export const BOSSES = ['jconejo', 'jtroll', 'jrey'];
+export const BOSS_GEM = 1;
 export const TEAM_WIN = 4; // gemas para cada quien si vencen a la Sombra
 export const TEAM_LOSE = 3; // gemas que les quita a cada quien si gana ella
 export const NEAR = [0.5, 0.72];
@@ -123,7 +127,7 @@ export class Game {
       case 'choose': return this.choose(a.i);
       case 'shop': return this.shopBuy(a.i);
       case 'cave': return this.caveAct(a.what);
-      case 'duel': return this.duelResult(a.winner);
+      case 'duel': return this.duelResult(a.winner, a.hits);
       case 'castle': return this.castleAct(a.what);
       default: return [];
     }
@@ -777,22 +781,22 @@ export class Game {
     const ev = [], G = GUARDS[q.i];
     q.done = true;
     ev.push({ t: 'guard', i: q.i, kind: q.kind, p: this.turn, id: this.player.tile });
-    this.msg(ev, 'omen', G.title, G.text, false, this.coop ? `Si ganan: la runa ${q.i + 1} de 3 y ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: pierden 1 corazón y sigue cerrando el paso` : `Si ganan: ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: hasta −${TEAM_LOSE} a cada quien`);
-    this.startDuel(ev, 'guardia');
+    this.msg(ev, 'omen', G.title, G.text, false, this.coop ? `Si ganan: la runa ${q.i + 1} de 3 y ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: pierden 1 corazón y sigue cerrando el paso` : `Si ganan: ${TEAM_WIN} gemas para cada quien · Si gana ${G.name}: hasta −${TEAM_LOSE} a cada quien · Quien pegue más golpes: +${BOSS_GEM} gema`);
+    this.startDuel(ev, 'guardia', BOSSES[q.i]);
     this.duel.guard = q.i;
     return ev;
   }
 
   /* ---------- Minijuegos ---------- */
-  startDuel(ev, why) {
+  startDuel(ev, why, game = null) {
     const team = this.coop || why === 'sombra' || why === 'guardia' || why === 'ronda', list = team ? TEAM_GAMES : MINIGAMES, key = team ? 'teamBag' : 'bag';
-    if (!this[key]?.length) this[key] = this.rng.shuffle(list);
-    this.duel = { why, game: this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
+    if (!game && !this[key]?.length) this[key] = this.rng.shuffle(list);
+    this.duel = { why, game: game || this[key].pop(), seed: this.rng.int(1, 1e9), by: this.turn, team };
     this.phase = 'duel';
     ev.push({ t: 'duel', ...this.duel });
   }
 
-  duelResult(w) {
+  duelResult(w, hits = null) {
     if (this.phase !== 'duel' || ![0, 1, -1, -2].includes(w)) return [];
     const { why, team, guard } = this.duel, ev = [];
     if (team ? w > -1 : w === -2) return [];
@@ -808,6 +812,7 @@ export class Game {
         this.msg(ev, 'omen', `Ganó ${foe} esta vez`, `Se lleva hasta ${TEAM_LOSE} gemas de cada quien. El escudo protege.`, true);
         for (const p of this.players) if (!this.shielded(ev, p, 'La Sombra del Rey')) this.addGems(ev, p, -TEAM_LOSE, 'lost');
       }
+      if (why === 'guardia') this.bossBonus(ev, hits);
       ev.push({ t: 'teamEnd', won: w === -1, guard });
       if (why === 'guardia') return ev.concat(this.endTurn());
       this.phase = 'ready';
@@ -831,6 +836,15 @@ export class Game {
     if (why === 'torneo') { this.phase = 'ready'; this.checkStars(ev); return ev; }
     if (why === 'reto') { this.phase = 'ready'; return ev; }
     return ev.concat(this.endTurn());
+  }
+
+  // En «uno contra otro», la batalla de jefe se juega en equipo, pero quien le pegó
+  // más veces al jefe gana una gema extra.
+  bossBonus(ev, hits) {
+    if (!Array.isArray(hits) || hits.length !== 2 || !hits.every((n) => Number.isInteger(n) && n >= 0) || hits[0] === hits[1]) return;
+    const w = hits[0] > hits[1] ? 0 : 1, p = this.players[w];
+    this.msg(ev, 'star', `¡${p.name} pegó más golpes!`, `${p.name} le dio ${hits[w]} golpes al jefe y ${this.players[1 - w].name}, ${hits[1 - w]}. Gana ${BOSS_GEM} gema extra.`, true);
+    this.addGems(ev, p, BOSS_GEM, 'team');
   }
 
   // Modo cooperativo: los guardianes dan runas o quitan corazones; los demás

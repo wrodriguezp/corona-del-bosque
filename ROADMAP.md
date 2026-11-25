@@ -155,14 +155,16 @@ Una entrega solo de minijuegos: 6 para dos y 6 en equipo. Todos cortos, de la se
 - La computadora también los juega, calibrada como los demás.
 - Por confirmar jugando: si la carrera se entiende con los controles de celular, y si la poción y la garra en equipo se coordinan bien.
 
-## V4.3: batallas de jefe (siguiente)
-Los guardianes dejan de ser un minijuego cualquiera y pasan a ser una batalla propia, en equipo. Ritmo de cada batalla: el jefe ataca (se esquiva), después queda **noqueado** unos segundos (estrellitas) y ahí se le pega para bajarle la vida. Con cada golpe se pone más rápido; la primera parte es generosa para aprender.
-- **Conejo Gigante (a un cuarto):** salta y al caer hace ondas que hay que saltar, y lanza zanahorias. Después de varios saltos queda mareado.
-- **Troll Hipnotizado (a la mitad):** tira rocas (su sombra en el piso avisa dónde caen) y embiste. Si choca contra una roca queda atontado: uno lo atrae y el otro se aparta.
-- **Rey Sombrío (a tres cuartos):** por fases. Esquivar su bigote látigo, devolverle sus rayos con el escudo y, al final, pegarle los dos a la vez.
-- Vidas compartidas. En «uno contra otro» siguen siendo en equipo, con 1 gema extra para quien dé más golpes.
-- En el modo juntos, batalla final contra el Rey Sombrío en la puerta del castillo.
-- También se pueden jugar en el Arcade.
+## V4.3: batallas de jefe (lista)
+Los guardianes dejan de ser un minijuego cualquiera y pasan a ser una batalla propia, en equipo, en una arena redonda. Ritmo de cada batalla: el jefe ataca (se esquiva), después queda **mareado** unos segundos (estrellitas sobre la cabeza) y ahí se le pega chocándolo, hasta 3 golpes por mareo. Con cada golpe se pone más rápido; la primera parte es generosa para aprender. 5 vidas compartidas; la barra de vida del jefe se ve arriba.
+- **Conejo Gigante (a un cuarto):** salta hacia uno de los dos (su sombra en el piso avisa dónde cae). Al caer hace una onda con dos huecos opuestos: hay que ponerse en un hueco o alejarse. Entre saltos lanza zanahorias (marcas rojas). Después de 3 saltos queda mareado. 9 golpes.
+- **Troll Hipnotizado (a la mitad):** tira 2 rocas (su sombra roja avisa dónde caen) que quedan en el piso. Después mira a uno (franja roja) y embiste en línea recta: si choca con una roca queda atontado; si llega al borde, solo se detiene. Quien es mirado se esconde detrás de una roca; el otro se aparta. 8 golpes.
+- **Rey Sombrío (a tres cuartos), en tres partes:** primero gira su bigote como látigo (rojo y transparente mientras avisa) y se cansa tras 2 giros; después alterna látigos con rayos oscuros y uno dorado: tocar el dorado se lo devuelve y lo marea; al final, solo cuentan los golpes de los dos casi a la vez (0,6 s). 9 golpes.
+- En «uno contra otro» siguen siendo en equipo, con 1 gema extra para quien dé más golpes (empate: nadie).
+- También se pueden jugar en el Arcade, en su propia sección, y contra la computadora.
+- Con jugadores simulados, el equipo gana: conejo ~77 % (~22 s), troll ~71 % (~31 s), Rey ~77 % (~17 s).
+- Se dejó para más adelante la batalla final del modo juntos en la puerta del castillo: con los tres guardianes como batallas ya hay tres peleas por partida.
+- Por confirmar jugando: si se entiende cuándo pegar, si las ondas del conejo y la embestida del troll se leen bien en celular, y si el golpe juntos del Rey se coordina.
 
 ## Después
 - Reliquias: objetos que duran toda la partida con un poder fijo (por ejemplo, ignorar una trampa una vez o +1 en cada fogata). Se ganan en lugares lejanos o venciendo guardianes.

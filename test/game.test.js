@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeBoard, bfs } from '../src/core/board.js';
-import { Game } from '../src/core/game.js';
+import { Game, BOSSES } from '../src/core/game.js';
 import { Session } from '../src/core/session.js';
 import { CARDS } from '../src/core/cards.js';
 import { ADVENTURES, describe } from '../src/core/adventures.js';
@@ -186,6 +186,18 @@ test('un guardián detiene a quien llega y juegan juntos contra él', () => {
     g.apply({ type: 'duel', winner: w });
     assert.deepEqual(g.players.map((p) => p.gems), [10 + delta, 10 + delta]);
     assert.notEqual(g.turn, turn); // el turno termina después del guardián
+  }
+});
+
+test('cada guardián es una batalla de jefe y quien pega más golpes gana 1 gema extra', () => {
+  for (const [i, hits, gems] of [[0, [5, 3], [15, 14]], [1, [2, 6], [14, 15]], [2, [4, 4], [14, 14]], [0, null, [14, 14]]]) {
+    const g = new Game({ names: ['A', 'B'], len: 20, seed: 8 });
+    g.apply({ type: 'begin' });
+    g.players.forEach((p) => (p.gems = 10));
+    g.meetGuard(g.guards[i]);
+    assert.equal(g.duel.game, BOSSES[i]);
+    g.apply(hits ? { type: 'duel', winner: -1, hits } : { type: 'duel', winner: -1 });
+    assert.deepEqual(g.players.map((p) => p.gems), gems);
   }
 });
 

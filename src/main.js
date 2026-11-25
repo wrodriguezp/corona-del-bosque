@@ -10,7 +10,7 @@ import { makeRng } from './core/rng.js';
 import { byId } from './core/adventures.js';
 import { GAMES } from './core/minigames/index.js';
 import { CARDS, FAMILIES } from './core/cards.js';
-import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS, COOP } from './core/game.js';
+import { RUSH, TEAM_WIN, TEAM_LOSE, MINIGAMES, TEAM_GAMES, GUARDS, COOP, BOSSES, BOSS_GEM } from './core/game.js';
 import { Stage, ease } from './view/stage.js';
 import { BoardView } from './view/boardView.js';
 import { makePrincess, makeMage, PRINCESS_SKINS } from './view/characters.js';
@@ -711,7 +711,7 @@ async function prompt() {
     case 'adventure': { const i = await hud.adventure(byId[g.adventure], p, (k) => g.canChoose(k)); return act({ type: 'choose', i }); }
     case 'shop': { const i = await hud.shop(g.shop, p); return act({ type: 'shop', i }); }
     case 'cave': { const what = await hud.cave(g.cave, p); return act({ type: 'cave', what }); }
-    case 'duel': { const winner = await minigame(g.duel); return act({ type: 'duel', winner }); }
+    case 'duel': { const winner = await minigame(g.duel), hits = lastHits; return act(hits ? { type: 'duel', winner, hits } : { type: 'duel', winner }); }
   }
 }
 
@@ -781,6 +781,7 @@ function auto() {
   else if (g.phase === 'move') { const ids = g.options(); if (ids.length) choose(ids[Math.floor(Math.random() * ids.length)]); }
 }
 const WHY = { sombra: '¡Juntos contra la Sombra del Rey!', guardia: '¡Juntos contra el guardián!', torneo: 'Ronda de minijuegos · torneo real', ronda: 'Ronda en equipo contra el Rey Sombrío', encuentro: '¡Encuentro en el camino!', arena: 'Arena antigua', reto: 'Guante de reto' };
+let lastHits = null; // golpes de cada quien en la última batalla de jefe
 async function minigame(d) {
   const names = g.players.map((p) => p.name), rules = GAMES[d.game];
   const foe = d.guard != null ? GUARDS[d.guard].name : 'la Sombra';
@@ -788,7 +789,7 @@ async function minigame(d) {
     ? [{ cls: 'team', icon: 'rune', text: `Si ganan: la runa ${d.guard + 1} de 3` }, { cls: 'shadow', icon: 'heart', text: `Si gana ${foe}: −1 corazón` }]
     : [{ cls: 'team', icon: 'sun', text: `Si ganan: la Sombra retrocede ${COOP.push}` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: avanza ${COOP.surge}` }];
   sides.cpu = S.opts.ai;
-  await hud.miniIntro(rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], names, stage.mobile, g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
+  await hud.miniIntro(rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], names, stage.mobile, g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }, ...(rules.boss ? [{ cls: 'team', icon: 'star', text: `Quien pegue más golpes: +${BOSS_GEM} gema` }] : [])] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');
@@ -802,6 +803,7 @@ async function minigame(d) {
   await mini.countdown();
   const w = await mini.play();
   await mini.celebrate(w);
+  lastHits = rules.boss ? [...mini.s.score] : null;
   await hud.fade(true);
   mini.dispose();
   mini = null;
@@ -820,10 +822,10 @@ async function minigame(d) {
 
 /* ---------- Arcade: minijuegos sueltos, sin tablero ---------- */
 async function arcade(names) {
-  const score = [0, 0, 0], versus = MINIGAMES, team = TEAM_GAMES;
+  const score = [0, 0, 0], versus = MINIGAMES, team = [...TEAM_GAMES, ...BOSSES];
   hud.games = GAMES;
   for (;;) {
-    let id = await hud.arcade(names, versus, team, score);
+    let id = await hud.arcade(names, versus, TEAM_GAMES, score, BOSSES);
     if (!id) return location.reload();
     if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
     const isTeam = team.includes(id), rules = GAMES[id];

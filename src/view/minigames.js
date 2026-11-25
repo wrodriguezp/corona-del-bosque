@@ -8,6 +8,8 @@ import { TEAM_VIEWS } from './minigames4.js';
 import { ROAD_VIEWS } from './minigames5.js';
 import { FAIR_VIEWS } from './minigames6.js';
 import { TEAM2_VIEWS } from './minigames7.js';
+import { BOSS_VIEWS } from './minigames8.js';
+const BOSS_NAMES = { conejo: 'el Conejo Gigante', troll: 'el Troll Hipnotizado', rey: 'el Rey Sombrío' };
 import { makeFoe } from './foes.js';
 import { Pads } from './pads.js';
 import { brain } from '../core/bots.js';
@@ -180,6 +182,7 @@ const VIEWS = {
   ...ROAD_VIEWS,
   ...FAIR_VIEWS,
   ...TEAM2_VIEWS,
+  ...BOSS_VIEWS,
 };
 
 const place = (h, p) => h.root.position.copy(p);
@@ -260,11 +263,11 @@ export class MiniView {
     // En equipo se ve contra quién juegan: el guardián de la casilla o el Rey Sombrío.
     if (this.rules.team) {
       const f = this.view.foe;
-      this.foe = makeFoe(duel.foe || 'rey');
+      this.foe = makeFoe(this.rules.boss || duel.foe || 'rey');
       this.foe.root.position.copy(V(...f.p));
       this.foe.root.rotation.y = f.ry || 0;
       this.foe.root.scale.setScalar(f.s || 1);
-      this.foeName = duel.foeName || 'el Rey Sombrío';
+      this.foeName = duel.foeName || BOSS_NAMES[this.rules.boss] || 'el Rey Sombrío';
       this.group.add(this.foe.root);
     }
     this.view.init(this);
