@@ -834,10 +834,10 @@ async function minigame(d) {
 // Desde las instrucciones se puede ver una demo (la computadora juega por los dos) o
 // practicar sin que cuente, las veces que quieran, antes de pulsar «¡Listos!».
 // Usan una semilla propia: no adelantan nada del minijuego de verdad.
-async function intro(duel, names, ai, restore, rules, why, prize) {
+async function intro(duel, names, ai, restore, rules, why, prize, back = false) {
   for (;;) {
-    const c = await hud.miniIntro(rules, why, names, stage.mobile, prize, sides);
-    if (c !== 'demo' && c !== 'try') return;
+    const c = await hud.miniIntro(rules, why, names, stage.mobile, prize, sides, back);
+    if (c !== 'demo' && c !== 'try') return c;
     await rehearse(duel, names, c === 'demo' ? 'demo' : 'practice', ai, restore);
   }
 }
@@ -880,7 +880,7 @@ async function arcade(names) {
     if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
     const isTeam = team.includes(id), rules = GAMES[id];
     sides.cpu = prefs.ai;
-    await intro({ game: id, team: isTeam }, names, cpuMini(prefs), pose, rules, isTeam ? 'Arcade · en equipo' : 'Arcade', isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`));
+    if (await intro({ game: id, team: isTeam }, names, cpuMini(prefs), pose, rules, isTeam ? 'Arcade · en equipo' : 'Arcade', isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), true) === 'back') continue;
     await hud.fade(true);
     stage.locked = true;
     stage.setMood('day', 0);

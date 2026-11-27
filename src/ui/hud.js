@@ -353,13 +353,14 @@ export class Hud {
   }
 
   // `opt.swap` intercambia qué lado de la pantalla (y del teclado) usa cada jugador.
-  miniIntro(rules, why, names, mobile, prize, opt) {
+  // `back`: en el Arcade se puede volver a la lista si se eligió por error.
+  miniIntro(rules, why, names, mobile, prize, opt, back = false) {
     const ctl = CONTROLS(rules.input, mobile);
     const role = rules.input === 'chase';
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2>${howTo(rules.goal)}
       <div class="ctl"></div><div class="prize">${prize.map((t, i) => (typeof t === 'string' ? `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>` : `<span class="${t.cls}">${icon(t.icon)}${esc(t.text)}</span>`)).join('')}</div>
       <div class="try"><button class="ghost" data-i="demo">${icon('eye')}Ver cómo se juega</button><button class="ghost" data-i="try">${icon('hand')}Practicar</button></div>
-      <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
+      <div class="go2">${back ? `<button class="link" data-i="back">${icon('exit')}Volver</button>` : ''}<button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
     const draw = () => {
       s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; if (!role && opt.cpu === i) return `<div class="p${i}"><b>${icon(AV[i])}${esc(names[i])}</b>Lo juega la computadora</div>`; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}${opt.cpu != null && !role ? `<small> (${mobile ? 'o en la otra mitad' : 'o con las teclas del otro lado'})</small>` : ''}</div>`; }).join('');
     };

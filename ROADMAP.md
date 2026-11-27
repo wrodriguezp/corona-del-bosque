@@ -187,6 +187,9 @@ Lo de siempre al jugar: «no se entiende qué hay que hacer». Como en las fiest
 - **Nombres guardados:** los nombres quedan en el navegador y aparecen solos la próxima vez.
 - Por confirmar jugando: si con la demo ya se entiende sin leer, y si la práctica se usa o sobra.
 
+### V4.5.1: volver en el Arcade
+- Las instrucciones de un minijuego del Arcade tienen «Volver»: si se eligió uno por error, se regresa a la lista sin jugarlo. En el tablero no aparece, porque ahí el minijuego es parte de la partida.
+
 ## Después
 - **Siguiente:** más cartas (unas 40), algunas ligadas a las reliquias.
 - Misión secreta. Ojo: en una pantalla compartida el otro la vería. Opciones: revelarla al final, mirarla con «el otro cierra los ojos» o esperar a la sala con código.

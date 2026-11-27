@@ -341,6 +341,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
   .rehearse .tag { top: calc(var(--pad) + 104px); font-size: 14px; }
 }
 @media (max-height: 520px) and (min-width: 600px) { .rehearse .cap { padding: 8px 12px; gap: 6px; } .rehearse .cap p { font-size: 14px; } .rehearse .tag { top: calc(var(--pad) + 56px); } }
-.tale .go2 .link { color: var(--muted); }
+.tale .go2 .link { color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
 @media (max-width: 560px) { .tale.mini .try { gap: 8px; } .ghost { font-size: 15px; padding: 9px 11px; gap: 5px; } }
 @media (max-width: 700px) { .rehearse .chip.on { transform: scale(1.04); } .rehearse .chip .arw { right: -4px; } }
