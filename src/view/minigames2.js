@@ -129,7 +129,7 @@ export const NEW_VIEWS = {
     island: { r: 4.9, top: ['#8a7fb0', '#9b90c0'], plaza: true }, floor: true,
     cam: { y: 0.8, w: 8.4, pitch: 0.46, h: 6 },
     init(v) {
-      v.flip = 0;
+      v.flipFx = 0;
       v.heroes.forEach((h, i) => { h.turnTo = i ? -0.5 : 0.5; });
       v.post = mesh([paintBy(at(loft([{ y: 0, r: 0.55 }, { y: 0.18, r: 0.42 }, { y: 0.24, r: 0.5 }, { y: 0.32, r: 0.4 }], 8), {}), () => '#6d6295')]);
       v.post.position.copy(V(0, 0, 0));
@@ -143,10 +143,10 @@ export const NEW_VIEWS = {
     },
     update(v, dt, time) {
       const s = v.s;
-      v.flip = Math.max(0, v.flip - dt * 1.6);
+      v.flipFx = Math.max(0, v.flipFx - dt * 1.6);
       v.rod.rotation.y = -s.ang;
       v.gem.rotation.y += dt * (1 + s.speed); v.gem.position.y = V(0, 0.85 + Math.sin(time * 3) * 0.06, 0).y;
-      v.ray[1].material.color.set(v.flip > 0 ? '#ff8a3c' : '#37d6ff'); v.ray[1].scale.set(1, 1 + v.flip + Math.sin(time * 30) * 0.12, 1 + v.flip + Math.sin(time * 30) * 0.12);
+      v.ray[1].material.color.set(v.flipFx > 0 ? '#ff8a3c' : '#37d6ff'); v.ray[1].scale.set(1, 1 + v.flipFx + Math.sin(time * 30) * 0.12, 1 + v.flipFx + Math.sin(time * 30) * 0.12);
       s.p.forEach((p, i) => {
         const h = v.heroes[i];
         h.root.position.copy(V(i ? JUMP.r : -JUMP.r, p.y, 0));
@@ -158,7 +158,7 @@ export const NEW_VIEWS = {
     on(v, e) {
       const st = v.stage;
       if (e.t === 'jump') sfx('flip');
-      if (e.t === 'flip') { v.flip = 1; sfx('feint'); v.say('¡Cambia de sentido!', '', 0.6); }
+      if (e.t === 'flip') { v.flipFx = 1; sfx('feint'); v.say('¡Cambia de sentido!', '', 0.6); }
       if (e.t === 'hit') { const p = v.heroes[e.p].root.position; sfx('zap'); st.shake(0.35); st.sparks.burst(p.x, p.y + 0.6, p.z, 40, { color: ['#7df9ff', '#ffffff'], speed: 3.4, life: 0.7, size: 0.28 }); v.float(up(p, 1.7), v.s.score[e.p] === 1 ? 'Le queda 1 vida' : v.s.score[e.p] > 1 ? `Le quedan ${v.s.score[e.p]}` : 'Sin vidas', 'down'); }
     },
   },

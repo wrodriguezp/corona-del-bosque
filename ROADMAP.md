@@ -174,6 +174,10 @@ Objetos que duran toda la partida, con un poder pequeño y fijo. Se ven bajo el 
 - Equilibrio: los altares lejanos a 2–4 casillas no suben las palizas (20 gemas o más: ~17 %), y la reliquia se reparte entre quien gana y quien pierde.
 - Por confirmar jugando: si vale la pena el desvío, y si se entiende qué hace cada reliquia.
 
+### V4.4.1: arreglo de «Salta el rayo»
+- El minijuego se quedaba congelado al terminar la cuenta regresiva: la escena guardaba un dato con el mismo nombre que la función que invierte los controles. Ya se juega normal.
+- Una prueba nueva revisa que ninguna escena de minijuego repita ese error.
+
 ## Después
 - **Siguiente:** más cartas (unas 40), algunas ligadas a las reliquias.
 - Misión secreta. Ojo: en una pantalla compartida el otro la vería. Opciones: revelarla al final, mirarla con «el otro cierra los ojos» o esperar a la sala con código.

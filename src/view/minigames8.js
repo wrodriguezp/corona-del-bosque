@@ -31,9 +31,9 @@ const mark = (r, color = '#ff2a4d') => { const m = flat(new THREE.Mesh(new THREE
 function arena(v) {
   const edge = flat(new THREE.Mesh(new THREE.RingGeometry(BOSS.r + 0.25, BOSS.r + 0.45, 64), glass('#ffffff', 0.35)));
   edge.position.copy(V(0, 0.03, 0)); v.group.add(edge);
-  v.dizzy = new THREE.Group();
-  for (let j = 0; j < 4; j++) { const st = mesh([paint(octa(0.16), '#ffe14a')], matGlow, false); st.position.set(Math.cos(j * 1.57) * 0.55, 0, Math.sin(j * 1.57) * 0.55); v.dizzy.add(st); }
-  v.group.add(v.dizzy);
+  v.stars = new THREE.Group();
+  for (let j = 0; j < 4; j++) { const st = mesh([paint(octa(0.16), '#ffe14a')], matGlow, false); st.position.set(Math.cos(j * 1.57) * 0.55, 0, Math.sin(j * 1.57) * 0.55); v.stars.add(st); }
+  v.group.add(v.stars);
   v.line = extra(v);
   v.hitT = 0;
 }
@@ -60,9 +60,9 @@ function boss(v, dt, time, kind) {
   f.root.scale.set(k, (v.view.foe.s || 1) * (1 - v.hitT * 0.3), k);
   // Mareado: se tambalea y le giran estrellas sobre la cabeza.
   f.root.rotation.z = b.stun > 0 && kind !== 'rey' ? Math.sin(time * 5) * 0.12 : 0;
-  v.dizzy.visible = b.stun > 0 && !s.done;
-  v.dizzy.position.copy(V(b.x, HEAD[kind] * (v.view.foe.s || 1), b.y));
-  v.dizzy.rotation.y = time * 4;
+  v.stars.visible = b.stun > 0 && !s.done;
+  v.stars.position.copy(V(b.x, HEAD[kind] * (v.view.foe.s || 1), b.y));
+  v.stars.rotation.y = time * 4;
   const left = Math.ceil(b.stun), hp = `${NAME[kind]} ${bar(s.hp, s.max)}`;
   v.line(`${hp} &nbsp; ${hearts(s.lives, BOSS.lives)}${b.stun > 0 && !s.done ? ` &nbsp; <b>¡Mareado! ${left} s</b>` : ''}`);
 }
