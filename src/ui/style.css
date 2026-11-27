@@ -313,3 +313,34 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold2); out
 .minihud > .extra .ing { display: inline-block; margin: 2px 3px; padding: 1px 8px; border-radius: 10px; background: #1d1830cc; border: 2px solid var(--c); opacity: 0.7; }
 .minihud > .extra .ing.now { opacity: 1; transform: scale(1.15); box-shadow: 0 0 10px var(--c); } .minihud > .extra .ing.done { opacity: 0.35; text-decoration: line-through; }
 @media (max-width: 560px) { .minihud > .extra { top: calc(var(--pad) + 110px); font-size: 13px; white-space: normal; width: 94vw; } }
+
+/* Ver cómo se juega y practicar, desde las instrucciones del minijuego */
+.modal { place-items: safe center; } /* si no cabe, se desplaza desde arriba sin cortar el título */
+.tale.mini .try { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0 0 14px; }
+.ghost { display: inline-flex; gap: 7px; align-items: center; padding: 10px 16px; border-radius: 14px; background: var(--ink); color: #fff; font-size: 18px; font-weight: 700; border: 2px solid var(--ink2); box-shadow: 0 4px 0 #170d29; }
+.ghost:hover { background: var(--ink2); } .ghost:active { transform: translateY(3px); box-shadow: 0 1px 0 #170d29; } .ghost .ic { color: var(--gold); }
+.rehearse { position: absolute; inset: 0; pointer-events: none; }
+.rehearse .tag { position: absolute; left: 50%; top: calc(var(--pad) + 64px); transform: translateX(-50%); display: flex; gap: 7px; align-items: center; white-space: nowrap; padding: 6px 14px; border-radius: 99px; background: var(--gold); color: var(--ink); font-weight: 800; font-size: 16px; box-shadow: 0 3px 0 #a8741c; }
+.rehearse.practice .tag { background: #8ef0b8; box-shadow: 0 3px 0 #2c9d64; }
+.rehearse .bar { position: absolute; left: var(--pad); right: var(--pad); bottom: max(14px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr minmax(0, 520px) 1fr; gap: 12px; align-items: end; }
+.rehearse .cap { grid-column: 2; display: grid; gap: 10px; justify-items: center; padding: 12px 16px; border-radius: 16px; background: var(--paper); border: 3px solid var(--gold); text-align: center; }
+.rehearse .cap p { margin: 0; font-size: 17px; line-height: 1.3; text-wrap: balance; }
+.rehearse .cap .cta { font-size: 23px; padding: 9px 24px 11px; }
+.rehearse .chip { grid-row: 1; position: relative; display: grid; gap: 3px; padding: 9px 14px; border-radius: 14px; background: var(--ink); color: #fff; border: 3px solid var(--c); font-size: 15px; max-width: 260px; transition: transform .1s, background .1s; }
+.rehearse .chip.p0 { --c: var(--p0); } .rehearse .chip.p1 { --c: var(--p1); }
+.rehearse .chip.s0 { grid-column: 1; justify-self: start; } .rehearse .chip.s1 { grid-column: 3; justify-self: end; }
+.rehearse .chip b { display: flex; gap: 6px; align-items: center; font: 400 20px/1 var(--disp); } .rehearse .chip b .ic { color: var(--c); }
+.rehearse .chip.on { background: var(--c); transform: scale(1.12); } .rehearse .chip.on b .ic { color: #fff; }
+.rehearse .chip .arw { position: absolute; top: -22px; right: -10px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--ink); font-style: normal; font-size: 22px; opacity: 0; transition: opacity .15s; border: 3px solid var(--c); }
+.rehearse .chip.dir .arw { opacity: 1; }
+@media (max-width: 700px) {
+  .rehearse .bar { grid-template-columns: 1fr 1fr; }
+  .rehearse .cap { grid-column: 1 / -1; grid-row: 2; }
+  .rehearse .chip.s0 { grid-column: 1; } .rehearse .chip.s1 { grid-column: 2; }
+  .rehearse .chip { font-size: 13px; } .rehearse .chip b { font-size: 17px; }
+  .rehearse .tag { top: calc(var(--pad) + 104px); font-size: 14px; }
+}
+@media (max-height: 520px) and (min-width: 600px) { .rehearse .cap { padding: 8px 12px; gap: 6px; } .rehearse .cap p { font-size: 14px; } .rehearse .tag { top: calc(var(--pad) + 56px); } }
+.tale .go2 .link { color: var(--muted); }
+@media (max-width: 560px) { .tale.mini .try { gap: 8px; } .ghost { font-size: 15px; padding: 9px 11px; gap: 5px; } }
+@media (max-width: 700px) { .rehearse .chip.on { transform: scale(1.04); } .rehearse .chip .arw { right: -4px; } }

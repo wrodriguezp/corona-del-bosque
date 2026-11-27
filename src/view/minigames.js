@@ -243,10 +243,17 @@ const SCENES = [
 
 export class MiniView {
   // `ai = {i, level}`: la computadora maneja a esa persona; la otra puede usar los dos lados.
-  constructor(stage, hud, heroes, names, duel, swap, ai = null) {
-    Object.assign(this, { stage, hud, heroes, names, id: duel.game, rules: GAMES[duel.game], view: VIEWS[duel.game] });
+  // `mode`: 'demo' (la computadora juega por los dos para mostrar cómo se juega) o
+  // 'practice' (se juega de verdad, pero no cuenta). En los dos se corta a los `limit` segundos.
+  constructor(stage, hud, heroes, names, duel, swap, ai = null, mode = null, limit = 0) {
+    Object.assign(this, { stage, hud, heroes, names, id: duel.game, rules: GAMES[duel.game], view: VIEWS[duel.game], mode, limit, clock: 0 });
     this.s = this.rules.create(duel.seed);
-    if (ai) { this.ai = ai.i; this.brain = brain(duel.game, ai.i, ai.level, duel.seed); }
+    if (ai && mode !== 'demo') { this.ai = ai.i; this.brain = brain(duel.game, ai.i, ai.level, duel.seed); }
+    if (mode === 'demo') {
+      // Juega bien, pero a veces falla: así también se ve qué pasa al equivocarse.
+      const k = this.rules.team ? 0 : 0.25, b = [0, 1].map((i) => brain(duel.game, i, 'normal', duel.seed + i, k));
+      this.bot = (s) => b.map((f) => f(s));
+    }
     this.group = new THREE.Group();
     if (this.view.island) this.group.add(island(this.view.island));
     stage.scene.add(this.group);
@@ -295,16 +302,26 @@ export class MiniView {
     return new Promise((res) => { this.res = res; this.running = true; });
   }
 
+  // Termina antes de tiempo (demo o práctica): no hay ganador.
+  stop() {
+    if (!this.running) return;
+    this.running = false;
+    this.res(null);
+  }
+
   update(dt, time) {
     if (this.running) {
       this.acc = Math.min(0.12, this.acc + dt);
       while (this.acc >= DT && !this.s.done) {
         this.acc -= DT;
-        this.rules.step(this.s, this.bot ? this.bot(this.s) : this.input());
+        const pads = this.bot ? this.bot(this.s) : this.input();
+        this.rules.step(this.s, pads);
+        this.onPads?.(pads);
       }
       for (const e of this.s.events.splice(0)) { this.view.on(this, e); if (this.foe && (e.t === 'lost' || e.t === 'saved')) this.foe.set(e.t === 'lost' ? 'cheer' : 'hurt', 1.5); }
       this.hud.miniScore(this.hudEl, this.s.score, this.s.left, this.rules.time);
       if (this.s.done) { this.running = false; this.res(this.s.winner); }
+      else if (this.limit && (this.clock += dt) > this.limit) this.stop();
     }
     if (!this.show) this.view.update(this, dt, time);
     this.foe?.update(dt, time);

@@ -25,6 +25,7 @@ Juego de tablero 3D para dos personas en la misma pantalla (PC, celular o iPad).
 - **`src/core`:** reglas puras. Toda acción entra por `Session.dispatch` y devuelve eventos, y todo el azar sale de `g.rng`. Con la misma semilla y las mismas acciones, la partida se repite igual.
 - **`src/main.js`:** anima cada evento con `play[e.t]`. Ojo: cuando se reproducen los eventos, `g` ya está en su estado final.
 - **`src/view`:** Three.js, todo hecho con código.
+- **Demo y práctica de minijuegos:** `intro()` y `rehearse()` en `src/main.js`; el `MiniView` recibe `mode` ('demo' o 'practice') y un límite de segundos. La demo usa `brain()` para los dos lados.
 - **`src/ui/hud.js`:** interfaz y textos, incluida la ayuda «Cómo se juega», que se actualiza con cada regla nueva.
 
 ## Probar

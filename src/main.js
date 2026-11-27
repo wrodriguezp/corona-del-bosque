@@ -798,7 +798,8 @@ async function minigame(d) {
     ? [{ cls: 'team', icon: 'rune', text: `Si ganan: la runa ${d.guard + 1} de 3` }, { cls: 'shadow', icon: 'heart', text: `Si gana ${foe}: −1 corazón` }]
     : [{ cls: 'team', icon: 'sun', text: `Si ganan: la Sombra retrocede ${COOP.push}` }, { cls: 'shadow', icon: 'omen', text: `Si gana la Sombra: avanza ${COOP.surge}` }];
   sides.cpu = S.opts.ai;
-  await hud.miniIntro(rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], names, stage.mobile, g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }, ...(rules.boss ? [{ cls: 'team', icon: 'star', text: `Quien pegue más golpes: +${BOSS_GEM} gema` }] : [])] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)), sides);
+  const duel = d.guard != null ? { ...d, foe: GUARDS[d.guard].kind, foeName: GUARDS[d.guard].name } : d;
+  await intro(duel, names, cpuMini(), () => { skyNow(0); arrange(true); }, rules, g.coop && d.why === 'arena' ? 'Arena antigua · juntos contra la Sombra' : WHY[d.why], g.coop ? coopPrize : d.team ? [{ cls: 'team', icon: 'sun', text: `Si ganan: ${TEAM_WIN} gemas para cada quien` }, { cls: 'shadow', icon: 'omen', text: `Si gana ${d.guard != null ? GUARDS[d.guard].name : 'el Rey Sombrío'}: hasta −${TEAM_LOSE} gemas a cada quien` }, ...(rules.boss ? [{ cls: 'team', icon: 'star', text: `Quien pegue más golpes: +${BOSS_GEM} gema` }] : [])] : names.map((n, i) => (d.why === 'torneo' ? `Si gana ${n}: ${g.duelPrize(i)} gemas y una carta` : `Si gana ${n}: le quita hasta ${g.duelTake(i)} gemas a ${names[1 - i]}`)));
   const cam = { ...stage.cam, target: stage.cam.target.clone() };
   await hud.fade(true);
   hud.game.classList.add('hidden');
@@ -807,7 +808,7 @@ async function minigame(d) {
   stage.locked = true;
   stage.setMood('day', 0); // la arena siempre se juega con buena luz
   view.group.visible = false;
-  mini = new MiniView(stage, hud, heroes, names, d.guard != null ? { ...d, foe: GUARDS[d.guard].kind, foeName: GUARDS[d.guard].name } : d, sides.swap, cpuMini());
+  mini = new MiniView(stage, hud, heroes, names, duel, sides.swap, cpuMini());
   await hud.fade(false);
   await mini.countdown();
   const w = await mini.play();
@@ -829,6 +830,46 @@ async function minigame(d) {
   return w;
 }
 
+/* ---------- Instrucciones, demo y práctica ---------- */
+// Desde las instrucciones se puede ver una demo (la computadora juega por los dos) o
+// practicar sin que cuente, las veces que quieran, antes de pulsar «¡Listos!».
+// Usan una semilla propia: no adelantan nada del minijuego de verdad.
+async function intro(duel, names, ai, restore, rules, why, prize) {
+  for (;;) {
+    const c = await hud.miniIntro(rules, why, names, stage.mobile, prize, sides);
+    if (c !== 'demo' && c !== 'try') return;
+    await rehearse(duel, names, c === 'demo' ? 'demo' : 'practice', ai, restore);
+  }
+}
+
+async function rehearse(duel, names, mode, ai, restore) {
+  const cam = { ...stage.cam, target: stage.cam.target.clone() }, locked = stage.locked, board = view.group.visible, ui0 = hud.game.classList.contains('hidden');
+  await hud.fade(true);
+  hud.game.classList.add('hidden');
+  stage.locked = true;
+  stage.setMood('day', 0);
+  view.group.visible = false;
+  const m = new MiniView(stage, hud, heroes, names, { ...duel, seed: newSeed() }, sides.swap, mode === 'practice' ? ai : null, mode, mode === 'demo' ? 14 : 30);
+  mini = m;
+  const ui = hud.rehearsal(mode, GAMES[duel.game], names, stage.mobile, sides.swap, () => m.stop());
+  if (mode === 'demo') m.onPads = ui.pads;
+  await hud.fade(false);
+  if (mode === 'practice') await m.countdown();
+  const w = await m.play();
+  ui.remove();
+  if (w !== null) { m.say(mode === 'demo' ? 'Así termina' : '¡Bien practicado!', '', 1); await stage.wait(1.1); }
+  await hud.fade(true);
+  m.dispose();
+  mini = null;
+  view.group.visible = board;
+  if (!ui0) hud.game.classList.remove('hidden');
+  restore();
+  Object.assign(stage.cam, { wYaw: cam.wYaw, yaw: cam.wYaw, wPitch: cam.wPitch, pitch: cam.wPitch, wDist: cam.wDist, dist: cam.wDist });
+  stage.cam.target.copy(cam.target); stage.cam.pos.copy(cam.target);
+  stage.locked = locked;
+  await hud.fade(false);
+}
+
 /* ---------- Arcade: minijuegos sueltos, sin tablero ---------- */
 async function arcade(names) {
   const score = [0, 0, 0], versus = MINIGAMES, team = [...TEAM_GAMES, ...BOSSES];
@@ -839,7 +880,7 @@ async function arcade(names) {
     if (id === 'random') { const all = [...versus, ...team]; id = all[Math.floor(Math.random() * all.length)]; }
     const isTeam = team.includes(id), rules = GAMES[id];
     sides.cpu = prefs.ai;
-    await hud.miniIntro(rules, isTeam ? 'Arcade · en equipo' : 'Arcade', names, stage.mobile, isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`), sides);
+    await intro({ game: id, team: isTeam }, names, cpuMini(prefs), pose, rules, isTeam ? 'Arcade · en equipo' : 'Arcade', isTeam ? [{ cls: 'team', icon: 'sun', text: 'Si ganan: +1 para el equipo' }] : names.map((n) => `Si gana ${n}: +1 en el marcador`));
     await hud.fade(true);
     stage.locked = true;
     stage.setMood('day', 0);
@@ -865,6 +906,7 @@ hud.on = {
   exit: () => location.reload(),
   roll: () => { if (!busy && g.phase === 'ready') { sfx('click'); act({ type: 'roll' }); } },
   buy: (what) => { if (!busy && g.canBuy(what)) { view.showOptions([], '#fff'); act({ type: 'buy', what }); } },
+  names: (n) => saveNames(n),
   skin: (id) => { prefs.skin = id; try { localStorage.setItem('corona-skin', id); } catch {} preview(prefs.len, false); },
   card: async (i) => {
     if (busy || g.phase !== 'ready' || g.cardPlayed || g.player.fx.locked || !g.player.hand[i]) return;
@@ -923,6 +965,9 @@ stage.onTap = (n) => {
 /* ---------- Flujo ---------- */
 let prefs = { names: ['Princesa', 'Mago'], len: 28, seed: newSeed(), skin: PRINCESS_SKINS[0].id };
 try { prefs.skin = localStorage.getItem('corona-skin') || prefs.skin; } catch {}
+// Los nombres quedan guardados en el navegador para la próxima vez.
+try { const n = JSON.parse(localStorage.getItem('corona-nombres')); if (Array.isArray(n) && n.length === 2) prefs.names = n.map((x, i) => String(x || '').slice(0, 12) || prefs.names[i]); } catch {}
+const saveNames = (n) => { try { localStorage.setItem('corona-nombres', JSON.stringify(n)); } catch {} };
 
 function preview(len, fresh) {
   prefs.len = len;
@@ -955,6 +1000,7 @@ async function home() {
   if (c === 'resume') return resume(saved);
   const { arcade: wantsArcade, ...pick } = c;
   Object.assign(prefs, pick);
+  saveNames(prefs.names);
   if (wantsArcade) return arcade(prefs.names);
   start({ ...prefs });
 }

@@ -178,6 +178,15 @@ Objetos que duran toda la partida, con un poder pequeño y fijo. Se ven bajo el 
 - El minijuego se quedaba congelado al terminar la cuenta regresiva: la escena guardaba un dato con el mismo nombre que la función que invierte los controles. Ya se juega normal.
 - Una prueba nueva revisa que ninguna escena de minijuego repita ese error.
 
+## V4.5: ver cómo se juega (lista)
+Lo de siempre al jugar: «no se entiende qué hay que hacer». Como en las fiestas de minijuegos, ahora se puede mirar y probar antes de que cuente.
+- **Ver cómo se juega:** desde las instrucciones, la computadora juega por los dos en la arena real, a pantalla completa (también en celular). Abajo se lee qué hay que hacer, y la tecla o el toque de cada quien se ilumina justo cuando lo usa; en los de moverse aparece una flecha hacia dónde va. Dura hasta 14 s o hasta pulsar «Entendido».
+- **Practicar:** se juega de verdad, con cuenta regresiva, hasta 30 s o hasta «Terminar práctica». No cuenta para nada.
+- Las dos usan una semilla propia, así que no adelantan el minijuego de verdad ni cambian la partida guardada. Se pueden repetir cuantas veces quieran.
+- Las instrucciones se desplazan si no caben en la pantalla, sin cortar el título.
+- **Nombres guardados:** los nombres quedan en el navegador y aparecen solos la próxima vez.
+- Por confirmar jugando: si con la demo ya se entiende sin leer, y si la práctica se usa o sobra.
+
 ## Después
 - **Siguiente:** más cartas (unas 40), algunas ligadas a las reliquias.
 - Misión secreta. Ojo: en una pantalla compartida el otro la vería. Opciones: revelarla al final, mirarla con «el otro cierra los ojos» o esperar a la sala con código.

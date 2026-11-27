@@ -38,6 +38,15 @@ const cardHtml = (id, big, p) => {
     : `<span class="t">${icon(c.icon)}${c.name}</span><span class="efx">${bigLine(c.big, p)}</span>`;
 };
 
+// Cómo se maneja cada lado de la pantalla, según el tipo de minijuego.
+const CONTROLS = (input, mobile) => ({
+  button: mobile ? ['Toca la mitad izquierda', 'Toca la mitad derecha'] : ['Tecla A o espacio', 'Enter o clic del mouse'],
+  move: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas A y D', 'Flechas ← y →'],
+  hold: mobile ? ['Mantén el dedo en la mitad izquierda', 'Mantén el dedo en la mitad derecha'] : ['Mantén A o espacio', 'Mantén Enter o el clic del mouse'],
+  dirs: mobile ? ['Los cuatro botones de la izquierda', 'Los cuatro botones de la derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
+  move2: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
+  chase: mobile ? ['Quien huye: joystick en su esquina de abajo', 'Quien lanza: toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
+})[input];
 // Instrucciones de un minijuego en tres pasos: qué ves, qué haces y cómo se gana.
 const HOW = [['eye', 'Así es'], ['hand', 'Qué haces'], ['crown', 'Cómo se gana']];
 const howTo = (goal) => `<ol class="how">${goal.map((t, i) => `<li>${icon(HOW[i][0])}<div><b>${HOW[i][1]}</b>${esc(t)}</div></li>`).join('')}</ol>`;
@@ -345,17 +354,11 @@ export class Hud {
 
   // `opt.swap` intercambia qué lado de la pantalla (y del teclado) usa cada jugador.
   miniIntro(rules, why, names, mobile, prize, opt) {
-    const ctl = {
-      button: mobile ? ['Toca la mitad izquierda', 'Toca la mitad derecha'] : ['Tecla A o espacio', 'Enter o clic del mouse'],
-      move: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas A y D', 'Flechas ← y →'],
-      hold: mobile ? ['Mantén el dedo en la mitad izquierda', 'Mantén el dedo en la mitad derecha'] : ['Mantén A o espacio', 'Mantén Enter o el clic del mouse'],
-      dirs: mobile ? ['Los cuatro botones de la izquierda', 'Los cuatro botones de la derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
-      move2: mobile ? ['Desliza en la mitad izquierda', 'Desliza en la mitad derecha'] : ['Teclas W, A, S y D', 'Flechas ↑ ← ↓ →'],
-      chase: mobile ? ['Quien huye: joystick en su esquina de abajo', 'Quien lanza: toca la arena'] : ['Quien huye: WASD o flechas', 'Quien lanza: mouse y clic'],
-    }[rules.input];
+    const ctl = CONTROLS(rules.input, mobile);
     const role = rules.input === 'chase';
     const s = el('tale mini', `<div class="orn">${icon(rules.icon)}</div><small>${why}</small><h2>${rules.name}</h2>${howTo(rules.goal)}
       <div class="ctl"></div><div class="prize">${prize.map((t, i) => (typeof t === 'string' ? `<span class="p${i}">${icon(AV[i])}${esc(t)}</span>` : `<span class="${t.cls}">${icon(t.icon)}${esc(t.text)}</span>`)).join('')}</div>
+      <div class="try"><button class="ghost" data-i="demo">${icon('eye')}Ver cómo se juega</button><button class="ghost" data-i="try">${icon('hand')}Practicar</button></div>
       <div class="go2"><button class="link swap">${icon('swap')}Cambiar lados</button><button class="cta" data-i="go" data-ok="1">¡Listos!</button></div>`);
     const draw = () => {
       s.querySelector('.ctl').innerHTML = [0, 1].map((side) => { const i = opt.swap ? 1 - side : side; if (!role && opt.cpu === i) return `<div class="p${i}"><b>${icon(AV[i])}${esc(names[i])}</b>Lo juega la computadora</div>`; return `<div class="p${role ? side : i}">${role ? '' : `<b>${icon(AV[i])}${esc(names[i])}</b>`}${ctl[side]}${opt.cpu != null && !role ? `<small> (${mobile ? 'o en la otra mitad' : 'o con las teclas del otro lado'})</small>` : ''}</div>`; }).join('');
@@ -364,6 +367,32 @@ export class Hud {
     s.querySelector('.swap').onclick = () => { opt.swap = !opt.swap; sfx('flip'); draw(); const c = s.querySelector('.ctl'); c.classList.remove('flip'); void c.offsetWidth; c.classList.add('flip'); };
     if (role) s.querySelector('.swap').hidden = !mobile;
     return this.ask(s);
+  }
+
+  // Letreros de la demo y de la práctica: qué está pasando, qué se hace y, en la
+  // demo, qué tecla o toque usa cada quien, iluminado justo cuando lo usa.
+  rehearsal(mode, rules, names, mobile, swap, end) {
+    const demo = mode === 'demo', ctl = CONTROLS(rules.input, mobile);
+    const side = (i) => (swap ? 1 - i : i);
+    const chips = demo ? [0, 1].map((i) => `<div class="chip p${i} s${side(i)}"><b>${icon(AV[i])}${esc(names[i])}</b><span>${esc(rules.input === 'chase' ? 'Huye o lanza, según la ronda' : ctl[side(i)])}</span><i class="arw">➜</i></div>`).join('') : '';
+    const r = el(`rehearse ${mode}`, `<div class="tag">${demo ? `${icon('eye')}Así se juega · la computadora muestra` : `${icon('hand')}Práctica · no cuenta`}</div>
+      <div class="bar">${chips}<div class="cap"><p>${esc(rules.goal[1])}</p><button class="cta">${demo ? 'Entendido' : 'Terminar práctica'}</button></div></div>`);
+    r.querySelector('button').onclick = () => { sfx('click'); end(); };
+    this.root.append(r);
+    const els = [...r.querySelectorAll('.chip')], last = [0, 0];
+    return {
+      remove: () => r.remove(),
+      // Mandos de este instante (en coordenadas del mundo); la escena en espejo invierte x.
+      pads: (pads) => els.forEach((c, i) => {
+        const p = pads[i], now = performance.now();
+        if (p.a || p.h || p.d != null || Math.hypot(p.x || 0, p.y || 0) > 0.25) last[i] = now;
+        c.classList.toggle('on', now - last[i] < 260);
+        const x = (swap ? -1 : 1) * (p.x || 0), y = p.y || 0, a = p.d != null ? (p.d - 1) * 90 : (Math.atan2(y, x) * 180) / Math.PI;
+        const moving = p.d != null || Math.hypot(x, y) > 0.25;
+        c.classList.toggle('dir', moving);
+        if (moving) c.querySelector('.arw').style.transform = `rotate(${a}deg)`;
+      }),
+    };
   }
 
   // Letrero grande de victoria con la pantalla teñida del color de quien ganó.
@@ -422,7 +451,7 @@ export class Hud {
       ${li('rune', '#2fa596', '<b>Altares.</b> Se ven desde lejos, en los desvíos más largos. Cada uno guarda una <b>reliquia</b> que dura toda la partida; se la lleva quien llega primero (al pasar te detienes). Pasa el dedo o el ratón sobre una reliquia, bajo tu nombre, para leerla.')}
       ${li('flame', '#e0651f', '<b>Cueva.</b> Toma gemas y sal antes de que el dragón despierte.')}
       ${li('eagle', '#2b7fd0', '<b>Águila</b> te lleva adelante; el <b>gusano</b>, atrás.')}
-      ${li('duel', '#d2452f', `<b>Minijuegos.</b> Cada ${TOURNEY_EVERY / 2} vueltas hay una ronda de minijuegos: un torneo (quien gana se lleva gemas y una carta) y, cada ${TEAM_ROUND} rondas, uno en equipo contra el Rey. También en las arenas y al caer donde está tu rival.`)}
+      ${li('duel', '#d2452f', `<b>Minijuegos.</b> Cada ${TOURNEY_EVERY / 2} vueltas hay una ronda de minijuegos: un torneo (quien gana se lleva gemas y una carta) y, cada ${TEAM_ROUND} rondas, uno en equipo contra el Rey. También en las arenas y al caer donde está tu rival. Antes de cada uno pueden pulsar «Ver cómo se juega» (la computadora lo juega por los dos) o «Practicar» (no cuenta).`)}
       ${li('star', '#d8981a', '<b>3 estrellas</b> te dan una carta. Ganas una estrella por turno.')}
       ${li('gem', '#1f9d63', '<b>Gasta gemas.</b> Sobres, trampas, repetir tirada o un paso más.')}
       ${li('star', '#d6468f', '<b>Hada madrina.</b> Ayuda a quien va atrás: mejores tiradas, menos pérdidas y cartas de remontada. Cuando alguien llega al castillo se despide, salvo que vayas 13 gemas o más atrás.')}
@@ -508,6 +537,7 @@ export class Hud {
       const resume = s.querySelector('[data-a=resume]');
       if (resume) resume.onclick = () => { s.remove(); res('resume'); };
       const names = () => [...s.querySelectorAll('input')].map((i, k) => i.value.trim() || ['Princesa', 'Mago'][k]);
+      s.querySelectorAll('.names input').forEach((i) => (i.oninput = () => this.on.names?.(names())));
       s.querySelector('[data-a=start]').onclick = () => { const n = names(); s.remove(); res({ names: n, len, mode, solo, level, ai: solo ? 1 : null }); };
       s.querySelector('[data-a=arcade]').onclick = () => { const n = names(); sfx('click'); s.remove(); res({ names: n, len, solo, level, ai: solo ? 1 : null, arcade: true }); };
     });

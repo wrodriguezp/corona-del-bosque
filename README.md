@@ -18,6 +18,7 @@ Una princesa y un mago cruzan un bosque donde cada casilla es una sorpresa. Tire
 - Día y noche, y un mundo que cambia: bosques que caminan, lagos que se congelan, eclipses, estrellas caídas y un dragón que sale a volar.
 - Un hada madrina que le da una mano a quien va atrás.
 - Cada 3 vueltas hay una ronda de minijuegos: un torneo y, cada tercera ronda, uno en equipo contra el Rey.
+- Antes de cada minijuego se puede ver una demo (la computadora juega por los dos y se iluminan las teclas) o practicar sin que cuente. Los nombres quedan guardados en el navegador.
 - **Modo juntos:** en el menú se elige entre jugar uno contra otro o juntos contra el Rey Sombrío. En el modo juntos comparten 4 corazones (5 en Tranquila y 3 en Difícil), vencen a los tres guardianes para reunir tres runas y ganan cuando llegan los dos al castillo. Todos los minijuegos son en equipo, hay cartas de equipo y quien llega primero ayuda desde la torre.
 - **Jugar solo:** en el menú se elige «Yo y la computadora». Tú juegas con la princesa y la computadora con el mago, en los dos modos y en el Arcade. Hay tres dificultades (Tranquila, Normal y Difícil). La computadora decide con lo mismo que ve una persona: nunca mira lo que esconde una casilla.
 - **Arcade:** desde el menú se puede jugar cualquier minijuego suelto, con marcador, y también las tres batallas de jefe.
